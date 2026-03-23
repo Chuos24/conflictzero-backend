@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: conflictzero-backend
+    runtime: node
+    buildCommand: "npm install"
+    startCommand: "node index.js"
+    envVars:
+      - key: PERU_API_KEY
+        value: d02bb5a71984e759885a4e47a575715c
+    plan: free
