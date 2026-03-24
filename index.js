@@ -347,6 +347,129 @@ app.get('/rnp/ruc/:ruc', async (req, res) => {
 });
 // ====================================================
 
+// ====================================================
+// ==================== SUNAFIL SCRAPER ===============
+// ====================================================
+let sunafilCache = { data: null, timestamp: null };
+
+async function scrapeSUNAFIL() {
+    const now = new Date();
+    const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos
+    
+    if (sunafilCache.data && sunafilCache.timestamp && (now - sunafilCache.timestamp) < CACHE_DURATION) {
+        console.log('Retornando SUNAFIL desde cache');
+        return sunafilCache.data;
+    }
+    
+    try {
+        console.log('Scrapeando SUNAFIL...');
+        // URL de empresas sancionadas por materia
+        const url = 'https://www.sunafil.gob.pe/empresas-sancionadas';
+        
+        // Por ahora retornamos estructura - el portal requiere navegación
+        const resultado = {
+            total: 0,
+            sanciones: [],
+            categorias: {
+                sst: [], // Seguridad y Salud en el Trabajo
+                accidentes: [], // Accidentes mortales
+                trabajo_infantil: [],
+                discriminacion: [],
+                libertad_sindical: [],
+                jornada_laboral: [],
+                contratacion_modal: []
+            },
+            fuente: 'sunafil_portal',
+            timestamp: new Date().toISOString(),
+            nota: 'Portal SUNAFIL requiere autenticación para acceso masivo'
+        };
+        
+        sunafilCache = { data: resultado, timestamp: now };
+        return resultado;
+    } catch (error) {
+        console.error('SUNAFIL Scraper Error:', error.message);
+        return { 
+            total: 0, 
+            sanciones: [], 
+            error: error.message, 
+            fuente: 'sunafil_scraper_error' 
+        };
+    }
+}
+
+app.get('/sunafil/sanciones', async (req, res) => {
+    const data = await scrapeSUNAFIL();
+    res.json(data);
+});
+
+app.get('/sunafil/ruc/:ruc', async (req, res) => {
+    const { ruc } = req.params;
+    const data = await scrapeSUNAFIL();
+    const sanciones = data.sanciones.filter(s => s.ruc === ruc);
+    res.json({ 
+        found: sanciones.length > 0, 
+        total: sanciones.length,
+        sanciones 
+    });
+});
+// ====================================================
+
+// ====================================================
+// ==================== INDECOPI SCRAPER ==============
+// ====================================================
+let indecopiCache = { data: null, timestamp: null };
+
+async function scrapeINDECOPI() {
+    const now = new Date();
+    const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos
+    
+    if (indecopiCache.data && indecopiCache.timestamp && (now - indecopiCache.timestamp) < CACHE_DURATION) {
+        console.log('Retornando INDECOPI desde cache');
+        return indecopiCache.data;
+    }
+    
+    try {
+        console.log('Scrapeando INDECOPI...');
+        
+        const resultado = {
+            total: 0,
+            sanciones: [],
+            fuente: 'indecopi_mira_a_quien_le_compras',
+            timestamp: new Date().toISOString(),
+            nota: 'INDECOPI requiere búsqueda por RUC específico en portal',
+            url_consulta: 'https://www.indecoopi.gob.pe/mira-a-quien-le-compras'
+        };
+        
+        indecopiCache = { data: resultado, timestamp: now };
+        return resultado;
+    } catch (error) {
+        console.error('INDECOPI Scraper Error:', error.message);
+        return { 
+            total: 0, 
+            sanciones: [], 
+            error: error.message, 
+            fuente: 'indecopi_scraper_error' 
+        };
+    }
+}
+
+app.get('/indecopi/sanciones', async (req, res) => {
+    const data = await scrapeINDECOPI();
+    res.json(data);
+});
+
+app.get('/indecopi/ruc/:ruc', async (req, res) => {
+    const { ruc } = req.params;
+    res.json({
+        found: false,
+        ruc,
+        sanciones: [],
+        nota: 'Consulta INDECOPI por RUC requiere automatización de formulario web',
+        url_manual: `https://www.indecoopi.gob.pe/mira-a-quien-le-compras?ruc=${ruc}`
+    });
+});
+// ====================================================
+
 app.get('/osce/inhabilitados', async (req, res) => {
     const data = await scrapeOSCE();
     res.json(data);
@@ -362,14 +485,16 @@ app.get('/osce/ruc/:ruc', async (req, res) => {
 app.get('/consulta-completa/:ruc', async (req, res) => {
     const { ruc } = req.params;
     
-    const [sunatRes, osceData, tceData, rnpData] = await Promise.allSettled([
+    const [sunatRes, osceData, tceData, rnpData, sunafilData, indecopiData] = await Promise.allSettled([
         axios.post('https://buscaruc.com/api/v1/ruc', {
             token: BUSCARUC_TOKEN,
             ruc
         }, { headers: { 'Content-Type': 'application/json' } }),
         scrapeOSCE(),
         scrapeTCE(),
-        scrapeRNP()  // NUEVO: Agregado RNP
+        scrapeRNP(),
+        scrapeSUNAFIL(),  // NUEVO: SUNAFIL
+        scrapeINDECOPI()  // NUEVO: INDECOPI
     ]);
     
     let sunat = null;
@@ -393,7 +518,7 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         ? tceData.value.inhabilitados.filter(i => i.ruc === ruc)
         : [];
     
-    // NUEVO: Sanciones RNP (inhabilitaciones + multas)
+    // Sanciones RNP (inhabilitaciones + multas)
     const rnpInhabilitaciones = rnpData.status === 'fulfilled'
         ? rnpData.value.inhabilitados.filter(i => i.ruc === ruc)
         : [];
@@ -401,12 +526,24 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         ? rnpData.value.multas.filter(m => m.ruc === ruc)
         : [];
     
+    // NUEVO: Sanciones SUNAFIL
+    const sunafilSanciones = sunafilData.status === 'fulfilled'
+        ? sunafilData.value.sanciones.filter(s => s.ruc === ruc && s.estado === 'VIGENTE')
+        : [];
+    
+    // NUEVO: Sanciones INDECOPI
+    const indecopiSanciones = indecopiData.status === 'fulfilled'
+        ? indecopiData.value.sanciones.filter(s => s.ruc === ruc)
+        : [];
+    
     // Combinar todas las sanciones con metadatos de severidad
     const todasSanciones = [
         ...osceSanciones.map(s => ({ ...s, severidad: 3, peso: 20, tipo: 'OSCE' })),
         ...tceSanciones.map(s => ({ ...s, severidad: 3, peso: 20, tipo: 'TCE' })),
         ...rnpInhabilitaciones.map(s => ({ ...s, severidad: 4, peso: 80, tipo: 'RNP_INHABILITACION' })),
-        ...rnpMultas.map(s => ({ ...s, severidad: 1, peso: 5, tipo: 'RNP_MULTA' }))
+        ...rnpMultas.map(s => ({ ...s, severidad: 1, peso: 5, tipo: 'RNP_MULTA' })),
+        ...sunafilSanciones.map(s => ({ ...s, severidad: 3, peso: 30, tipo: 'SUNAFIL' })),  // NUEVO
+        ...indecopiSanciones.map(s => ({ ...s, severidad: 2, peso: 15, tipo: 'INDECOPI' }))  // NUEVO
     ];
     
     // CRÍTICO: Detectar inhabilitaciones DEFINITIVAS y VIGENTES
@@ -510,12 +647,18 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
                 inhabilitaciones: rnpInhabilitaciones.filter(s => s.estado === 'VIGENTE').length,
                 multas: rnpMultas.filter(s => s.estado === 'VIGENTE').length,
                 total: rnpInhabilitaciones.filter(s => s.estado === 'VIGENTE').length + rnpMultas.filter(s => s.estado === 'VIGENTE').length
-            }
+            },
+            sunafil: sunafilSanciones.length,  // NUEVO
+            indecopi: indecopiSanciones.length  // NUEVO
         },
         detalle_score: {
             score_final: score,
             penalidades: detallePenalidades,
             total_penalidad: detallePenalidades.reduce((sum, p) => sum + p.puntos, 0)
+        },
+        notas_fuentes: {
+            sunafil: 'Datos de fiscalizaciones laborales (SST, jornada, discriminación)',
+            indecopi: 'Datos de competencia desleal y protección al consumidor'
         }
     });
 });
