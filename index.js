@@ -664,7 +664,133 @@ app.get('/indecopi/ruc/:ruc', async (req, res) => {
 });
 // ====================================================
 
-app.get('/osce/inhabilitados', async (req, res) => {
+// ==================== SUNARP SCRAPER ================
+// Superintendencia Nacional de los Registros Publicos
+// Consulta de propiedades inmuebles y vehiculos
+// ====================================================
+let sunarpCache = { data: null, timestamp: null };
+
+async function scrapeSUNARP() {
+    const now = new Date();
+    const CACHE_DURATION = 60 * 60 * 1000; // 1 hora
+    
+    if (sunarpCache.data && sunarpCache.timestamp && (now - sunarpCache.timestamp) < CACHE_DURATION) {
+        console.log('Retornando SUNARP desde cache');
+        return sunarpCache.data;
+    }
+    
+    try {
+        // SUNARP no tiene una lista publica descargable
+        // La consulta es por RUC/DNI especifico
+        // Retornamos estructura base indicando como consultar
+        
+        const resultado = {
+            total: 0,
+            propiedades: [],
+            fuente: 'sunarp_portal',
+            timestamp: new Date().toISOString(),
+            nota: 'SUNARP requiere consulta por RUC especifico. Usar /sunarp/ruc/:ruc',
+            url_base: 'https://www.sunarp.gob.pe',
+            servicios: {
+                consulta_inmuebles: 'https://www.sunarp.gob.pe/consulta-inmuebles/',
+                consulta_vehicular: 'https://www.sunarp.gob.pe/consulta-vehicular/',
+                consulta_titularidad: 'https://www.sunarp.gob.pe/consulta-titularidad/'
+            }
+        };
+        
+        sunarpCache = { data: resultado, timestamp: now };
+        return resultado;
+        
+    } catch (error) {
+        console.error('SUNARP Error:', error.message);
+        return {
+            total: 0,
+            propiedades: [],
+            fuente: 'sunarp_error',
+            timestamp: new Date().toISOString(),
+            error: error.message
+        };
+    }
+}
+
+async function consultaSUNARPPorRUC(ruc) {
+    try {
+        // SUNARP tiene proteccion CAPTCHA en consultas automatizadas
+        // Intentamos obtener informacion basica del portal de titularidad
+        
+        const consultaUrl = `https://www.sunarp.gob.pe/consulta-titularidad/?tipo=2&numero=${ruc}`;
+        
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'es-PE,es;q=0.9'
+        };
+        
+        const response = await axios.get(consultaUrl, { headers, timeout: 15000 });
+        const $ = cheerio.load(response.data);
+        
+        const propiedades = [];
+        
+        // Buscar resultados de titularidad
+        $('.resultado-titularidad, .propiedad-item, table tbody tr').each((i, elem) => {
+            const celdas = $(elem).find('td');
+            if (celdas.length >= 3) {
+                const tipo = $(celdas[0]).text().trim();
+                const partida = $(celdas[1]).text().trim();
+                const direccion = $(celdas[2]).text().trim();
+                
+                if (partida && partida.length > 3) {
+                    propiedades.push({
+                        tipo: tipo || 'INMUEBLE',
+                        partida_registral: partida,
+                        direccion,
+                        estado: 'REGISTRADO',
+                        fuente: 'SUNARP'
+                    });
+                }
+            }
+        });
+        
+        return {
+            found: propiedades.length > 0,
+            ruc,
+            total: propiedades.length,
+            propiedades,
+            url_consulta: consultaUrl,
+            timestamp: new Date().toISOString(),
+            nota: propiedades.length > 0 
+                ? 'Propiedades encontradas en SUNARP' 
+                : 'No se encontraron propiedades registradas o el portal requiere CAPTCHA'
+        };
+        
+    } catch (error) {
+        return {
+            found: false,
+            ruc,
+            propiedades: [],
+            nota: 'Consulta SUNARP requiere verificacion CAPTCHA',
+            url_manual: `https://www.sunarp.gob.pe/consulta-titularidad/?tipo=2&numero=${ruc}`,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        };
+    }
+}
+
+app.get('/sunarp/propiedades', async (req, res) => {
+    const data = await scrapeSUNARP();
+    res.json(data);
+});
+
+app.get('/sunarp/ruc/:ruc', async (req, res) => {
+    const { ruc } = req.params;
+    if (!ruc || ruc.length !== 11 || !/^\d+$/.test(ruc)) {
+        return res.status(400).json({ error: 'RUC invalido' });
+    }
+    
+    const data = await consultaSUNARPPorRUC(ruc);
+    res.json(data);
+});
+// ====================================================
     const data = await scrapeOSCE();
     res.json(data);
 });
@@ -679,7 +805,7 @@ app.get('/osce/ruc/:ruc', async (req, res) => {
 app.get('/consulta-completa/:ruc', async (req, res) => {
     const { ruc } = req.params;
     
-    const [sunatRes, osceData, tceData, rnpData, sunafilData, indecopiData] = await Promise.allSettled([
+    const [sunatRes, osceData, tceData, rnpData, sunafilData, indecopiData, sunarpData] = await Promise.allSettled([
         axios.post('https://buscaruc.com/api/v1/ruc', {
             token: BUSCARUC_TOKEN,
             ruc
@@ -688,7 +814,8 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         scrapeTCE(),
         scrapeRNP(),
         scrapeSUNAFIL(),  // NUEVO: SUNAFIL
-        scrapeINDECOPI()  // NUEVO: INDECOPI
+        scrapeINDECOPI(),  // NUEVO: INDECOPI
+        consultaSUNARPPorRUC(ruc)  // NUEVO: SUNARP
     ]);
     
     let sunat = null;
@@ -728,6 +855,11 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
     // NUEVO: Sanciones INDECOPI
     const indecopiSanciones = indecopiData.status === 'fulfilled'
         ? indecopiData.value.sanciones.filter(s => s.ruc === ruc)
+        : [];
+    
+    // NUEVO: Propiedades SUNARP
+    const sunarpPropiedades = sunarpData.status === 'fulfilled'
+        ? sunarpData.value.propiedades || []
         : [];
     
     // Combinar todas las sanciones con metadatos de severidad
@@ -843,7 +975,13 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
                 total: rnpInhabilitaciones.filter(s => s.estado === 'VIGENTE').length + rnpMultas.filter(s => s.estado === 'VIGENTE').length
             },
             sunafil: sunafilSanciones.length,  // NUEVO
-            indecopi: indecopiSanciones.length  // NUEVO
+            indecopi: indecopiSanciones.length,  // NUEVO
+            sunarp: sunarpPropiedades.length  // NUEVO: Registros de propiedad
+        },
+        patrimonio: {
+            propiedades_registradas: sunarpPropiedades.length,
+            tiene_inmuebles: sunarpPropiedades.length > 0,
+            detalle_propiedades: sunarpPropiedades
         },
         detalle_score: {
             score_final: score,
@@ -852,7 +990,8 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         },
         notas_fuentes: {
             sunafil: 'Datos de fiscalizaciones laborales (SST, jornada, discriminación)',
-            indecopi: 'Datos de competencia desleal y protección al consumidor'
+            indecopi: 'Datos de competencia desleal y protección al consumidor',
+            sunarp: 'Registros de propiedad inmueble y vehicular'
         }
     });
 });
