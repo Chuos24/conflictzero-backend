@@ -90,59 +90,111 @@ async function scrapeOSCE() {
     }
 }
 
-// ==================== TCE - NUEVO ====================
+// ==================== TCE - MEJORADO ====================
 async function scrapeTCE() {
     const now = Date.now();
     if (tceCache.data && tceCache.timestamp && (now - tceCache.timestamp) < 1800000) {
         return tceCache.data;
     }
     try {
+        // Intentar múltiples fuentes de datos TCE
+        const response = await axios.get('http://www.osce.gob.pe/consultasenlinea/inhabilitados/inhabil_publi_mes.asp', {
+            timeout: 30000,
+            headers: { 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'es-PE,es;q=0.9'
+            }
+        });
+        
+        const $ = cheerio.load(response.data);
+        const inhabilitados = [];
+        
+        // DEBUG: Log para ver qué encontramos
+        console.log('TCE Scraper - Tablas encontradas:', $('table').length);
+        
+        // La estructura de la página de OSCE/TCE tiene tablas con clase específica
+        $('table').each((tableIndex, table) => {
+            const rows = $(table).find('tr');
+            console.log(`Tabla ${tableIndex}: ${rows.length} filas`);
+            
+            rows.each((i, row) => {
+                if (i === 0) return; // Saltar header
+                
+                const cols = $(row).find('td');
+                console.log(`Fila ${i}: ${cols.length} columnas`);
+                
+                if (cols.length >= 4) {
+                    // Intentar diferentes índices de columna
+                    let ruc = '';
+                    let expediente = '';
+                    let tipo = '';
+                    
+                    for (let j = 0; j < cols.length; j++) {
+                        const texto = $(cols[j]).text().trim();
+                        console.log(`  Col ${j}: "${texto.substring(0, 30)}"`);
+                        
+                        // Detectar RUC (11 dígitos)
+                        if (!ruc && texto.match(/^\d{11}$/)) {
+                            ruc = texto;
+                        }
+                        // Detectar expediente TCE
+                        else if (!expediente && (texto.includes('TCE') || texto.includes('EXP'))) {
+                            expediente = texto;
+                        }
+                        // Detectar tipo
+                        else if (!tipo && texto.length > 3 && texto.length < 50) {
+                            tipo = texto;
+                        }
+                    }
+                    
+                    console.log(`  -> Detectado: RUC=${ruc}, EXP=${expediente}, TIPO=${tipo}`);
+                    
+                    if (ruc && expediente && expediente.includes('TCE')) {
+                        inhabilitados.push({
+                            ruc,
+                            entidad: 'TCE',
+                            expediente: expediente,
+                            tipo_sancion: tipo || 'INHABILITACION',
+                            fecha: new Date().toISOString().split('T')[0]
+                        });
+                        console.log('  -> AGREGADO A TCE');
+                    } else if (ruc && expediente && !expediente.includes('TCE')) {
+                        // Es OSCE
+                        console.log('  -> ES OSCE, no TCE');
+                    }
+                }
+            });
+        });
+        
+        console.log(`TCE Scraper - Total encontrados: ${inhabilitados.length}`);
+        
+        const resultado = { total: inhabilitados.length, inhabilitados, fuente: 'tce_scraper_v2', timestamp: new Date().toISOString() };
+        tceCache = { data: resultado, timestamp: now };
+        return resultado;
+    } catch (error) {
+        console.error('TCE Scraper Error:', error.message);
+        return { total: 0, inhabilitados: [], error: error.message, fuente: 'tce_scraper_error' };
+    }
+}
+
+// Endpoint de debug para ver raw data
+app.get('/debug/tce-raw', async (req, res) => {
+    try {
         const response = await axios.get('http://www.osce.gob.pe/consultasenlinea/inhabilitados/inhabil_publi_mes.asp', {
             timeout: 30000,
             headers: { 'User-Agent': 'Mozilla/5.0' }
         });
-        const $ = cheerio.load(response.data);
-        const inhabilitados = [];
-        
-        // Buscar en tablas - TCE publica en la misma página que OSCE
-        $('table tr').each((i, row) => {
-            const cols = $(row).find('td');
-            if (cols.length >= 9) {
-                const tipo = $(cols[0]).text().trim();
-                const numero = $(cols[1]).text().trim();
-                const nombre = $(cols[2]).text().trim();
-                const ruc = $(cols[3]).text().trim();
-                const expediente = $(cols[4]).text().trim();
-                const duracion = $(cols[5]).text().trim();
-                const fechaInicio = $(cols[6]).text().trim();
-                const fechaFin = $(cols[7]).text().trim();
-                const motivo = $(cols[8]).text().trim();
-                
-                // Solo incluir si tiene expediente TCE
-                if (ruc && ruc.match(/^\d{11}$/) && expediente && expediente.includes('TCE')) {
-                    inhabilitados.push({
-                        ruc,
-                        entidad: 'TCE',
-                        tipo_sancion: tipo,
-                        nombre,
-                        expediente,
-                        duracion,
-                        fecha_inicio: fechaInicio,
-                        fecha_fin: fechaFin,
-                        motivo,
-                        fecha: fechaInicio
-                    });
-                }
-            }
+        // Devolver primeros 5000 caracteres para ver estructura
+        res.json({ 
+            preview: response.data.substring(0, 5000),
+            length: response.data.length,
+            tables: (response.data.match(/<table/g) || []).length
         });
-        
-        const resultado = { total: inhabilitados.length, inhabilitados, fuente: 'tce_scraper' };
-        tceCache = { data: resultado, timestamp: now };
-        return resultado;
     } catch (error) {
-        return { total: 0, inhabilitados: [], error: error.message };
+        res.status(500).json({ error: error.message });
     }
-}
+});
 
 app.get('/tce/inhabilitados', async (req, res) => {
     const data = await scrapeTCE();
