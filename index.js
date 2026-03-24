@@ -357,17 +357,21 @@ let sunafilCache = { data: null, timestamp: null };
 // ====================================================
 let sunafilCache = { data: null, timestamp: null };
 
-async function scrapeSUNAFILWithPuppeteer() {
-    console.log('Scrapeando SUNAFIL con Puppeteer...');
+// ==================== SUNAFIL SCRAPER (PLAYWRIGHT) ====
+// =====================================================
+let sunafilCache = { data: null, timestamp: null };
+
+async function scrapeSUNAFILWithPlaywright() {
+    console.log('Scrapeando SUNAFIL con Playwright...');
     
     let browser;
     try {
-        // Importar puppeteer-core
-        const puppeteer = require('puppeteer-core');
+        // Importar playwright
+        const { chromium } = require('playwright');
         
-        // Opciones para Render (usar chromium del sistema si existe)
-        const launchOptions = {
-            headless: 'new',
+        // Launch options para entornos cloud (Render)
+        browser = await chromium.launch({
+            headless: true,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -375,41 +379,15 @@ async function scrapeSUNAFILWithPuppeteer() {
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
                 '--window-size=1920,1080'
-            ],
-            timeout: 30000
-        };
+            ]
+        });
         
-        // Intentar encontrar chromium en el sistema
-        const possiblePaths = [
-            '/usr/bin/chromium',
-            '/usr/bin/chromium-browser',
-            '/usr/bin/google-chrome',
-            '/usr/bin/google-chrome-stable',
-            process.env.PUPPETEER_EXECUTABLE_PATH
-        ].filter(Boolean);
+        const context = await browser.newContext({
+            viewport: { width: 1920, height: 1080 },
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        });
         
-        for (const path of possiblePaths) {
-            try {
-                require('fs').accessSync(path, require('fs').constants.X_OK);
-                launchOptions.executablePath = path;
-                console.log(`Usando Chromium en: ${path}`);
-                break;
-            } catch (e) {
-                continue;
-            }
-        }
-        
-        if (!launchOptions.executablePath) {
-            console.log('Chromium no encontrado en sistema, usando cache existente...');
-            return null;
-        }
-        
-        browser = await puppeteer.launch(launchOptions);
-        const page = await browser.newPage();
-        
-        // Configurar viewport y user agent
-        await page.setViewport({ width: 1920, height: 1080 });
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        const page = await context.newPage();
         
         const todasSanciones = [];
         const categorias = {
@@ -428,7 +406,7 @@ async function scrapeSUNAFILWithPuppeteer() {
                 console.log(`  Navegando ${item.cat}...`);
                 
                 await page.goto(item.url, { 
-                    waitUntil: 'networkidle2', 
+                    waitUntil: 'networkidle', 
                     timeout: 20000 
                 });
                 
@@ -436,7 +414,7 @@ async function scrapeSUNAFILWithPuppeteer() {
                 await page.waitForSelector('table tbody tr', { timeout: 10000 });
                 
                 // Extraer datos
-                const sancionesCat = await page.evaluate((categoria, categoriaNombre) => {
+                const sancionesCat = await page.evaluate(({ categoria, categoriaNombre }) => {
                     const filas = document.querySelectorAll('table tbody tr');
                     const datos = [];
                     
@@ -463,7 +441,7 @@ async function scrapeSUNAFILWithPuppeteer() {
                     });
                     
                     return datos;
-                }, item.cat, item.nombre);
+                }, { categoria: item.cat, categoriaNombre: item.nombre });
                 
                 todasSanciones.push(...sancionesCat);
                 categorias[item.cat] = sancionesCat;
@@ -480,13 +458,13 @@ async function scrapeSUNAFILWithPuppeteer() {
             total: todasSanciones.length,
             sanciones: todasSanciones,
             categorias,
-            fuente: 'sunafil_portal_puppeteer',
+            fuente: 'sunafil_portal_playwright',
             timestamp: new Date().toISOString(),
-            nota: `Datos extraidos con Puppeteer: ${todasSanciones.length} sanciones laborales`
+            nota: `Datos extraidos con Playwright: ${todasSanciones.length} sanciones laborales`
         };
         
     } catch (error) {
-        console.error('SUNAFIL Puppeteer Error:', error.message);
+        console.error('SUNAFIL Playwright Error:', error.message);
         if (browser) await browser.close();
         return null;
     }
@@ -501,11 +479,11 @@ async function scrapeSUNAFIL() {
         return sunafilCache.data;
     }
     
-    // Intentar con Puppeteer primero
-    const puppeteerData = await scrapeSUNAFILWithPuppeteer();
-    if (puppeteerData && puppeteerData.total > 0) {
-        sunafilCache = { data: puppeteerData, timestamp: now };
-        return puppeteerData;
+    // Intentar con Playwright primero
+    const playwrightData = await scrapeSUNAFILWithPlaywright();
+    if (playwrightData && playwrightData.total > 0) {
+        sunafilCache = { data: playwrightData, timestamp: now };
+        return playwrightData;
     }
     
     // Fallback: Intentar con axios (por si acaso)
