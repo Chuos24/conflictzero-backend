@@ -352,6 +352,146 @@ app.get('/rnp/ruc/:ruc', async (req, res) => {
 // ====================================================
 let sunafilCache = { data: null, timestamp: null };
 
+// ====================================================
+// ==================== SUNAFIL SCRAPER (PUPPETEER) ====
+// ====================================================
+let sunafilCache = { data: null, timestamp: null };
+
+async function scrapeSUNAFILWithPuppeteer() {
+    console.log('Scrapeando SUNAFIL con Puppeteer...');
+    
+    let browser;
+    try {
+        // Importar puppeteer-core
+        const puppeteer = require('puppeteer-core');
+        
+        // Opciones para Render (usar chromium del sistema si existe)
+        const launchOptions = {
+            headless: 'new',
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--window-size=1920,1080'
+            ],
+            timeout: 30000
+        };
+        
+        // Intentar encontrar chromium en el sistema
+        const possiblePaths = [
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            process.env.PUPPETEER_EXECUTABLE_PATH
+        ].filter(Boolean);
+        
+        for (const path of possiblePaths) {
+            try {
+                require('fs').accessSync(path, require('fs').constants.X_OK);
+                launchOptions.executablePath = path;
+                console.log(`Usando Chromium en: ${path}`);
+                break;
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (!launchOptions.executablePath) {
+            console.log('Chromium no encontrado en sistema, usando cache existente...');
+            return null;
+        }
+        
+        browser = await puppeteer.launch(launchOptions);
+        const page = await browser.newPage();
+        
+        // Configurar viewport y user agent
+        await page.setViewport({ width: 1920, height: 1080 });
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        
+        const todasSanciones = [];
+        const categorias = {
+            sst: [], accidentes: [], trabajo_infantil: [], discriminacion: []
+        };
+        
+        const urls = [
+            { cat: 'sst', nombre: 'Seguridad y Salud en el Trabajo', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/seguridad-y-salud-en-el-trabajo' },
+            { cat: 'accidentes', nombre: 'Accidentes Mortales', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/accidentes-mortales' },
+            { cat: 'trabajo_infantil', nombre: 'Trabajo Infantil', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/trabajo-infantil' },
+            { cat: 'discriminacion', nombre: 'Discriminacion', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/igualdad-y-no-discriminacion' }
+        ];
+        
+        for (const item of urls) {
+            try {
+                console.log(`  Navegando ${item.cat}...`);
+                
+                await page.goto(item.url, { 
+                    waitUntil: 'networkidle2', 
+                    timeout: 20000 
+                });
+                
+                // Esperar a que cargue la tabla
+                await page.waitForSelector('table tbody tr', { timeout: 10000 });
+                
+                // Extraer datos
+                const sancionesCat = await page.evaluate((categoria, categoriaNombre) => {
+                    const filas = document.querySelectorAll('table tbody tr');
+                    const datos = [];
+                    
+                    filas.forEach(fila => {
+                        const celdas = fila.querySelectorAll('td');
+                        if (celdas.length >= 3) {
+                            const razonSocial = celdas[0]?.textContent?.trim() || '';
+                            const rucTexto = celdas[1]?.textContent?.trim() || '';
+                            const ruc = rucTexto.replace(/\D/g, '');
+                            const resolucion = celdas[2]?.textContent?.trim() || '';
+                            
+                            if (ruc && ruc.length === 11) {
+                                datos.push({
+                                    ruc,
+                                    razon_social: razonSocial,
+                                    categoria,
+                                    categoria_nombre: categoriaNombre,
+                                    resolucion,
+                                    estado: 'VIGENTE',
+                                    fecha_extraccion: new Date().toISOString()
+                                });
+                            }
+                        }
+                    });
+                    
+                    return datos;
+                }, item.cat, item.nombre);
+                
+                todasSanciones.push(...sancionesCat);
+                categorias[item.cat] = sancionesCat;
+                console.log(`    ${sancionesCat.length} sanciones`);
+                
+            } catch (err) {
+                console.log(`    Error ${item.cat}: ${err.message}`);
+            }
+        }
+        
+        await browser.close();
+        
+        return {
+            total: todasSanciones.length,
+            sanciones: todasSanciones,
+            categorias,
+            fuente: 'sunafil_portal_puppeteer',
+            timestamp: new Date().toISOString(),
+            nota: `Datos extraidos con Puppeteer: ${todasSanciones.length} sanciones laborales`
+        };
+        
+    } catch (error) {
+        console.error('SUNAFIL Puppeteer Error:', error.message);
+        if (browser) await browser.close();
+        return null;
+    }
+}
+
 async function scrapeSUNAFIL() {
     const now = new Date();
     const CACHE_DURATION = 30 * 60 * 1000;
@@ -361,88 +501,78 @@ async function scrapeSUNAFIL() {
         return sunafilCache.data;
     }
     
-    console.log('Scrapeando SUNAFIL (modo rapido)...');
+    // Intentar con Puppeteer primero
+    const puppeteerData = await scrapeSUNAFILWithPuppeteer();
+    if (puppeteerData && puppeteerData.total > 0) {
+        sunafilCache = { data: puppeteerData, timestamp: now };
+        return puppeteerData;
+    }
     
-    // Headers para simular navegador
-    const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'es-ES,es;q=0.9'
-    };
+    // Fallback: Intentar con axios (por si acaso)
+    console.log('Puppeteer fallo, intentando axios...');
     
-    // Intentar scraping en paralelo con timeouts cortos
-    const urls = [
-        { cat: 'sst', nombre: 'Seguridad y Salud en el Trabajo', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/seguridad-y-salud-en-el-trabajo' },
-        { cat: 'accidentes', nombre: 'Accidentes Mortales', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/accidentes-mortales' },
-        { cat: 'trabajo_infantil', nombre: 'Trabajo Infantil', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/trabajo-infantil' },
-        { cat: 'discriminacion', nombre: 'Discriminacion', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/igualdad-y-no-discriminacion' }
-    ];
-    
-    const todasSanciones = [];
-    const categorias = { sst: [], accidentes: [], trabajo_infantil: [], discriminacion: [] };
-    
-    // Scraping paralelo con Promise.allSettled
-    const promesas = urls.map(async (item) => {
-        try {
-            const response = await axios.get(item.url, { 
-                headers, 
-                timeout: 8000,
-                maxRedirects: 3
-            });
-            
-            const $ = cheerio.load(response.data);
-            const filas = $('table tbody tr');
-            const sancionesCat = [];
-            
-            filas.each((i, elem) => {
-                const celdas = $(elem).find('td');
-                if (celdas.length >= 3) {
-                    const ruc = $(celdas[1]).text().trim().replace(/\D/g, '');
-                    const razonSocial = $(celdas[0]).text().trim();
-                    
-                    if (ruc && ruc.length === 11) {
-                        const sancion = {
-                            ruc,
-                            razon_social: razonSocial,
-                            categoria: item.cat,
-                            categoria_nombre: item.nombre,
-                            estado: 'VIGENTE',
-                            fecha_extraccion: new Date().toISOString()
-                        };
-                        sancionesCat.push(sancion);
+    try {
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'es-ES,es;q=0.9'
+        };
+        
+        const urls = [
+            { cat: 'sst', nombre: 'Seguridad y Salud en el Trabajo', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/seguridad-y-salud-en-el-trabajo' },
+            { cat: 'accidentes', nombre: 'Accidentes Mortales', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/accidentes-mortales' }
+        ];
+        
+        const todasSanciones = [];
+        const categorias = { sst: [], accidentes: [], trabajo_infantil: [], discriminacion: [] };
+        
+        for (const item of urls) {
+            try {
+                const response = await axios.get(item.url, { headers, timeout: 8000 });
+                const $ = cheerio.load(response.data);
+                const filas = $('table tbody tr');
+                
+                filas.each((i, elem) => {
+                    const celdas = $(elem).find('td');
+                    if (celdas.length >= 3) {
+                        const ruc = $(celdas[1]).text().trim().replace(/\D/g, '');
+                        const razonSocial = $(celdas[0]).text().trim();
+                        
+                        if (ruc && ruc.length === 11) {
+                            const sancion = {
+                                ruc, razon_social: razonSocial,
+                                categoria: item.cat, categoria_nombre: item.nombre,
+                                estado: 'VIGENTE', fecha_extraccion: new Date().toISOString()
+                            };
+                            todasSanciones.push(sancion);
+                            categorias[item.cat].push(sancion);
+                        }
                     }
-                }
-            });
-            
-            return { categoria: item.cat, sanciones: sancionesCat };
-        } catch (err) {
-            return { categoria: item.cat, sanciones: [], error: err.message };
+                });
+            } catch (e) {}
         }
-    });
-    
-    const resultados = await Promise.allSettled(promesas);
-    
-    resultados.forEach(r => {
-        if (r.status === 'fulfilled' && r.value.sanciones.length > 0) {
-            todasSanciones.push(...r.value.sanciones);
-            categorias[r.value.categoria] = r.value.sanciones;
-        }
-    });
-    
-    const resultado = {
-        total: todasSanciones.length,
-        sanciones: todasSanciones,
-        categorias,
-        fuente: 'sunafil_portal',
-        timestamp: new Date().toISOString(),
-        nota: todasSanciones.length > 0 
-            ? `Datos extraidos: ${todasSanciones.length} sanciones laborales` 
-            : 'Portal SUNAFIL no permite acceso directo - usar /sunafil/ruc/:ruc para consulta especifica'
-    };
-    
-    sunafilCache = { data: resultado, timestamp: now };
-    console.log(`SUNAFIL: ${todasSanciones.length} sanciones`);
-    return resultado;
+        
+        const resultado = {
+            total: todasSanciones.length,
+            sanciones: todasSanciones,
+            categorias,
+            fuente: 'sunafil_portal_axios',
+            timestamp: new Date().toISOString(),
+            nota: todasSanciones.length > 0 ? 'Datos extraidos' : 'Portal protegido - datos no disponibles'
+        };
+        
+        sunafilCache = { data: resultado, timestamp: now };
+        return resultado;
+        
+    } catch (error) {
+        const resultado = {
+            total: 0, sanciones: [], categorias: { sst: [], accidentes: [], trabajo_infantil: [], discriminacion: [] },
+            fuente: 'sunafil_error', timestamp: new Date().toISOString(),
+            nota: 'Error accediendo a SUNAFIL: ' + error.message
+        };
+        sunafilCache = { data: resultado, timestamp: now };
+        return resultado;
+    }
 }
 
 app.get('/sunafil/sanciones', async (req, res) => {
