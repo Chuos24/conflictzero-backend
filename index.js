@@ -363,36 +363,105 @@ async function scrapeSUNAFIL() {
     
     try {
         console.log('Scrapeando SUNAFIL...');
-        // URL de empresas sancionadas por materia
-        const url = 'https://www.sunafil.gob.pe/empresas-sancionadas';
         
-        // Por ahora retornamos estructura - el portal requiere navegación
+        // URLs de listados de empresas sancionadas por materia
+        const urls = [
+            { categoria: 'sst', nombre: 'Seguridad y Salud en el Trabajo', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/seguridad-y-salud-en-el-trabajo' },
+            { categoria: 'accidentes', nombre: 'Accidentes Mortales', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/accidentes-mortales' },
+            { categoria: 'trabajo_infantil', nombre: 'Trabajo Infantil', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/trabajo-infantil' },
+            { categoria: 'discriminacion', nombre: 'Igualdad y No Discriminación', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/igualdad-y-no-discriminacion' },
+            { categoria: 'libertad_sindical', nombre: 'Libertad Sindical', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/libertad-sindical' },
+            { categoria: 'jornada_laboral', nombre: 'Jornada y Descansos', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/jornada-de-trabajo-y-descansos' },
+            { categoria: 'contratacion_modal', nombre: 'Contratación Modal', url: 'https://www.sunafil.gob.pe/empresas-sancionadas/contratacion-sujeta-a-modalidad' }
+        ];
+        
+        const todasSanciones = [];
+        const categorias = {
+            sst: [], accidentes: [], trabajo_infantil: [],
+            discriminacion: [], libertad_sindical: [],
+            jornada_laboral: [], contratacion_modal: []
+        };
+        
+        // Headers para simular navegador
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+            'Referer': 'https://www.sunafil.gob.pe/'
+        };
+        
+        for (const item of urls) {
+            try {
+                console.log(`  Intentando ${item.categoria}...`);
+                const response = await axios.get(item.url, { 
+                    headers, 
+                    timeout: 15000,
+                    maxRedirects: 5
+                });
+                
+                const $ = cheerio.load(response.data);
+                const filas = $('table tbody tr, .table tbody tr, tr[data-ruc], .sancion-row');
+                
+                console.log(`    Encontradas ${filas.length} filas`);
+                
+                filas.each((i, elem) => {
+                    const celdas = $(elem).find('td');
+                    if (celdas.length >= 4) {
+                        const ruc = $(celdas[1]).text().trim().replace(/\D/g, '');
+                        const razonSocial = $(celdas[0]).text().trim();
+                        const resolucion = $(celdas[2]).text().trim();
+                        const monto = $(celdas[3]).text().trim();
+                        const estado = $(celdas[4]).text().trim() || 'VIGENTE';
+                        
+                        if (ruc && ruc.length === 11) {
+                            const sancion = {
+                                ruc,
+                                razon_social: razonSocial,
+                                categoria: item.categoria,
+                                categoria_nombre: item.nombre,
+                                resolucion,
+                                monto,
+                                estado: estado.toUpperCase().includes('VIG') ? 'VIGENTE' : 'RESUELTO',
+                                fecha_extraccion: new Date().toISOString()
+                            };
+                            
+                            todasSanciones.push(sancion);
+                            categorias[item.categoria].push(sancion);
+                        }
+                    }
+                });
+            } catch (err) {
+                console.log(`    Error en ${item.categoria}: ${err.message}`);
+            }
+        }
+        
         const resultado = {
-            total: 0,
-            sanciones: [],
-            categorias: {
-                sst: [], // Seguridad y Salud en el Trabajo
-                accidentes: [], // Accidentes mortales
-                trabajo_infantil: [],
-                discriminacion: [],
-                libertad_sindical: [],
-                jornada_laboral: [],
-                contratacion_modal: []
-            },
+            total: todasSanciones.length,
+            sanciones: todasSanciones,
+            categorias,
             fuente: 'sunafil_portal',
             timestamp: new Date().toISOString(),
-            nota: 'Portal SUNAFIL requiere autenticación para acceso masivo'
+            nota: todasSanciones.length > 0 
+                ? 'Datos extraídos de listados públicos de SUNAFIL' 
+                : 'Listados no accesibles directamente - se requiere navegación manual'
         };
         
         sunafilCache = { data: resultado, timestamp: now };
+        console.log(`SUNAFIL: ${todasSanciones.length} sanciones encontradas`);
         return resultado;
+        
     } catch (error) {
         console.error('SUNAFIL Scraper Error:', error.message);
         return { 
             total: 0, 
             sanciones: [], 
             error: error.message, 
-            fuente: 'sunafil_scraper_error' 
+            fuente: 'sunafil_scraper_error',
+            categorias: {
+                sst: [], accidentes: [], trabajo_infantil: [],
+                discriminacion: [], libertad_sindical: [],
+                jornada_laboral: [], contratacion_modal: []
+            }
         };
     }
 }
@@ -431,17 +500,75 @@ async function scrapeINDECOPI() {
     try {
         console.log('Scrapeando INDECOPI...');
         
-        const resultado = {
-            total: 0,
-            sanciones: [],
-            fuente: 'indecopi_mira_a_quien_le_compras',
-            timestamp: new Date().toISOString(),
-            nota: 'INDECOPI requiere búsqueda por RUC específico en portal',
-            url_consulta: 'https://www.indecoopi.gob.pe/mira-a-quien-le-compras'
+        // INDECOPI tiene un portal "Mira a quién le compras"
+        // Intentamos obtener datos de la página de sanciones
+        const url = 'https://www.indecoopi.gob.pe/mira-a-quien-le-compras';
+        
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'es-ES,es;q=0.9'
         };
         
-        indecopiCache = { data: resultado, timestamp: now };
-        return resultado;
+        try {
+            const response = await axios.get(url, { headers, timeout: 15000 });
+            const $ = cheerio.load(response.data);
+            
+            // Buscar tablas o listados de sanciones
+            const sanciones = [];
+            
+            // Selectores comunes para tablas de sanciones
+            $('table tbody tr, .sancion-item, .resultado-item').each((i, elem) => {
+                const celdas = $(elem).find('td, .celda');
+                if (celdas.length >= 3) {
+                    const ruc = $(celdas[0]).text().trim().replace(/\D/g, '');
+                    const razonSocial = $(celdas[1]).text().trim();
+                    const tipoSancion = $(celdas[2]).text().trim();
+                    
+                    if (ruc && ruc.length === 11) {
+                        sanciones.push({
+                            ruc,
+                            razon_social: razonSocial,
+                            tipo_sancion: tipoSancion,
+                            fuente: 'INDECOPI',
+                            estado: 'VIGENTE',
+                            fecha_extraccion: new Date().toISOString()
+                        });
+                    }
+                }
+            });
+            
+            const resultado = {
+                total: sanciones.length,
+                sanciones: sanciones,
+                fuente: 'indecopi_mira_a_quien_le_compras',
+                timestamp: new Date().toISOString(),
+                nota: sanciones.length > 0 
+                    ? 'Datos extraídos de portal INDECOPI' 
+                    : 'Portal INDECOPI requiere búsqueda por RUC específico - listado general no disponible'
+            };
+            
+            indecopiCache = { data: resultado, timestamp: now };
+            console.log(`INDECOPI: ${sanciones.length} sanciones encontradas`);
+            return resultado;
+            
+        } catch (err) {
+            console.log('INDECOPI: No se pudo acceder al listado general');
+            
+            // Retornar estructura vacía pero funcional
+            const resultado = {
+                total: 0,
+                sanciones: [],
+                fuente: 'indecopi_mira_a_quien_le_compras',
+                timestamp: new Date().toISOString(),
+                nota: 'INDECOPI requiere búsqueda por RUC específico. Use /indecopi/ruc/:ruc para consultar individualmente',
+                url_consulta: 'https://www.indecoopi.gob.pe/mira-a-quien-le-compras'
+            };
+            
+            indecopiCache = { data: resultado, timestamp: now };
+            return resultado;
+        }
+        
     } catch (error) {
         console.error('INDECOPI Scraper Error:', error.message);
         return { 
@@ -460,13 +587,59 @@ app.get('/indecopi/sanciones', async (req, res) => {
 
 app.get('/indecopi/ruc/:ruc', async (req, res) => {
     const { ruc } = req.params;
-    res.json({
-        found: false,
-        ruc,
-        sanciones: [],
-        nota: 'Consulta INDECOPI por RUC requiere automatización de formulario web',
-        url_manual: `https://www.indecoopi.gob.pe/mira-a-quien-le-compras?ruc=${ruc}`
-    });
+    
+    try {
+        // Intentar buscar en el portal "Mira a quién le compras"
+        const searchUrl = `https://www.indecoopi.gob.pe/mira-a-quien-le-compras?ruc=${ruc}`;
+        
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'es-ES,es;q=0.9'
+        };
+        
+        const response = await axios.get(searchUrl, { headers, timeout: 15000 });
+        const $ = cheerio.load(response.data);
+        
+        // Buscar resultados en la página
+        const sanciones = [];
+        
+        $('.resultado-sancion, .sancion-item, table tbody tr').each((i, elem) => {
+            const celdas = $(elem).find('td');
+            if (celdas.length >= 2) {
+                const tipo = $(celdas[0]).text().trim();
+                const fecha = $(celdas[1]).text().trim();
+                const monto = $(celdas[2]) ? $(celdas[2]).text().trim() : '';
+                
+                sanciones.push({
+                    tipo_sancion: tipo,
+                    fecha,
+                    monto,
+                    estado: 'VIGENTE',
+                    fuente: 'INDECOPI'
+                });
+            }
+        });
+        
+        res.json({
+            found: sanciones.length > 0,
+            ruc,
+            total: sanciones.length,
+            sanciones,
+            url_consulta: searchUrl,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        res.json({
+            found: false,
+            ruc,
+            sanciones: [],
+            nota: 'Consulta INDECOPI por RUC requiere automatización avanzada de formulario',
+            url_manual: `https://www.indecoopi.gob.pe/mira-a-quien-le-compras?ruc=${ruc}`,
+            error: error.message
+        });
+    }
 });
 // ====================================================
 
