@@ -401,22 +401,58 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         ? rnpData.value.multas.filter(m => m.ruc === ruc)
         : [];
     
-    // Combinar todas las sanciones
-    const todasSanciones = [...osceSanciones, ...tceSanciones, ...rnpInhabilitaciones, ...rnpMultas];
+    // Combinar todas las sanciones con metadatos de severidad
+    const todasSanciones = [
+        ...osceSanciones.map(s => ({ ...s, severidad: 3, peso: 20 })),
+        ...tceSanciones.map(s => ({ ...s, severidad: 3, peso: 20 })),
+        ...rnpInhabilitaciones.map(s => ({ ...s, severidad: 2, peso: 15 })),
+        ...rnpMultas.map(s => ({ ...s, severidad: 1, peso: 5 }))
+    ];
     
-    // Calcular score (cada sanción resta 20 puntos)
+    // Calcular score mejorado con ponderacion por severidad
     let score = 100;
-    if (!sunat) score -= 30;
-    score -= osceSanciones.length * 20;
-    score -= tceSanciones.length * 20;
-    score -= rnpInhabilitaciones.length * 20;  // NUEVO: RNP inhabilitaciones
-    score -= rnpMultas.length * 10;  // NUEVO: RNP multas restan menos (10)
-    score = Math.max(0, score);
+    
+    // Penalidad base si no esta en SUNAT
+    if (!sunat) score -= 25;
+    
+    // Penalidad por sanciones (ponderadas por severidad)
+    let penalidadSanciones = 0;
+    todasSanciones.forEach(s => {
+        penalidadSanciones += s.peso;
+    });
+    
+    // Bonus por antiguedad (sanciones viejas penalizan menos)
+    const ahora = new Date();
+    todasSanciones.forEach(s => {
+        if (s.fecha) {
+            const fechaSancion = new Date(s.fecha);
+            const mesesAntiguedad = (ahora - fechaSancion) / (1000 * 60 * 60 * 24 * 30);
+            if (mesesAntiguedad > 24) {
+                // Sanciones mayores a 2 años restan solo la mitad
+                penalidadSanciones -= s.peso * 0.5;
+            }
+        }
+    });
+    
+    score -= penalidadSanciones;
+    
+    // Penalidad adicional por cantidad de sanciones (efecto acumulativo)
+    if (todasSanciones.length >= 3) score -= 10;
+    if (todasSanciones.length >= 5) score -= 15;
+    
+    // Asegurar rango 0-100
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    
+    // Determinar estado con umbrales ajustados
+    let estadoFinal;
+    if (score >= 80) estadoFinal = 'LIMPIO';
+    else if (score >= 50) estadoFinal = 'OBSERVADO';
+    else estadoFinal = 'CRITICO';
     
     res.json({
         ruc,
         razon_social: sunat?.razon_social || 'NO ENCONTRADO',
-        estado: score >= 70 ? 'LIMPIO' : score >= 40 ? 'OBSERVADO' : 'CRITICO',
+        estado: estadoFinal,
         condicion: sunat?.condicion || 'NO ENCONTRADO',
         estado_sunat: sunat?.estado || 'NO ENCONTRADO',
         direccion: sunat?.direccion || '',
@@ -433,6 +469,13 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
                 multas: rnpMultas.length,
                 total: rnpInhabilitaciones.length + rnpMultas.length
             }
+        },
+        detalle_score: {
+            base: 100,
+            penalidad_sunat: !sunat ? -25 : 0,
+            penalidad_sanciones: -penalidadSanciones,
+            penalidad_acumulativa: todasSanciones.length >= 5 ? -15 : todasSanciones.length >= 3 ? -10 : 0,
+            score_final: score
         }
     });
 });
@@ -453,29 +496,84 @@ app.post('/api/register', async (req, res) => {
     
     const msg = {
         to: 'contacto@czperu.com',
-        from: 'registro@czperu.com',
-        subject: `Nueva solicitud de registro - ${company}`,
+        from: {
+            email: 'noreply@czperu.com',
+            name: 'Conflict Zero - Registros'
+        },
+        replyTo: email,
+        subject: `[CONFLICT ZERO] Nueva solicitud: ${company || 'Empresa'} - ${plan || 'Sin plan'}`,
         html: `
-            <h2>Nueva Solicitud de Registro - Conflict Zero</h2>
-            <table style="border-collapse: collapse; width: 100%;">
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Nombre:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${firstName} ${lastName}</td></tr>
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${email}</td></tr>
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Empresa:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${company}</td></tr>
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Plan:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${planNames[plan] || plan}</td></tr>
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Telefono:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${phone || 'No proporcionado'}</td></tr>
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Fecha:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${date}</td></tr>
-            </table>
-            <p style="margin-top: 20px;">Por favor contactar al cliente en 24-48 horas.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #c9a961 0%, #d4b978 100%); padding: 20px; text-align: center;">
+                    <h2 style="color: white; margin: 0;">Conflict Zero</h2>
+                    <p style="color: white; margin: 5px 0 0 0; font-size: 14px;">Nueva Solicitud de Registro</p>
+                </div>
+                
+                <div style="padding: 30px; background: #fafafa; border: 1px solid #e0e0e0; border-top: none;">
+                    <p style="color: #666; margin-bottom: 20px;">Se ha recibido una nueva solicitud de registro con los siguientes datos:</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; background: white;">
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: bold; width: 35%; background: #f5f5f5;">Nombre:</td>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0;">${firstName} ${lastName}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: bold; background: #f5f5f5;">Email:</td>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0;"><a href="mailto:${email}" style="color: #c9a961;">${email}</a></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: bold; background: #f5f5f5;">Empresa:</td>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0;">${company || 'No especificado'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: bold; background: #f5f5f5;">Plan:</td>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0;"><strong style="color: #c9a961;">${planNames[plan] || plan}</strong></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: bold; background: #f5f5f5;">Telefono:</td>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0;">${phone || 'No proporcionado'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: bold; background: #f5f5f5;">Fecha:</td>
+                            <td style="padding: 12px; border: 1px solid #e0e0e0;">${date}</td>
+                        </tr>
+                    </table>
+                    
+                    <div style="margin-top: 25px; padding: 15px; background: #fff3cd; border-left: 4px solid #c9a961;">
+                        <p style="margin: 0; color: #856404; font-size: 14px;">
+                            <strong>Accion requerida:</strong> Contactar al cliente en 24-48 horas.
+                        </p>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <a href="mailto:${email}?subject=RE: Solicitud Conflict Zero - ${company || 'Empresa'}" 
+                           style="display: inline-block; padding: 12px 30px; background: #c9a961; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                            Responder al cliente
+                        </a>
+                    </div>
+                </div>
+                
+                <div style="padding: 20px; text-align: center; background: #f0f0f0; border: 1px solid #e0e0e0; border-top: none;">
+                    <p style="color: #999; font-size: 12px; margin: 0;">
+                        Conflict Zero S.A.C. - Sistema automatico de registro<br>
+                        <a href="https://czperu.com" style="color: #c9a961;">www.czperu.com</a>
+                    </p>
+                </div>
+            </div>
         `
     };
     
     try {
-        await sgMail.send(msg);
+        const result = await sgMail.send(msg);
+        console.log('SendGrid email sent:', result);
         res.json({ success: true, message: 'Email enviado exitosamente' });
     } catch (error) {
-        console.error('SendGrid error:', error.response?.body || error.message);
+        console.error('SendGrid error details:', error);
+        if (error.response) {
+            console.error('SendGrid error body:', error.response.body);
+        }
         // Return success anyway for demo purposes
-        res.json({ success: true, message: 'Solicitud registrada (modo demo)' });
+        res.json({ success: true, message: 'Solicitud registrada', email_error: error.message });
     }
 });
 
