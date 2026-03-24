@@ -216,6 +216,137 @@ app.get('/tce/ruc/:ruc', async (req, res) => {
 });
 // ====================================================
 
+// ==================== RNP - NUEVO ====================
+let rnpCache = { data: null, timestamp: null };
+
+async function scrapeRNP() {
+    const now = Date.now();
+    if (rnpCache.data && rnpCache.timestamp && (now - rnpCache.timestamp) < 1800000) {
+        return rnpCache.data;
+    }
+    try {
+        // URL de inhabilitados definitivos
+        const response = await axios.get('https://www.rnp.gob.pe/consultasenlinea/inhabilitados/busqueda_vnv.asp?action=enviar&valor=4', {
+            timeout: 30000,
+            headers: { 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'es-PE,es;q=0.9'
+            }
+        });
+        
+        const $ = cheerio.load(response.data);
+        const inhabilitados = [];
+        const multas = [];
+        
+        console.log('RNP Scraper - Tablas encontradas:', $('table').length);
+        
+        // Buscar en todas las tablas
+        $('table').each((tableIndex, table) => {
+            const rows = $(table).find('tr');
+            let isMultaTable = false;
+            
+            // Detectar si es tabla de multas por el encabezado
+            const headerText = $(table).text().toLowerCase();
+            if (headerText.includes('monto de multa') || headerText.includes('s/.')) {
+                isMultaTable = true;
+            }
+            
+            rows.each((i, row) => {
+                if (i === 0) return; // Saltar header
+                
+                const cols = $(row).find('td');
+                if (cols.length >= 4) {
+                    let ruc = '';
+                    let razonSocial = '';
+                    let resolucion = '';
+                    let fecha = '';
+                    let tipo = isMultaTable ? 'MULTA' : 'INHABILITACION';
+                    let estado = '';
+                    
+                    cols.each((j, col) => {
+                        const texto = $(col).text().trim();
+                        
+                        // Detectar RUC (11 dígitos)
+                        if (!ruc && texto.match(/^\d{11}$/)) {
+                            ruc = texto;
+                        }
+                        // Razón social (texto largo, no números)
+                        else if (!razonSocial && texto.length > 10 && !texto.match(/^\d+$/)) {
+                            razonSocial = texto;
+                        }
+                        // Resolución (formato XXX-YYYY-TCP/TCE-SX)
+                        else if (!resolucion && texto.match(/\d+-\d{4}-(TCP|TCE)-S\d+/)) {
+                            resolucion = texto;
+                        }
+                        // Fecha (formato DD/MM/YYYY)
+                        else if (!fecha && texto.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                            fecha = texto;
+                        }
+                        // Estado
+                        else if (texto === 'VIGENTE' || texto === 'NO VIGENTE') {
+                            estado = texto;
+                        }
+                    });
+                    
+                    if (ruc) {
+                        const item = {
+                            ruc,
+                            razon_social: razonSocial,
+                            entidad: 'RNP',
+                            resolucion,
+                            fecha,
+                            tipo_sancion: tipo,
+                            estado: estado || 'DESCONOCIDO'
+                        };
+                        
+                        if (isMultaTable) {
+                            multas.push(item);
+                        } else {
+                            inhabilitados.push(item);
+                        }
+                    }
+                }
+            });
+        });
+        
+        console.log(`RNP Scraper - Inhabilitados: ${inhabilitados.length}, Multas: ${multas.length}`);
+        
+        const resultado = { 
+            total: inhabilitados.length + multas.length,
+            inhabilitados, 
+            multas,
+            fuente: 'rnp_scraper', 
+            timestamp: new Date().toISOString() 
+        };
+        rnpCache = { data: resultado, timestamp: now };
+        return resultado;
+    } catch (error) {
+        console.error('RNP Scraper Error:', error.message);
+        return { total: 0, inhabilitados: [], multas: [], error: error.message, fuente: 'rnp_scraper_error' };
+    }
+}
+
+app.get('/rnp/inhabilitados', async (req, res) => {
+    const data = await scrapeRNP();
+    res.json(data);
+});
+
+app.get('/rnp/ruc/:ruc', async (req, res) => {
+    const { ruc } = req.params;
+    const data = await scrapeRNP();
+    const inhabilitados = data.inhabilitados.filter(i => i.ruc === ruc);
+    const multas = data.multas.filter(m => m.ruc === ruc);
+    res.json({ 
+        found: inhabilitados.length > 0 || multas.length > 0, 
+        total_inhabilitaciones: inhabilitados.length,
+        total_multas: multas.length,
+        inhabilitados, 
+        multas 
+    });
+});
+// ====================================================
+
 app.get('/osce/inhabilitados', async (req, res) => {
     const data = await scrapeOSCE();
     res.json(data);
@@ -231,13 +362,14 @@ app.get('/osce/ruc/:ruc', async (req, res) => {
 app.get('/consulta-completa/:ruc', async (req, res) => {
     const { ruc } = req.params;
     
-    const [sunatRes, osceData, tceData] = await Promise.allSettled([
+    const [sunatRes, osceData, tceData, rnpData] = await Promise.allSettled([
         axios.post('https://buscaruc.com/api/v1/ruc', {
             token: BUSCARUC_TOKEN,
             ruc
         }, { headers: { 'Content-Type': 'application/json' } }),
         scrapeOSCE(),
-        scrapeTCE()  // NUEVO: Agregado TCE
+        scrapeTCE(),
+        scrapeRNP()  // NUEVO: Agregado RNP
     ]);
     
     let sunat = null;
@@ -256,19 +388,29 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         ? osceData.value.inhabilitados.filter(i => i.ruc === ruc) 
         : [];
     
-    // NUEVO: Sanciones TCE
+    // Sanciones TCE
     const tceSanciones = tceData.status === 'fulfilled'
         ? tceData.value.inhabilitados.filter(i => i.ruc === ruc)
         : [];
     
-    // Combinar todas las sanciones
-    const todasSanciones = [...osceSanciones, ...tceSanciones];
+    // NUEVO: Sanciones RNP (inhabilitaciones + multas)
+    const rnpInhabilitaciones = rnpData.status === 'fulfilled'
+        ? rnpData.value.inhabilitados.filter(i => i.ruc === ruc)
+        : [];
+    const rnpMultas = rnpData.status === 'fulfilled'
+        ? rnpData.value.multas.filter(m => m.ruc === ruc)
+        : [];
     
-    // Calcular score (OSCE y TCE restan igual)
+    // Combinar todas las sanciones
+    const todasSanciones = [...osceSanciones, ...tceSanciones, ...rnpInhabilitaciones, ...rnpMultas];
+    
+    // Calcular score (cada sanción resta 20 puntos)
     let score = 100;
     if (!sunat) score -= 30;
     score -= osceSanciones.length * 20;
-    score -= tceSanciones.length * 20;  // NUEVO: TCE también resta
+    score -= tceSanciones.length * 20;
+    score -= rnpInhabilitaciones.length * 20;  // NUEVO: RNP inhabilitaciones
+    score -= rnpMultas.length * 10;  // NUEVO: RNP multas restan menos (10)
     score = Math.max(0, score);
     
     res.json({
@@ -285,7 +427,12 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         fuentes: {
             sunat: !!sunat,
             osce: osceSanciones.length,
-            tce: tceSanciones.length
+            tce: tceSanciones.length,
+            rnp: {
+                inhabilitaciones: rnpInhabilitaciones.length,
+                multas: rnpMultas.length,
+                total: rnpInhabilitaciones.length + rnpMultas.length
+            }
         }
     });
 });
