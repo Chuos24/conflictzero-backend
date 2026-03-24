@@ -352,14 +352,8 @@ app.get('/rnp/ruc/:ruc', async (req, res) => {
 // ====================================================
 let sunafilCache = { data: null, timestamp: null };
 
-// ====================================================
-// ==================== SUNAFIL SCRAPER (PUPPETEER) ====
-// ====================================================
-let sunafilCache = { data: null, timestamp: null };
-
 // ==================== SUNAFIL SCRAPER (PLAYWRIGHT) ====
 // =====================================================
-let sunafilCache = { data: null, timestamp: null };
 
 async function scrapeSUNAFILWithPlaywright() {
     console.log('Scrapeando SUNAFIL con Playwright...');
@@ -791,6 +785,8 @@ app.get('/sunarp/ruc/:ruc', async (req, res) => {
     res.json(data);
 });
 // ====================================================
+
+app.get('/osce/inhabilitados', async (req, res) => {
     const data = await scrapeOSCE();
     res.json(data);
 });
