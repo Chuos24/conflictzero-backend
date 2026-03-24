@@ -868,8 +868,30 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         ...indecopiSanciones.map(s => ({ ...s, severidad: 2, peso: 15, tipo: 'INDECOPI' }))  // NUEVO
     ];
     
+    // ==================== OPCION B: PONDERADA POR TIEMPO ====================
+    
+    // Función para calcular años de antigüedad de una sanción
+    function calcularAntiguedadAnios(fechaSancion) {
+        if (!fechaSancion) return 0;
+        try {
+            const fecha = new Date(fechaSancion);
+            const hoy = new Date();
+            const diffTime = hoy - fecha;
+            return diffTime / (1000 * 60 * 60 * 24 * 365);
+        } catch {
+            return 0;
+        }
+    }
+    
+    // Función para calcular factor de decaimiento según antigüedad
+    function calcularFactorDecaimiento(anios) {
+        if (anios < 2) return 1.0;        // < 2 años: 100% peso
+        if (anios < 5) return 0.5;        // 2-5 años: 50% peso
+        return 0.25;                       // > 5 años: 25% peso
+    }
+    
     // CRÍTICO: Detectar inhabilitaciones DEFINITIVAS y VIGENTES
-    // Estas inhabilitan legalmente a la empresa para contratar con el Estado
+    // Las inhabilitaciones son "todo o nada" - no decaen con el tiempo
     const inhabilitacionesDefinitivasVigentes = todasSanciones.filter(s => 
         (s.tipo === 'RNP_INHABILITACION' || s.tipo === 'OSCE' || s.tipo === 'TCE') &&
         s.estado === 'VIGENTE'
@@ -877,80 +899,107 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
     
     const tieneInhabilitacionGrave = inhabilitacionesDefinitivasVigentes.length > 0;
     
-    // Calcular score CRUDO y conservador
+    // Calcular score con decaimiento temporal
     let score = 100;
-    let penalidadSanciones = 0;
     let detallePenalidades = [];
+    let sancionesProcesadas = [];
     
-    // Penalidad base si no esta en SUNAT
+    // Penalidad base si no está en SUNAT (CRÍTICO)
     if (!sunat) {
-        score -= 30;
-        detallePenalidades.push({ razon: 'No encontrado en SUNAT', puntos: -30 });
+        score -= 40;
+        detallePenalidades.push({ razon: 'No encontrado en SUNAT', puntos: -40, tipo: 'CRITICO' });
     }
     
-    // Penalidad por sanciones activas
+    // Procesar cada sanción con factor de antigüedad
     todasSanciones.forEach(s => {
         if (s.estado === 'VIGENTE') {
-            penalidadSanciones += s.peso;
-            detallePenalidades.push({ 
-                razon: `${s.tipo} - ${s.resolucion || 'S/N'}`, 
-                puntos: -s.peso 
+            const antiguedad = calcularAntiguedadAnios(s.fecha);
+            
+            // Las inhabilitaciones no decaen (siempre 100% peso)
+            const esInhabilitacion = s.tipo === 'RNP_INHABILITACION' || s.tipo === 'OSCE' || s.tipo === 'TCE';
+            const factor = esInhabilitacion ? 1.0 : calcularFactorDecaimiento(antiguedad);
+            
+            const penalidadAplicada = Math.round(s.peso * factor);
+            score -= penalidadAplicada;
+            
+            sancionesProcesadas.push({
+                tipo: s.tipo,
+                resolucion: s.resolucion || 'S/N',
+                fecha: s.fecha,
+                antiguedad_anios: Math.round(antiguedad * 10) / 10,
+                factor_aplicado: factor,
+                peso_original: s.peso,
+                penalidad_final: penalidadAplicada
+            });
+            
+            detallePenalidades.push({
+                razon: `${s.tipo} - ${s.resolucion || 'S/N'}`,
+                puntos: -penalidadAplicada,
+                antiguedad: Math.round(antiguedad * 10) / 10 + ' años',
+                factor: factor
             });
         }
     });
     
-    score -= penalidadSanciones;
-    
-    // Penalidad acumulativa por cantidad de sanciones graves
-    const sancionesGraves = todasSanciones.filter(s => s.severidad >= 3 && s.estado === 'VIGENTE');
-    if (sancionesGraves.length >= 2) {
-        score -= 20;
-        detallePenalidades.push({ razon: 'Múltiples sanciones graves', puntos: -20 });
+    // Bonus por patrimonio (estabilidad financiera)
+    const tienePropiedades = sunarpPropiedades.length > 0;
+    if (tienePropiedades) {
+        const bonus = Math.min(10, sunarpPropiedades.length * 2); // Max +10
+        score += bonus;
+        detallePenalidades.push({
+            razon: `Patrimonio registrado (${sunarpPropiedades.length} propiedades)`,
+            puntos: +bonus,
+            tipo: 'BONUS'
+        });
     }
-    if (sancionesGraves.length >= 4) {
-        score -= 30;
-        detallePenalidades.push({ razon: 'Patrón de incumplimiento', puntos: -30 });
+    
+    // Penalidad acumulativa por patrón de incumplimiento
+    const sancionesGraves = todasSanciones.filter(s => s.severidad >= 3 && s.estado === 'VIGENTE');
+    if (sancionesGraves.length >= 3) {
+        score -= 15;
+        detallePenalidades.push({ razon: 'Patrón de incumplimiento recurrente', puntos: -15 });
     }
     
     // Asegurar rango 0-100
     score = Math.max(0, Math.min(100, Math.round(score)));
     
-    // Determinar estado con criterios CRUDOS
+    // ==================== CLASIFICACIÓN OPCIÓN B ====================
     let estadoFinal;
     let puedeContratar = true;
     let alertas = [];
+    let nivelRiesgo;
     
     if (tieneInhabilitacionGrave) {
-        // INHABILITADA: No puede trabajar con el Estado
-        estadoFinal = 'CRITICO';
+        // INHABILITACIÓN = Rechazo automático (no negociable legalmente)
+        estadoFinal = 'RECHAZADO';
+        nivelRiesgo = 'CRITICO';
         puedeContratar = false;
-        alertas.push('INHABILITADA_PARA_CONTRATAR_ESTADO');
-        // Forzar score bajo si hay inhabilitación vigente
-        score = Math.min(score, 20);
-    } else if (score >= 85) {
+        score = 0; // Forzar a 0
+        alertas.push('INHABILITADA_LEGALMENTE_PARA_CONTRATAR_ESTADO');
+    } else if (score >= 90) {
         estadoFinal = 'LIMPIO';
-    } else if (score >= 50) {
-        estadoFinal = 'OBSERVADO';
-        if (score < 70) {
-            alertas.push('RIESGO_ELEVADO');
-            puedeContratar = false; // Recomendación: no contratar
-        }
-    } else {
-        estadoFinal = 'CRITICO';
+        nivelRiesgo = 'BAJO';
+    } else if (score >= 70) {
+        estadoFinal = 'OBSERVADO_LEVE';
+        nivelRiesgo = 'MEDIO';
+        alertas.push('SANCIONES_ANTIGUAS_O_LEVES');
+    } else if (score >= 40) {
+        estadoFinal = 'OBSERVADO_GRAVE';
+        nivelRiesgo = 'ALTO';
         puedeContratar = false;
-        alertas.push('NO_RECOMENDABLE');
-    }
-    
-    // Alerta adicional si tiene multas acumuladas
-    const multasVigentes = todasSanciones.filter(s => s.tipo === 'RNP_MULTA' && s.estado === 'VIGENTE');
-    if (multasVigentes.length >= 3) {
-        alertas.push('HISTORIAL_DE_MULTAS');
+        alertas.push('HISTORIAL_RECIENTE_DE_SANCIONES');
+    } else {
+        estadoFinal = 'RECHAZADO';
+        nivelRiesgo = 'CRITICO';
+        puedeContratar = false;
+        alertas.push('PATRON_INFRACTOR');
     }
     
     res.json({
         ruc,
         razon_social: sunat?.razon_social || 'NO ENCONTRADO',
         estado: estadoFinal,
+        nivel_riesgo: nivelRiesgo,
         puede_contratar: puedeContratar,
         alertas: alertas,
         condicion: sunat?.condicion || 'NO ENCONTRADO',
@@ -959,6 +1008,7 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         score,
         sunat,
         sanciones: todasSanciones,
+        sanciones_procesadas: sancionesProcesadas,
         total_registros: todasSanciones.length,
         inhabilitaciones_vigentes: inhabilitacionesDefinitivasVigentes.length,
         fuentes: {
@@ -970,19 +1020,26 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
                 multas: rnpMultas.filter(s => s.estado === 'VIGENTE').length,
                 total: rnpInhabilitaciones.filter(s => s.estado === 'VIGENTE').length + rnpMultas.filter(s => s.estado === 'VIGENTE').length
             },
-            sunafil: sunafilSanciones.length,  // NUEVO
-            indecopi: indecopiSanciones.length,  // NUEVO
-            sunarp: sunarpPropiedades.length  // NUEVO: Registros de propiedad
+            sunafil: sunafilSanciones.length,
+            indecopi: indecopiSanciones.length,
+            sunarp: sunarpPropiedades.length
         },
         patrimonio: {
             propiedades_registradas: sunarpPropiedades.length,
             tiene_inmuebles: sunarpPropiedades.length > 0,
             detalle_propiedades: sunarpPropiedades
         },
+        formula_utilizada: 'B - PONDERADA_POR_TIEMPO',
         detalle_score: {
             score_final: score,
             penalidades: detallePenalidades,
-            total_penalidad: detallePenalidades.reduce((sum, p) => sum + p.puntos, 0)
+            total_penalidad: detallePenalidades.reduce((sum, p) => sum + (p.puntos || 0), 0),
+            escalas: {
+                '90-100': 'LIMPIO - Sin sanciones recientes',
+                '70-89': 'OBSERVADO_LEVE - Sanciones antiguas o leves',
+                '40-69': 'OBSERVADO_GRAVE - Historial reciente, requiere análisis',
+                '0-39': 'RECHAZADO - Patrón infractor o inhabilitación legal'
+            }
         },
         notas_fuentes: {
             sunafil: 'Datos de fiscalizaciones laborales (SST, jornada, discriminación)',
