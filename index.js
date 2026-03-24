@@ -403,56 +403,97 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
     
     // Combinar todas las sanciones con metadatos de severidad
     const todasSanciones = [
-        ...osceSanciones.map(s => ({ ...s, severidad: 3, peso: 20 })),
-        ...tceSanciones.map(s => ({ ...s, severidad: 3, peso: 20 })),
-        ...rnpInhabilitaciones.map(s => ({ ...s, severidad: 2, peso: 15 })),
-        ...rnpMultas.map(s => ({ ...s, severidad: 1, peso: 5 }))
+        ...osceSanciones.map(s => ({ ...s, severidad: 3, peso: 20, tipo: 'OSCE' })),
+        ...tceSanciones.map(s => ({ ...s, severidad: 3, peso: 20, tipo: 'TCE' })),
+        ...rnpInhabilitaciones.map(s => ({ ...s, severidad: 4, peso: 80, tipo: 'RNP_INHABILITACION' })),
+        ...rnpMultas.map(s => ({ ...s, severidad: 1, peso: 5, tipo: 'RNP_MULTA' }))
     ];
     
-    // Calcular score mejorado con ponderacion por severidad
+    // CRÍTICO: Detectar inhabilitaciones DEFINITIVAS y VIGENTES
+    // Estas inhabilitan legalmente a la empresa para contratar con el Estado
+    const inhabilitacionesDefinitivasVigentes = todasSanciones.filter(s => 
+        (s.tipo === 'RNP_INHABILITACION' || s.tipo === 'OSCE' || s.tipo === 'TCE') &&
+        s.estado === 'VIGENTE'
+    );
+    
+    const tieneInhabilitacionGrave = inhabilitacionesDefinitivasVigentes.length > 0;
+    
+    // Calcular score CRUDO y conservador
     let score = 100;
+    let penalidadSanciones = 0;
+    let detallePenalidades = [];
     
     // Penalidad base si no esta en SUNAT
-    if (!sunat) score -= 25;
+    if (!sunat) {
+        score -= 30;
+        detallePenalidades.push({ razon: 'No encontrado en SUNAT', puntos: -30 });
+    }
     
-    // Penalidad por sanciones (ponderadas por severidad)
-    let penalidadSanciones = 0;
+    // Penalidad por sanciones activas
     todasSanciones.forEach(s => {
-        penalidadSanciones += s.peso;
-    });
-    
-    // Bonus por antiguedad (sanciones viejas penalizan menos)
-    const ahora = new Date();
-    todasSanciones.forEach(s => {
-        if (s.fecha) {
-            const fechaSancion = new Date(s.fecha);
-            const mesesAntiguedad = (ahora - fechaSancion) / (1000 * 60 * 60 * 24 * 30);
-            if (mesesAntiguedad > 24) {
-                // Sanciones mayores a 2 años restan solo la mitad
-                penalidadSanciones -= s.peso * 0.5;
-            }
+        if (s.estado === 'VIGENTE') {
+            penalidadSanciones += s.peso;
+            detallePenalidades.push({ 
+                razon: `${s.tipo} - ${s.resolucion || 'S/N'}`, 
+                puntos: -s.peso 
+            });
         }
     });
     
     score -= penalidadSanciones;
     
-    // Penalidad adicional por cantidad de sanciones (efecto acumulativo)
-    if (todasSanciones.length >= 3) score -= 10;
-    if (todasSanciones.length >= 5) score -= 15;
+    // Penalidad acumulativa por cantidad de sanciones graves
+    const sancionesGraves = todasSanciones.filter(s => s.severidad >= 3 && s.estado === 'VIGENTE');
+    if (sancionesGraves.length >= 2) {
+        score -= 20;
+        detallePenalidades.push({ razon: 'Múltiples sanciones graves', puntos: -20 });
+    }
+    if (sancionesGraves.length >= 4) {
+        score -= 30;
+        detallePenalidades.push({ razon: 'Patrón de incumplimiento', puntos: -30 });
+    }
     
     // Asegurar rango 0-100
     score = Math.max(0, Math.min(100, Math.round(score)));
     
-    // Determinar estado con umbrales ajustados
+    // Determinar estado con criterios CRUDOS
     let estadoFinal;
-    if (score >= 80) estadoFinal = 'LIMPIO';
-    else if (score >= 50) estadoFinal = 'OBSERVADO';
-    else estadoFinal = 'CRITICO';
+    let puedeContratar = true;
+    let alertas = [];
+    
+    if (tieneInhabilitacionGrave) {
+        // INHABILITADA: No puede trabajar con el Estado
+        estadoFinal = 'CRITICO';
+        puedeContratar = false;
+        alertas.push('INHABILITADA_PARA_CONTRATAR_ESTADO');
+        // Forzar score bajo si hay inhabilitación vigente
+        score = Math.min(score, 20);
+    } else if (score >= 85) {
+        estadoFinal = 'LIMPIO';
+    } else if (score >= 50) {
+        estadoFinal = 'OBSERVADO';
+        if (score < 70) {
+            alertas.push('RIESGO_ELEVADO');
+            puedeContratar = false; // Recomendación: no contratar
+        }
+    } else {
+        estadoFinal = 'CRITICO';
+        puedeContratar = false;
+        alertas.push('NO_RECOMENDABLE');
+    }
+    
+    // Alerta adicional si tiene multas acumuladas
+    const multasVigentes = todasSanciones.filter(s => s.tipo === 'RNP_MULTA' && s.estado === 'VIGENTE');
+    if (multasVigentes.length >= 3) {
+        alertas.push('HISTORIAL_DE_MULTAS');
+    }
     
     res.json({
         ruc,
         razon_social: sunat?.razon_social || 'NO ENCONTRADO',
         estado: estadoFinal,
+        puede_contratar: puedeContratar,
+        alertas: alertas,
         condicion: sunat?.condicion || 'NO ENCONTRADO',
         estado_sunat: sunat?.estado || 'NO ENCONTRADO',
         direccion: sunat?.direccion || '',
@@ -460,22 +501,21 @@ app.get('/consulta-completa/:ruc', async (req, res) => {
         sunat,
         sanciones: todasSanciones,
         total_registros: todasSanciones.length,
+        inhabilitaciones_vigentes: inhabilitacionesDefinitivasVigentes.length,
         fuentes: {
             sunat: !!sunat,
-            osce: osceSanciones.length,
-            tce: tceSanciones.length,
+            osce: osceSanciones.filter(s => s.estado === 'VIGENTE').length,
+            tce: tceSanciones.filter(s => s.estado === 'VIGENTE').length,
             rnp: {
-                inhabilitaciones: rnpInhabilitaciones.length,
-                multas: rnpMultas.length,
-                total: rnpInhabilitaciones.length + rnpMultas.length
+                inhabilitaciones: rnpInhabilitaciones.filter(s => s.estado === 'VIGENTE').length,
+                multas: rnpMultas.filter(s => s.estado === 'VIGENTE').length,
+                total: rnpInhabilitaciones.filter(s => s.estado === 'VIGENTE').length + rnpMultas.filter(s => s.estado === 'VIGENTE').length
             }
         },
         detalle_score: {
-            base: 100,
-            penalidad_sunat: !sunat ? -25 : 0,
-            penalidad_sanciones: -penalidadSanciones,
-            penalidad_acumulativa: todasSanciones.length >= 5 ? -15 : todasSanciones.length >= 3 ? -10 : 0,
-            score_final: score
+            score_final: score,
+            penalidades: detallePenalidades,
+            total_penalidad: detallePenalidades.reduce((sum, p) => sum + p.puntos, 0)
         }
     });
 });
