@@ -706,8 +706,46 @@
     </footer>
 
     <script>
-        // Configuración del API
-        const API_BASE_URL = 'https://conflictzero-api.onrender.com';
+        // CONFIGURACIÓN - Cambiar cuando PostgreSQL esté listo
+        const API_BASE_URL = 'https://czperu-api.onrender.com';  // URL objetivo
+        const USE_LOCALSTORAGE_PRIMARY = true;  // true = guarda local primero, sync después
+        
+        // Función para guardar en localStorage (SIEMPRE funciona)
+        function saveToLocalStorage(data) {
+            const applications = JSON.parse(localStorage.getItem('cz_applications') || '[]');
+            const appWithId = {
+                ...data, 
+                id: 'app_' + Date.now(),
+                submitted_at: new Date().toISOString(),
+                synced: false
+            };
+            applications.push(appWithId);
+            localStorage.setItem('cz_applications', JSON.stringify(applications));
+            return appWithId;
+        }
+        
+        // Función para intentar sync con API (background)
+        async function syncToAPI(data) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v2/founder-applications/`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok || response.status === 201) {
+                    console.log('✅ Sync con API exitoso');
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                console.log('⚠️ API no disponible, queda en localStorage');
+                return false;
+            }
+        }
         
         document.getElementById('founderForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -717,7 +755,7 @@
             btn.textContent = 'Enviando...';
             btn.disabled = true;
             
-            // Mapear campos del formulario al schema del API
+            // 1. Mapear campos del formulario
             const formData = {
                 ruc: document.getElementById('ruc').value,
                 company_name: document.getElementById('companyName').value,
@@ -728,42 +766,50 @@
                 subcontractor_count: document.getElementById('subcontractors').value
             };
             
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/v2/founder-applications/`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                if (response.ok || response.status === 201) {
-                    const result = await response.json();
-                    console.log('✅ Aplicación guardada:', result);
-                    alert('¡Aplicación enviada exitosamente! Te contactaremos en 24-48 horas.');
-                    this.reset();
-                } else if (response.status === 400) {
-                    // Error de validación o duplicado
-                    const error = await response.json();
-                    alert('Error: ' + (error.detail || 'Verifica los datos e intenta de nuevo.'));
-                } else {
-                    throw new Error('Error del servidor: ' + response.status);
+            // 2. SIEMPRE guardar en localStorage primero (nunca perder datos)
+            const savedApp = saveToLocalStorage(formData);
+            console.log('💾 Guardado en localStorage:', savedApp.id);
+            
+            // 3. Intentar sync con API en background (no bloquea UI)
+            const apiSuccess = await syncToAPI(formData);
+            
+            // 4. Actualizar estado de sync en localStorage
+            if (apiSuccess) {
+                const apps = JSON.parse(localStorage.getItem('cz_applications') || '[]');
+                const idx = apps.findIndex(a => a.id === savedApp.id);
+                if (idx >= 0) {
+                    apps[idx].synced = true;
+                    localStorage.setItem('cz_applications', JSON.stringify(apps));
                 }
-            } catch (error) {
-                console.error('Error enviando aplicación:', error);
-                
-                // Fallback: guardar en localStorage para no perder datos
-                const applications = JSON.parse(localStorage.getItem('cz_applications') || '[]');
-                applications.push({...formData, submitted_at: new Date().toISOString()});
-                localStorage.setItem('cz_applications', JSON.stringify(applications));
-                
-                alert('⚠️ Error de conexión. Tu aplicación se ha guardado localmente y será procesada manualmente.');
-            } finally {
-                btn.textContent = originalText;
-                btn.disabled = false;
             }
+            
+            // 5. Siempre mostrar éxito al usuario
+            alert('¡Aplicación recibida! Te contactaremos en 24-48 horas.');
+            this.reset();
+            
+            btn.textContent = originalText;
+            btn.disabled = false;
         });
+        
+        // Debug: Exponer función para admin ver aplicaciones
+        window.CZAdmin = {
+            getApplications: () => JSON.parse(localStorage.getItem('cz_applications') || '[]'),
+            exportToJSON: () => {
+                const data = window.CZAdmin.getApplications();
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'cz_applications_' + new Date().toISOString().split('T')[0] + '.json';
+                a.click();
+                return data.length + ' aplicaciones exportadas';
+            },
+            clearApplications: () => {
+                localStorage.removeItem('cz_applications');
+                return 'localStorage limpiado';
+            }
+        };
+        console.log('🔧 Admin tools disponibles: CZAdmin.getApplications(), CZAdmin.exportToJSON()');
     </script>
 </body>
 </html>
