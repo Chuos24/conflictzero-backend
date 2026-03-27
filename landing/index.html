@@ -706,37 +706,63 @@
     </footer>
 
     <script>
-        document.getElementById('founderForm').addEventListener('submit', function(e) {
+        // Configuración del API
+        const API_BASE_URL = 'https://conflictzero-api.onrender.com';
+        
+        document.getElementById('founderForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData);
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.textContent = 'Enviando...';
+            btn.disabled = true;
             
-            // Enviar a webhook (configurar después)
-            fetch('https://conflict-zero-api1.onrender.com/api/v1/founder-applications', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert('¡Aplicación enviada! Te contactaremos en 24-48 horas.');
+            // Mapear campos del formulario al schema del API
+            const formData = {
+                ruc: document.getElementById('ruc').value,
+                company_name: document.getElementById('companyName').value,
+                contact_name: document.getElementById('contactName').value,
+                contact_email: document.getElementById('email').value,
+                contact_phone: document.getElementById('phone').value,
+                annual_volume: document.getElementById('volume').value,
+                subcontractor_count: document.getElementById('subcontractors').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v2/founder-applications/`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok || response.status === 201) {
+                    const result = await response.json();
+                    console.log('✅ Aplicación guardada:', result);
+                    alert('¡Aplicación enviada exitosamente! Te contactaremos en 24-48 horas.');
                     this.reset();
+                } else if (response.status === 400) {
+                    // Error de validación o duplicado
+                    const error = await response.json();
+                    alert('Error: ' + (error.detail || 'Verifica los datos e intenta de nuevo.'));
                 } else {
-                    // Fallback: guardar en localStorage para no perder datos
-                    const applications = JSON.parse(localStorage.getItem('cz_applications') || '[]');
-                    applications.push({...data, submitted_at: new Date().toISOString()});
-                    localStorage.setItem('cz_applications', JSON.stringify(applications));
-                    alert('Aplicación guardada. Nuestro equipo la procesará manualmente.');
+                    throw new Error('Error del servidor: ' + response.status);
                 }
-            })
-            .catch(() => {
-                // Fallback offline
+            } catch (error) {
+                console.error('Error enviando aplicación:', error);
+                
+                // Fallback: guardar en localStorage para no perder datos
                 const applications = JSON.parse(localStorage.getItem('cz_applications') || '[]');
-                applications.push({...data, submitted_at: new Date().toISOString()});
+                applications.push({...formData, submitted_at: new Date().toISOString()});
                 localStorage.setItem('cz_applications', JSON.stringify(applications));
-                alert('Aplicación recibida. Te contactaremos pronto.');
-            });
+                
+                alert('⚠️ Error de conexión. Tu aplicación se ha guardado localmente y será procesada manualmente.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         });
     </script>
 </body>
