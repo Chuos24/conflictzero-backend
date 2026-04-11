@@ -1,0 +1,313 @@
+/* Compliance.css */
+.compliance-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.compliance-container h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+}
+
+.compliance-loading,
+.compliance-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  font-size: 16px;
+  color: #666;
+}
+
+.compliance-error {
+  color: #dc2626;
+}
+
+/* Not Founder Alert */
+.not-founder-alert {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.not-founder-alert p {
+  color: #92400e;
+  margin-bottom: 16px;
+}
+
+/* Cards */
+.compliance-status-card,
+.obligations-card,
+.network-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.compliance-status-card h2,
+.obligations-card h2,
+.network-card h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.status-badge.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.danger {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.neutral {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.status-description {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* Obligation Details */
+.obligation-details {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.obligation-details h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.obligation-details p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric {
+  text-align: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.metric-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.metric-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Progress Section */
+.progress-section {
+  margin-top: 20px;
+}
+
+.progress-section p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c9a961 0%, #a88b4a 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #666;
+  text-align: right;
+}
+
+/* Network Stats */
+.network-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  text-align: center;
+  padding: 16px 24px;
+  background: #f9fafb;
+  border-radius: 8px;
+  flex: 1;
+}
+
+.stat-value {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  color: #c9a961;
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Recent Invites Table */
+.recent-invites {
+  margin-top: 20px;
+}
+
+.recent-invites h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.invites-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invites-table th,
+.invites-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.invites-table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.invites-table td {
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.status-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-tag.sent {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.status-tag.accepted {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-tag.paid {
+  background: #c9a961;
+  color: white;
+}
+
+.status-tag.expired {
+  background: #f3f4f6;
+  color: #666;
+}
+
+/* Button */
+.btn-primary {
+  padding: 12px 24px;
+  background: #c9a961;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #a88b4a;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .network-stats {
+    flex-direction: column;
+  }
+
+  .invites-table {
+    font-size: 12px;
+  }
+
+  .invites-table th,
+  .invites-table td {
+    padding: 8px;
+  }
+}

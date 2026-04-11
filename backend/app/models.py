@@ -322,7 +322,7 @@ class AuditLog(Base):
     
     old_values = Column(JSONB)
     new_values = Column(JSONB)
-    metadata = Column(JSONB)
+    audit_metadata = Column(JSONB)
     
     ip_address = Column(String(45))
     user_agent = Column(Text)

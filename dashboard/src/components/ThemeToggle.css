@@ -1,0 +1,23 @@
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-color, #fff);
+}
+
+.theme-toggle:hover {
+  background: var(--hover-bg, rgba(212, 175, 55, 0.1));
+  border-color: var(--gold, #d4af37);
+}
+
+.theme-icon {
+  width: 18px;
+  height: 18px;
+}

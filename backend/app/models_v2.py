@@ -490,6 +490,31 @@ class Webhook(Base):
 
 
 # ============================================================
+# ============================================================
+# 8b. WEBHOOK DELIVERIES
+# ============================================================
+
+class WebhookDelivery(Base):
+    __tablename__ = "webhook_deliveries"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    webhook_id = Column(UUID(as_uuid=True), ForeignKey("webhooks.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    event_type = Column(String(50), nullable=False)
+    payload = Column(JSONB, nullable=False)
+    
+    status = Column(String(20), default="pending")
+    http_status = Column(Integer)
+    response_body = Column(Text)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime)
+    
+    __table_args__ = (
+        CheckConstraint("status IN (pending, delivered, failed)", name="valid_delivery_status"),
+    )
+
+
 # 9. API CACHE (PostgreSQL como cache)
 # ============================================================
 
@@ -537,7 +562,7 @@ class AuditLog(Base):
     
     old_values = Column(JSONB)
     new_values = Column(JSONB)
-    metadata = Column(JSONB)
+    audit_metadata = Column(JSONB)  # Renamed from 'metadata' to avoid SQLAlchemy reserved word
     
     ip_address = Column(String(45))
     user_agent = Column(Text)

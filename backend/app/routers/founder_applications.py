@@ -8,12 +8,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 import os
 
 from app.core.database import get_db
-from app.models_v2 import FounderApplication
+from app.models_v2 import FounderApplication, Company
 
 router = APIRouter(prefix="/founder-applications", tags=["Founder Applications"])
 
@@ -251,11 +251,68 @@ async def review_application(
     db.refresh(application)
     
     # Si es approved, crear Company como Founder
+    created_company = None
     if status == 'approved':
-        # TODO: Crear Company con is_founder=True
-        pass
+        # Verificar si ya existe una Company con este RUC
+        existing_company = db.query(Company).filter(
+            Company.ruc_hash == application.ruc_hash,
+            Company.deleted_at.is_(None)
+        ).first()
+        
+        if existing_company:
+            # Actualizar a Founder
+            existing_company.is_founder = True
+            existing_company.plan_tier = "founder"
+            existing_company.founder_expires_at = datetime.utcnow() + timedelta(days=365)
+            existing_company.contact_email = application.contact_email
+            existing_company.contact_name = application.contact_name
+            existing_company.contact_phone = application.contact_phone
+            db.commit()
+            db.refresh(existing_company)
+            created_company = existing_company
+        else:
+            # Crear nueva Company como Founder
+            # Calcular expiración (12 meses desde ahora)
+            founder_expires = datetime.utcnow() + timedelta(days=365)
+            
+            new_company = Company(
+                ruc_encrypted=b"encrypted_placeholder",  # En producción: encriptar RUC real
+                ruc_hash=application.ruc_hash,
+                razon_social=application.company_name,
+                contact_email=application.contact_email,
+                contact_name=application.contact_name,
+                contact_phone=application.contact_phone,
+                plan_tier="founder",
+                status="active",
+                is_founder=True,
+                founder_expires_at=founder_expires,
+                max_monthly_queries=10000,  # Founder: 10k queries
+                contractual_obligation=True,  # Founder tiene obligación contractual
+                contractual_signed_at=datetime.utcnow(),
+                retained_until=datetime.utcnow() + timedelta(days=365*5)  # 5 años retención legal
+            )
+            
+            db.add(new_company)
+            db.commit()
+            db.refresh(new_company)
+            created_company = new_company
+            
+            print(f"✅ Nueva Company Founder creada: {new_company.razon_social} (ID: {new_company.id})")
     
-    return {"message": f"Aplicación {status}", "application_id": application_id}
+    result = {
+        "message": f"Aplicación {status}",
+        "application_id": application_id
+    }
+    
+    if created_company:
+        result["company"] = {
+            "id": str(created_company.id),
+            "razon_social": created_company.razon_social,
+            "is_founder": created_company.is_founder,
+            "founder_expires_at": created_company.founder_expires_at.isoformat() if created_company.founder_expires_at else None
+        }
+    
+    return result
 
 
 @router.get(

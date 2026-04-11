@@ -11,7 +11,19 @@ import os
 import time
 
 from app.core.database import init_db, test_connection
-from app.routers import founder_applications, founder_compliance, api_v2
+from app.core.rate_limit import add_rate_limit_headers
+from app.routers import (
+    founder_applications,
+    founder_compliance,
+    api_v2,
+    compare,
+    auth,
+    verifications,
+    company,
+    dashboard,
+    webhooks,
+    invites
+)
 from app.services.digital_signature_v2 import signature_service
 
 
@@ -107,7 +119,9 @@ async def api_status():
             "founder_compliance": True,
             "public_verification": True,
             "pdf_generation": signature_service.is_ready(),
-            "email_notifications": os.getenv("CERT_MODE") == "production"  # Disabled in demo
+            "email_notifications": os.getenv("CERT_MODE") == "production",  # Disabled in demo
+            "webhooks": True,
+            "invites": True
         }
     }
 
@@ -116,6 +130,13 @@ async def api_status():
 app.include_router(founder_applications.router, prefix="/api/v2")
 app.include_router(founder_compliance.router, prefix="/api/v2")
 app.include_router(api_v2.router, prefix="/api/v2")
+app.include_router(compare.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(verifications.router, prefix="/api/v1")
+app.include_router(company.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(webhooks.router, prefix="/api/v1")
+app.include_router(invites.router, prefix="/api/v2")
 
 
 # Error handlers

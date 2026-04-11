@@ -1,0 +1,85 @@
+# Render.com Configuration for Conflict Zero
+services:
+  # Backend API Service
+  - type: web
+    name: conflict-zero-api
+    runtime: docker
+    plan: standard
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: conflict-zero-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: conflict-zero-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: CERT_MODE
+        value: demo
+      - key: ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
+        value: noreply@czperu.com
+      - key: EMAIL_ENABLED
+        value: "false"
+      - key: FRONTEND_URL
+        value: https://czperu.com
+      - key: FOUNDERS_URL
+        value: https://founders.czperu.com
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "60"
+      - key: RATE_LIMIT_PER_HOUR
+        value: "1000"
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - backend/**
+    autoDeploy: true
+
+  # Dashboard Static Site
+  - type: web
+    name: conflict-zero-dashboard
+    runtime: static
+    buildCommand: cd dashboard && npm install && npm run build
+    staticPublishPath: ./dashboard/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://conflict-zero-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # Landing Page Static Site
+  - type: web
+    name: conflict-zero-landing
+    runtime: static
+    staticPublishPath: ./landing
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+# PostgreSQL Database
+databases:
+  - name: conflict-zero-db
+    plan: starter
+    databaseName: conflict_zero
+    user: cz_user
+
+# Redis for Rate Limiting & Cache
+redis:
+  - name: conflict-zero-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru

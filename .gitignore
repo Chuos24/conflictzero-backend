@@ -1,0 +1,79 @@
+# Conflict Zero
+
+## Environment
+*.env
+!.env.example
+.env.local
+.env.*.local
+
+## Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+## Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+## IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+## Database
+*.db
+*.sqlite
+*.sqlite3
+
+## Logs
+*.log
+logs/
+
+## Certificates
+*.p12
+*.pfx
+*.pem
+*.key
+certs/
+
+## Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+## Docker
+.dockerignore
+
+## Node (si agregas frontend)
+node_modules/
+.next/
+dist/
+build/
+
+## Misc
+*.tmp
+*.bak
+*.orig
