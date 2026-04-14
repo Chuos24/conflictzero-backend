@@ -1,32 +1,37 @@
-# app/core/__init__.py
-from .database import get_db, init_db, test_connection
+# __init__.py for core module
+from .config import settings, get_settings
+from .database import get_db, init_db, Base, SessionLocal
 from .security import (
-    get_current_company,
-    get_current_founder,
-    get_current_admin,
+    verify_password, 
+    get_password_hash, 
     create_access_token,
-    generate_api_key,
-    verify_api_key
+    create_refresh_token,
+    decode_token,
+    get_current_user,
+    get_current_active_user,
+    require_admin
 )
-from .rate_limit import (
-    MonthlyRateLimiter,
-    PlanRateLimitMiddleware,
-    rate_limited_auth,
-    add_rate_limit_headers
-)
+from .cache import cache, cached, CacheManager
+from .middleware import RateLimitMiddleware, LoggingMiddleware
 
 __all__ = [
+    "settings",
+    "get_settings",
     "get_db",
     "init_db",
-    "test_connection",
-    "get_current_company",
-    "get_current_founder",
-    "get_current_admin",
+    "Base",
+    "SessionLocal",
+    "verify_password",
+    "get_password_hash",
     "create_access_token",
-    "generate_api_key",
-    "verify_api_key",
-    "MonthlyRateLimiter",
-    "PlanRateLimitMiddleware",
-    "rate_limited_auth",
-    "add_rate_limit_headers"
+    "create_refresh_token",
+    "decode_token",
+    "get_current_user",
+    "get_current_active_user",
+    "require_admin",
+    "cache",
+    "cached",
+    "CacheManager",
+    "RateLimitMiddleware",
+    "LoggingMiddleware",
 ]

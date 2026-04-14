@@ -1,55 +1,55 @@
-"""
-Conflict Zero - Configuración Centralizada
-"""
-
 from pydantic_settings import BaseSettings
 from functools import lru_cache
-
+from typing import Optional, List
+import os
 
 class Settings(BaseSettings):
-    """Configuración de la aplicación"""
-    
-    # App
-    APP_NAME: str = "Conflict Zero API"
-    APP_VERSION: str = "2.0.0"
-    DEBUG: bool = False
-    ENV: str = "development"
-    
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost/conflict_zero"
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/conflict_zero"
+    
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
     
     # Security
-    SECRET_KEY: str = "change-this-in-production"
-    ADMIN_TOKEN: str = "admin-dev-token"
+    SECRET_KEY: str = "dev-secret-key-change-in-production"
+    ENCRYPTION_KEY: str = "dev-encryption-key-32chars-long!!"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
     
-    # Digital Signatures
-    CERT_MODE: str = "demo"  # demo | production
-    INDECOPI_CERT_PATH: str = "/app/certs/indecopi_cert.p12"
-    INDECOPI_CERT_PASSWORD: str = ""
+    # Environment
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = True
     
-    # Email (SendGrid)
-    SENDGRID_API_KEY: str = ""
-    SENDGRID_FROM_EMAIL: str = "noreply@czperu.com"
-    EMAIL_ENABLED: bool = False
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
     
-    # Frontend URLs
-    FRONTEND_URL: str = "https://czperu.com"
-    FOUNDERS_URL: str = "https://founders.czperu.com"
+    # API
+    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str = "Conflict Zero API"
     
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
-    RATE_LIMIT_PER_HOUR: int = 1000
     
-    # Founder Program
-    FOUNDER_MAX_SLOTS: int = 10
-    FOUNDER_DURATION_MONTHS: int = 3
+    # External APIs
+    SUNAT_API_URL: Optional[str] = None
+    OSCE_API_URL: Optional[str] = None
+    TCE_API_URL: Optional[str] = None
+    FACTALIZA_API_KEY: Optional[str] = None
+    
+    # Email
+    SENDGRID_API_KEY: Optional[str] = None
+    EMAIL_FROM: str = "noreply@conflictzero.com"
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
     
     class Config:
         env_file = ".env"
         case_sensitive = True
 
-
 @lru_cache()
 def get_settings() -> Settings:
-    """Retorna settings cacheados"""
     return Settings()
+
+settings = get_settings()

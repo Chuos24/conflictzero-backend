@@ -1,68 +1,55 @@
-"""
-Conflict Zero - Database Configuration
-PostgreSQL connection with SQLAlchemy
-"""
-
 from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import NullPool
-import os
+from sqlalchemy.pool import QueuePool
+from typing import Generator
+from .config import settings
+import logging
 
-# Database URL from environment or default
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://user:password@localhost/conflict_zero"
-)
+logger = logging.getLogger(__name__)
 
-# Fix for Render's postgres:// vs postgresql://
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# Engine configuration
+# Create engine with connection pooling
 engine = create_engine(
-    DATABASE_URL,
-    pool_size=20,
-    max_overflow=0,
-    pool_pre_ping=True,  # Verify connections before using
-    echo=False  # Set to True for SQL logging
+    settings.DATABASE_URL,
+    poolclass=QueuePool,
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    echo=settings.DEBUG
 )
 
+# Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Base class for models
 Base = declarative_base()
 
-
-def get_db():
-    """Dependency for FastAPI to get database session"""
+def get_db() -> Generator[Session, None, None]:
+    """Dependency to get database session."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-
-def init_db():
-    """Initialize database tables"""
+def init_db() -> None:
+    """Initialize database tables."""
     from app.models_v2 import (
-        Company, FounderApplication, PublicProfile, Invite,
-        VerificationRequest, CompanyHierarchy, ApiKey, Webhook,
-        ApiCache, AuditLog, DigitalSignature, SystemConfig
+        Company, FounderApplication, Invite, PublicProfile,
+        VerificationRequest, CompanyHierarchy, DigitalSignature,
+        ApiKey, Comparison, Webhook, WebhookDelivery,
+        ComplianceCheck, SanctionsCache, AuditLog
     )
     
-    # Create all tables
     Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized")
+    logger.info("Database tables initialized")
 
+# Connection event listeners
+@event.listens_for(engine, "connect")
+def on_connect(dbapi_conn, connection_record):
+    logger.debug("Database connection established")
 
-def test_connection():
-    """Test database connection"""
-    try:
-        with engine.connect() as conn:
-            result = conn.execute("SELECT version()")
-            version = result.fetchone()
-            print(f"✅ PostgreSQL connected: {version[0]}")
-            return True
-    except Exception as e:
-        print(f"❌ Database connection failed: {e}")
-        return False
+@event.listens_for(engine, "checkout")
+def on_checkout(dbapi_conn, connection_record, connection_proxy):
+    logger.debug("Database connection checked out from pool")
