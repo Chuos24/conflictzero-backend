@@ -292,6 +292,49 @@ class EmailService:
             subject=f"⏰ {days_remaining} días para mantener tu beneficio Founder",
             html_content=html
         )
+    
+    def send_welcome_email(self, to_email: str, company_name: str, login_url: str = "https://czperu.com/login") -> dict:
+        """
+        Email de bienvenida después del registro exitoso.
+        """
+        html = f"""
+        <html>
+        <body style="font-family: Inter, sans-serif; background: #0A0A0A; color: #F5F5F5; padding: 40px;">
+            <div style="max-width: 600px; margin: 0 auto; background: #141414; border: 1px solid #C9A961; border-radius: 16px; padding: 40px;">
+                <h1 style="color: #C9A961; font-family: 'Playfair Display', serif;">¡Bienvenido a Conflict Zero!</h1>
+                
+                <p>Hola <strong>{company_name}</strong>,</p>
+                
+                <p>Tu cuenta ha sido creada exitosamente. Ya puedes comenzar a verificar el cumplimiento de tus contrapartes.</p>
+                
+                <div style="background: rgba(201,169,97,0.1); border-left: 4px solid #C9A961; padding: 20px; margin: 24px 0;">
+                    <p style="margin: 0;"><strong>Con tu cuenta puedes:</strong></p>
+                    <ul style="margin: 10px 0;">
+                        <li>Verificar RUCs de proveedores en segundos</li>
+                        <li>Obtener tu Sello de Cumplimiento</li>
+                        <li>Comparar múltiples contrapartes</li>
+                        <li>Acceder a reportes de riesgo</li>
+                    </ul>
+                </div>
+                
+                <p style="text-align: center; margin: 32px 0;">
+                    <a href="{login_url}" style="background: #C9A961; color: #0A0A0A; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Iniciar Sesión</a>
+                </p>
+                
+                <p style="color: #888; font-size: 12px; margin-top: 32px;">
+                    Si no creaste esta cuenta, ignora este mensaje.<br>
+                    Conflict Zero - Estándar Institucional en Verificación
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return self._send_email(
+            to_email=to_email,
+            subject="✅ Bienvenido a Conflict Zero - Tu cuenta está lista",
+            html_content=html
+        )
 
 
 # Singleton

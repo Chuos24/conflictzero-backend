@@ -7,9 +7,10 @@ from .security import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    get_current_user,
-    get_current_active_user,
-    require_admin
+    get_current_company,
+    get_current_active_company,
+    require_admin,
+    generate_api_key
 )
 from .cache import cache, cached, CacheManager
 from .middleware import RateLimitMiddleware, LoggingMiddleware
@@ -26,9 +27,10 @@ __all__ = [
     "create_access_token",
     "create_refresh_token",
     "decode_token",
-    "get_current_user",
-    "get_current_active_user",
+    "get_current_company",
+    "get_current_active_company",
     "require_admin",
+    "generate_api_key",
     "cache",
     "cached",
     "CacheManager",

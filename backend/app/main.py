@@ -22,7 +22,8 @@ from app.routers import (
     company,
     dashboard,
     webhooks,
-    invites
+    invites,
+    admin
 )
 from app.services.digital_signature_v2 import signature_service
 
@@ -137,6 +138,7 @@ app.include_router(company.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(webhooks.router, prefix="/api/v1")
 app.include_router(invites.router, prefix="/api/v2")
+app.include_router(admin.router, prefix="/api/v1")  # Admin router
 
 
 # Error handlers

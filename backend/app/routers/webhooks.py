@@ -10,7 +10,7 @@ import hashlib
 import json
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_company
 from app.models_v2 import Company, Webhook, WebhookDelivery
 from app.services.email_service import send_email
 
@@ -22,12 +22,12 @@ async def register_webhook(
     url: str,
     events: List[str],
     secret: Optional[str] = None,
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db)
 ):
     """Registrar un nuevo webhook para la empresa"""
     webhook = Webhook(
-        company_id=current_user.id,
+        company_id=current_company.id,
         url=url,
         events=events,
         secret=secret,
@@ -48,12 +48,12 @@ async def register_webhook(
 
 @router.get("/list")
 async def list_webhooks(
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db)
 ):
     """Listar webhooks registrados"""
     webhooks = db.query(Webhook).filter(
-        Webhook.company_id == current_user.id,
+        Webhook.company_id == current_company.id,
         Webhook.is_active == True
     ).all()
     
@@ -73,13 +73,13 @@ async def list_webhooks(
 @router.delete("/{webhook_id}")
 async def delete_webhook(
     webhook_id: str,
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db)
 ):
     """Eliminar un webhook"""
     webhook = db.query(Webhook).filter(
         Webhook.id == webhook_id,
-        Webhook.company_id == current_user.id
+        Webhook.company_id == current_company.id
     ).first()
     
     if not webhook:
@@ -95,13 +95,13 @@ async def delete_webhook(
 async def test_webhook(
     webhook_id: str,
     background_tasks: BackgroundTasks,
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db)
 ):
     """Enviar evento de prueba al webhook"""
     webhook = db.query(Webhook).filter(
         Webhook.id == webhook_id,
-        Webhook.company_id == current_user.id
+        Webhook.company_id == current_company.id
     ).first()
     
     if not webhook:
@@ -112,7 +112,7 @@ async def test_webhook(
         "timestamp": datetime.utcnow().isoformat(),
         "data": {
             "message": "Este es un evento de prueba",
-            "company": current_user.company_name
+            "company": current_company.razon_social
         }
     }
     
@@ -203,13 +203,13 @@ def notify_webhook_failure(webhook: Webhook, delivery: WebhookDelivery, db: Sess
 async def get_webhook_deliveries(
     webhook_id: str,
     limit: int = 20,
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db)
 ):
     """Obtener historial de entregas de un webhook"""
     webhook = db.query(Webhook).filter(
         Webhook.id == webhook_id,
-        Webhook.company_id == current_user.id
+        Webhook.company_id == current_company.id
     ).first()
     
     if not webhook:

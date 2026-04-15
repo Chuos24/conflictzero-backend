@@ -20,6 +20,7 @@ from app.core.security import (
     create_access_token
 )
 from app.models_v2 import Company, AuditLog
+from app.services.email_service import get_email_service
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -147,6 +148,18 @@ async def register(
     )
     db.add(audit)
     db.commit()
+    
+    # Enviar email de bienvenida (fire and forget)
+    try:
+        email_service = get_email_service()
+        email_service.send_welcome_email(
+            to_email=request.contact_email,
+            company_name=request.razon_social
+        )
+    except Exception as e:
+        # No fallar el registro si el email falla
+        import logging
+        logging.warning(f"Failed to send welcome email to {request.contact_email}: {e}")
     
     # Generar token
     access_token = create_access_token(data={"sub": str(company.id)})

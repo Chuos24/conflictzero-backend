@@ -5,9 +5,12 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+import secrets
+import string
+
 from .config import settings
 from .database import get_db
-from app.models_v2 import User
+from app.models_v2 import Company
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -55,11 +58,11 @@ def decode_token(token: str) -> Optional[dict]:
     except JWTError:
         return None
 
-def get_current_user(
+def get_current_company(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> User:
-    """Get the current authenticated user from JWT token."""
+) -> Company:
+    """Get the current authenticated company from JWT token."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -70,35 +73,103 @@ def get_current_user(
     if payload is None:
         raise credentials_exception
     
-    user_id: str = payload.get("sub")
+    company_id: str = payload.get("sub")
     token_type: str = payload.get("type")
     
-    if user_id is None or token_type != "access":
+    if company_id is None or token_type != "access":
         raise credentials_exception
     
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
+    from uuid import UUID
+    try:
+        company_uuid = UUID(company_id)
+    except ValueError:
         raise credentials_exception
     
-    if not user.is_active:
+    company = db.query(Company).filter(Company.id == company_uuid).first()
+    if company is None:
+        raise credentials_exception
+    
+    if company.status != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is deactivated"
+            detail="Company account is not active"
         )
     
-    return user
+    return company
 
-def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-    """Ensure user is active."""
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
+def get_current_active_company(current_company: Company = Depends(get_current_company)) -> Company:
+    """Ensure company is active."""
+    if current_company.status != "active":
+        raise HTTPException(status_code=400, detail="Inactive company")
+    return current_company
 
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Ensure user has admin role."""
-    if current_user.role not in ["admin", "superadmin"]:
+def generate_api_key():
+    """Generate a new API key and its hash."""
+    # Generate 48-char random string
+    api_key = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(48))
+    # Hash for storage
+    api_key_hash = get_password_hash(api_key)
+    return api_key, api_key_hash
+
+def require_admin(current_company: Company = Depends(get_current_company)) -> Company:
+    """Ensure company has admin privileges (founder or specific flag)."""
+    # For now, founders have admin-like access
+    if not current_company.is_founder:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    return current_user
+    return current_company
+
+def get_current_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> Company:
+    """
+    Get current admin user.
+    Validates that the user has admin privileges (is_admin flag or is_founder).
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    forbidden_exception = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin access required"
+    )
+    
+    payload = decode_token(credentials.credentials)
+    if payload is None:
+        raise credentials_exception
+    
+    company_id: str = payload.get("sub")
+    token_type: str = payload.get("type")
+    is_admin: bool = payload.get("is_admin", False)
+    
+    if company_id is None or token_type != "access":
+        raise credentials_exception
+    
+    from uuid import UUID
+    try:
+        company_uuid = UUID(company_id)
+    except ValueError:
+        raise credentials_exception
+    
+    company = db.query(Company).filter(Company.id == company_uuid).first()
+    if company is None:
+        raise credentials_exception
+    
+    # Check admin privileges (is_admin flag, is_founder, or email in admin list)
+    admin_emails = ["tiagomunoz10@icloud.com", "admin@czperu.com"]  # Configurable admin list
+    is_user_admin = (
+        is_admin or 
+        getattr(company, 'is_admin', False) or 
+        getattr(company, 'is_founder', False) or
+        company.email in admin_emails
+    )
+    
+    if not is_user_admin:
+        raise forbidden_exception
+    
+    return company

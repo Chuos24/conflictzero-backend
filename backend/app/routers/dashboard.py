@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_company
 from app.models_v2 import Company, VerificationRequest, Invite, ComparisonRequest
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
@@ -16,11 +16,11 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 @router.get("/stats")
 async def get_dashboard_stats(
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db)
 ):
     """Get dashboard statistics for current user"""
-    company_id = current_user.id
+    company_id = current_company.id
     
     # Count verifications
     verifications_count = db.query(VerificationRequest).filter(
@@ -46,11 +46,11 @@ async def get_dashboard_stats(
     
     # Calculate compliance score (mock logic - can be enhanced)
     base_score = 85
-    if current_user.plan_tier == "founder":
+    if current_company.plan_tier == "founder":
         base_score = 95
-    elif current_user.plan_tier == "gold":
+    elif current_company.plan_tier == "gold":
         base_score = 90
-    elif current_user.plan_tier == "silver":
+    elif current_company.plan_tier == "silver":
         base_score = 88
     
     return {
@@ -59,18 +59,18 @@ async def get_dashboard_stats(
         "invites_sent": invites_sent,
         "invites_accepted": invites_accepted,
         "compliance_score": base_score,
-        "plan_tier": current_user.plan_tier,
-        "company_name": current_user.company_name
+        "plan_tier": current_company.plan_tier,
+        "company_name": current_company.razon_social
     }
 
 
 @router.get("/chart-data")
 async def get_chart_data(
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db)
 ):
     """Get chart data for dashboard"""
-    company_id = current_user.id
+    company_id = current_company.id
     
     # Get verifications by month (last 6 months)
     six_months_ago = datetime.utcnow() - timedelta(days=180)
@@ -113,7 +113,7 @@ async def get_chart_data(
         {"name": "Critical", "value": 10, "color": "#f44336"}
     ]
     
-    if current_user.plan_tier == "founder":
+    if current_company.plan_tier == "founder":
         compliance_distribution = [
             {"name": "Compliant", "value": 90, "color": "#4caf50"},
             {"name": "Warning", "value": 8, "color": "#ff9800"},
@@ -137,12 +137,12 @@ async def get_chart_data(
 
 @router.get("/activity")
 async def get_recent_activity(
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db),
     limit: int = 10
 ):
     """Get recent activity for dashboard"""
-    company_id = current_user.id
+    company_id = current_company.id
     
     # Get recent verifications
     verifications = db.query(VerificationRequest).filter(
@@ -179,7 +179,7 @@ async def get_recent_activity(
 
 @router.get("/export/csv")
 async def export_csv(
-    current_user: Company = Depends(get_current_user),
+    current_company: Company = Depends(get_current_company),
     db: Session = Depends(get_db)
 ):
     """Export verification history as CSV"""
@@ -187,7 +187,7 @@ async def export_csv(
     import io
     from fastapi.responses import StreamingResponse
     
-    company_id = current_user.id
+    company_id = current_company.id
     
     verifications = db.query(VerificationRequest).filter(
         VerificationRequest.company_id == company_id

@@ -53,6 +53,23 @@ class InviteStatus(str, Enum):
     CANCELLED = "cancelled"
 
 # ============================================================
+# USER SCHEMAS (Admin)
+# ============================================================
+
+class UserResponse(BaseModel):
+    """Respuesta con datos de usuario para panel admin"""
+    id: int
+    email: str
+    ruc: Optional[str] = None
+    company_name: Optional[str] = None
+    status: str = "pending"
+    created_at: Optional[datetime] = None
+    founder_program: bool = False
+    
+    class Config:
+        from_attributes = True
+
+# ============================================================
 # FOUNDER APPLICATION SCHEMAS
 # ============================================================
 
