@@ -13,6 +13,7 @@ import Verifications from './pages/Verifications'
 import Compare from './pages/Compare'
 import Invites from './pages/Invites'
 import Compliance from './pages/Compliance'
+import Network from './pages/Network'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 
