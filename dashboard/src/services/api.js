@@ -82,4 +82,22 @@ export const companyAPI = {
   revokeApiKey: (id) => api.delete(`/api/v1/company/api-keys/${id}`)
 }
 
+// Network API (Mi Red - Supplier Network)
+export const networkApi = {
+  // Suppliers
+  getSuppliers: () => api.get('/api/v2/network/'),
+  addSupplier: (data) => api.post('/api/v2/network/add', data),
+  getSupplier: (id) => api.get(`/api/v2/network/${id}`),
+  updateSupplier: (id, data) => api.patch(`/api/v2/network/${id}`, data),
+  removeSupplier: (id) => api.delete(`/api/v2/network/${id}`),
+  
+  // Alerts
+  getAlerts: () => api.get('/api/v2/network/alerts'),
+  markAlertRead: (id) => api.patch(`/api/v2/network/alerts/${id}/read`),
+  markAllAlertsRead: () => api.post('/api/v2/network/alerts/mark-all-read'),
+  
+  // Stats
+  getStats: () => api.get('/api/v2/network/stats/dashboard')
+}
+
 export default api

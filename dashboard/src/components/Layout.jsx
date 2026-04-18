@@ -18,6 +18,7 @@ function Layout() {
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/verifications', label: 'Verificaciones', icon: '✓' },
     { path: '/compare', label: 'Comparar', icon: '⚖️' },
+    { path: '/network', label: 'Mi Red', icon: '🌐' },
     { path: '/invites', label: 'Invitaciones', icon: '📧' },
     { path: '/compliance', label: 'Compliance', icon: '🛡️' },
     { path: '/profile', label: 'Perfil', icon: '👤' },

@@ -35,6 +35,7 @@ function App() {
                   <Route path="/compare" element={<Compare />} />
                   <Route path="/invites" element={<Invites />} />
                   <Route path="/compliance" element={<Compliance />} />
+                  <Route path="/network" element={<Network />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
