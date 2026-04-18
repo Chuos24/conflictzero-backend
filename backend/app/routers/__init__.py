@@ -4,11 +4,15 @@ from .founder_compliance import router as founder_compliance_router
 from .api_v2 import router as api_v2_router
 from .compare import router as compare_router
 from .auth import router as auth_router
+from .admin import router as admin_router
+from .network import router as network_router
 
 __all__ = [
     "founder_applications_router",
     "founder_compliance_router",
     "api_v2_router",
     "compare_router",
-    "auth_router"
+    "auth_router",
+    "admin_router",
+    "network_router"
 ]

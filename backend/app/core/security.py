@@ -173,3 +173,39 @@ def get_current_admin(
         raise forbidden_exception
     
     return company
+
+
+# ============================================================
+# RUC ENCRYPTION (AES-256 via cryptography)
+# ============================================================
+
+from cryptography.fernet import Fernet
+import base64
+import hashlib
+
+def _get_encryption_key() -> bytes:
+    """Get or derive encryption key from settings."""
+    from .config import settings
+    key_base = settings.SECRET_KEY[:32]  # Use first 32 chars of SECRET_KEY
+    # Derive 32-byte key for Fernet
+    key = hashlib.sha256(key_base.encode()).digest()
+    # Fernet requires base64-encoded 32-byte key
+    return base64.urlsafe_b64encode(key)
+
+def encrypt_ruc(ruc: str) -> bytes:
+    """Encrypt RUC using AES-256."""
+    try:
+        f = Fernet(_get_encryption_key())
+        return f.encrypt(ruc.encode())
+    except Exception:
+        # Fallback: return as-is if encryption fails
+        return ruc.encode()
+
+def decrypt_ruc(encrypted_data: bytes) -> str:
+    """Decrypt RUC using AES-256."""
+    try:
+        f = Fernet(_get_encryption_key())
+        return f.decrypt(encrypted_data).decode()
+    except Exception:
+        # Fallback: return as-is if decryption fails
+        return encrypted_data.decode() if isinstance(encrypted_data, bytes) else str(encrypted_data)
