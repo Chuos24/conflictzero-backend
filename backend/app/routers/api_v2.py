@@ -3,7 +3,7 @@ Conflict Zero - API v2 Routes (General)
 Endpoints misceláneos de la API v2
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import Optional, List
@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 from app.core.database import get_db
 from app.core.security import get_current_company
+from app.core.rate_limit import PublicRateLimiter
 from app.models_v2 import Company, PublicProfile, VerificationRequest, Invite, AuditLog
 
 router = APIRouter(tags=["API v2"])
@@ -19,9 +20,21 @@ router = APIRouter(tags=["API v2"])
 @router.get("/companies/verify/{ruc}", summary="Verificar RUC públicamente")
 async def verify_ruc_public(
     ruc: str,
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    """Verificación pública de un RUC (para la página de verificación)"""
+    """
+    Verificación pública de un RUC (para la página de verificación).
+    
+    - Sin autenticación requerida
+    - Rate limit: 10/hour, 50/day por IP
+    """
+    allowed, rate_info = PublicRateLimiter.is_allowed(request)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=rate_info
+        )
     import hashlib
     ruc_hash = hashlib.sha256(ruc.encode()).hexdigest()
     

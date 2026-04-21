@@ -342,3 +342,46 @@ email_service = EmailService()
 
 def get_email_service() -> EmailService:
     return email_service
+
+
+# ============================================================
+# FUNCIONES HELPER (para compatibilidad con imports)
+# ============================================================
+
+def send_verification_certificate(to_email: str, certificate_url: str, company_name: str) -> dict:
+    """
+    Envía email con certificado de verificación.
+    Stub para compatibilidad - implementación completa pendiente.
+    """
+    html = f"""
+    <html>
+    <body style="font-family: Inter, sans-serif; background: #0A0A0A; color: #F5F5F5; padding: 40px;">
+        <div style="max-width: 600px; margin: 0 auto; background: #141414; border: 1px solid #C9A961; border-radius: 16px; padding: 40px;">
+            <h1 style="color: #C9A961; font-family: 'Playfair Display', serif;">Certificado de Verificación</h1>
+            <p>Hola <strong>{company_name}</strong>,</p>
+            <p>Tu certificado de verificación está listo para descargar.</p>
+            <p style="text-align: center; margin: 32px 0;">
+                <a href="{certificate_url}" style="background: #C9A961; color: #0A0A0A; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Descargar Certificado</a>
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+    return email_service._send_email(
+        to_email=to_email,
+        subject="📜 Tu Certificado Conflict Zero está listo",
+        html_content=html
+    )
+
+
+def send_invite_email(to_email: str, invite_code: str, inviter_name: str) -> dict:
+    """
+    Envía email de invitación.
+    Stub para compatibilidad - delega a send_invite_to_subcontractor.
+    """
+    return email_service.send_invite_to_subcontractor(
+        to_email=to_email,
+        inviter_company=inviter_name,
+        invite_code=invite_code,
+        registration_link="https://czperu.com/register"
+    )

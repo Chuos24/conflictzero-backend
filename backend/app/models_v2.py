@@ -52,9 +52,15 @@ class Company(Base):
     
     # Plan y estado
     plan_tier = Column(String(20), nullable=False, default="bronze")
+    plan_type = Column(String(20), nullable=False, default="bronze")
     status = Column(String(20), nullable=False, default="pending")
     is_founder = Column(Boolean, default=False)
     founder_expires_at = Column(DateTime)
+    
+    # Suscripción y pagos
+    subscription_status = Column(String(20), default="inactive")
+    plan_activated_at = Column(DateTime)
+    next_billing_date = Column(DateTime)
     
     # Obligación contractual (manual, solo admin)
     contractual_obligation = Column(Boolean, default=False)
@@ -100,12 +106,19 @@ class Company(Base):
     
     __table_args__ = (
         CheckConstraint("plan_tier IN ('bronze', 'silver', 'gold', 'founder')", name="valid_plan_tier"),
+        CheckConstraint("plan_type IN ('essential', 'professional', 'enterprise', 'bronze', 'silver', 'gold', 'founder')", name="valid_plan_type"),
         CheckConstraint("status IN ('active', 'cancelled', 'suspended', 'pending')", name="valid_status"),
+        CheckConstraint("subscription_status IN ('active', 'inactive', 'canceled', 'past_due')", name="valid_subscription_status"),
     )
     
     @validates('plan_tier')
     def validate_plan_tier(self, key, value):
         assert value in ['bronze', 'silver', 'gold', 'founder']
+        return value
+    
+    @validates('plan_type')
+    def validate_plan_type(self, key, value):
+        assert value in ['essential', 'professional', 'enterprise', 'bronze', 'silver', 'gold', 'founder']
         return value
     
     def soft_delete(self):

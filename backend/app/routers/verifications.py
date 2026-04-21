@@ -11,6 +11,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 import hashlib
 import uuid
+import os
 
 from app.core.database import get_db
 from app.core.security import get_current_company
@@ -18,6 +19,7 @@ from app.core.rate_limit import rate_limited_auth
 from app.models_v2 import Company, VerificationRequest, PublicProfile
 from app.services.scoring_service import scoring_service
 from app.services.data_collection import DataCollectionService
+from app.services.certificate_service import certificate_service
 
 router = APIRouter(prefix="/verify", tags=["Verificaciones"])
 
@@ -204,6 +206,29 @@ async def verify_ruc(
         is_cached=False
     )
     
+    # Generar certificado para planes pagos (essential+)
+    plan_generates_cert = current_company.plan_tier in ["essential", "professional", "enterprise", "silver", "gold", "bronze"]
+    if plan_generates_cert:
+        try:
+            cert_path, cert_hash = certificate_service.generate_certificate(
+                verification_id=str(verification.id),
+                ruc_hash=ruc_hash,
+                company_name=verification.target_company_name,
+                score=verification.score,
+                risk_level=verification.risk_level,
+                sunat_debt=verification.sunat_debt,
+                sunat_tax_status=verification.sunat_tax_status,
+                sunat_contributor_status=verification.sunat_contributor_status,
+                osce_sanctions_count=verification.osce_sanctions_count,
+                tce_sanctions_count=verification.tce_sanctions_count,
+                consultant_name=current_company.razon_social
+            )
+            verification.certificate_url = f"/static/certificates/{os.path.basename(cert_path)}"
+            verification.certificate_hash = cert_hash
+        except Exception as e:
+            # No fallar la verificación si el certificado no se genera
+            print(f"⚠️ Error generando certificado: {e}")
+
     # Incrementar contador de consultas
     current_company.used_queries_this_month += 1
     
@@ -359,9 +384,10 @@ async def get_verification_certificate(
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene la información del certificado de una verificación.
+    Obtiene o genera el certificado de una verificación.
     
     - Requiere autenticación
+    - Si el certificado no existe, lo genera bajo demanda (planes pagos)
     - Retorna URL de descarga y hash del certificado
     """
     try:
@@ -384,11 +410,38 @@ async def get_verification_certificate(
             detail="Verificación no encontrada"
         )
     
+    # Si no tiene certificado, intentar generarlo
     if not verification.certificate_url:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Certificado no generado para esta verificación"
-        )
+        plan_generates_cert = current_company.plan_tier in ["essential", "professional", "enterprise", "silver", "gold", "bronze"]
+        if not plan_generates_cert:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu plan no incluye generación de certificados. Actualiza a Essential o superior."
+            )
+        
+        try:
+            cert_path, cert_hash = certificate_service.generate_certificate(
+                verification_id=str(verification.id),
+                ruc_hash=verification.target_ruc_hash,
+                company_name=verification.target_company_name,
+                score=verification.score,
+                risk_level=verification.risk_level,
+                sunat_debt=verification.sunat_debt,
+                sunat_tax_status=verification.sunat_tax_status,
+                sunat_contributor_status=verification.sunat_contributor_status,
+                osce_sanctions_count=verification.osce_sanctions_count,
+                tce_sanctions_count=verification.tce_sanctions_count,
+                consultant_name=current_company.razon_social
+            )
+            verification.certificate_url = f"/static/certificates/{os.path.basename(cert_path)}"
+            verification.certificate_hash = cert_hash
+            db.commit()
+            db.refresh(verification)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error generando certificado: {str(e)}"
+            )
     
     return CertificateDownloadResponse(
         certificate_url=verification.certificate_url,

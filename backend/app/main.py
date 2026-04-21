@@ -6,6 +6,7 @@ Backend v2.0 (Demo Mode)
 from fastapi import FastAPI, Depends, HTTPException, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
 import time
@@ -24,7 +25,8 @@ from app.routers import (
     webhooks,
     invites,
     admin,
-    network
+    network,
+    payments
 )
 from app.services.digital_signature_v2 import signature_service
 
@@ -65,6 +67,10 @@ app = FastAPI(
     redoc_url="/redoc" if os.getenv("ENV") != "production" else None,
     lifespan=lifespan
 )
+
+# Static files for certificates
+os.makedirs("static/certificates", exist_ok=True)
+app.mount("/static/certificates", StaticFiles(directory="static/certificates"), name="certificates")
 
 # CORS - Allow founders.czperu.com and czperu.com
 app.add_middleware(
@@ -141,6 +147,7 @@ app.include_router(webhooks.router, prefix="/api/v1")
 app.include_router(invites.router, prefix="/api/v2")
 app.include_router(admin.router, prefix="/api/v1")  # Admin router
 app.include_router(network.router, prefix="/api/v2")  # Mi Red - Supplier Network
+app.include_router(payments.router, prefix="/api/v2")  # Pagos - Culqi integration
 
 
 # Error handlers

@@ -264,6 +264,127 @@ async def rate_limited_auth(
     return await PlanRateLimitMiddleware.check_and_apply(request, credentials, db)
 
 
+class PublicRateLimiter:
+    """
+    Rate limiting por IP para endpoints públicos.
+    Usa contadores en memoria (para producción: Redis).
+    """
+
+    # Configuración por defecto: 10 requests por hora por IP
+    DEFAULT_HOURLY_LIMIT = 10
+    DEFAULT_DAILY_LIMIT = 50
+
+    # Contadores: {ip_hash: {"hourly": int, "daily": int, "hour_reset": datetime, "day_reset": datetime}}
+    _counters = {}
+
+    @classmethod
+    def _get_client_ip(cls, request: Request) -> str:
+        """Obtiene la IP real del cliente considerando proxies"""
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return real_ip
+        return request.client.host if request.client else "unknown"
+
+    @classmethod
+    def _hash_ip(cls, ip: str) -> str:
+        """Hashea la IP para privacidad"""
+        return hashlib.sha256(ip.encode()).hexdigest()[:16]
+
+    @classmethod
+    def is_allowed(cls, request: Request) -> tuple[bool, dict]:
+        """
+        Verifica si la IP puede hacer una request pública.
+        Retorna: (permitido, info_dict)
+        """
+        ip = cls._get_client_ip(request)
+        ip_hash = cls._hash_ip(ip)
+        now = datetime.utcnow()
+
+        if ip_hash not in cls._counters:
+            cls._counters[ip_hash] = {
+                "hourly": 0,
+                "daily": 0,
+                "hour_reset": now + timedelta(hours=1),
+                "day_reset": now + timedelta(days=1)
+            }
+
+        counter = cls._counters[ip_hash]
+
+        # Resetear si pasó el período
+        if now >= counter["hour_reset"]:
+            counter["hourly"] = 0
+            counter["hour_reset"] = now + timedelta(hours=1)
+
+        if now >= counter["day_reset"]:
+            counter["daily"] = 0
+            counter["day_reset"] = now + timedelta(days=1)
+
+        # Verificar límites
+        if counter["hourly"] >= cls.DEFAULT_HOURLY_LIMIT:
+            return False, {
+                "limit_type": "hourly",
+                "hourly_limit": cls.DEFAULT_HOURLY_LIMIT,
+                "hourly_used": counter["hourly"],
+                "daily_limit": cls.DEFAULT_DAILY_LIMIT,
+                "daily_used": counter["daily"],
+                "hour_reset_at": counter["hour_reset"].isoformat(),
+                "day_reset_at": counter["day_reset"].isoformat(),
+                "message": "Límite horario excedido. Regístrate para consultas ilimitadas."
+            }
+
+        if counter["daily"] >= cls.DEFAULT_DAILY_LIMIT:
+            return False, {
+                "limit_type": "daily",
+                "hourly_limit": cls.DEFAULT_HOURLY_LIMIT,
+                "hourly_used": counter["hourly"],
+                "daily_limit": cls.DEFAULT_DAILY_LIMIT,
+                "daily_used": counter["daily"],
+                "hour_reset_at": counter["hour_reset"].isoformat(),
+                "day_reset_at": counter["day_reset"].isoformat(),
+                "message": "Límite diario excedido. Regístrate para consultas ilimitadas."
+            }
+
+        # Incrementar contadores
+        counter["hourly"] += 1
+        counter["daily"] += 1
+
+        return True, {
+            "hourly_limit": cls.DEFAULT_HOURLY_LIMIT,
+            "hourly_used": counter["hourly"],
+            "hourly_remaining": cls.DEFAULT_HOURLY_LIMIT - counter["hourly"],
+            "daily_limit": cls.DEFAULT_DAILY_LIMIT,
+            "daily_used": counter["daily"],
+            "daily_remaining": cls.DEFAULT_DAILY_LIMIT - counter["daily"],
+            "hour_reset_at": counter["hour_reset"].isoformat(),
+            "day_reset_at": counter["day_reset"].isoformat()
+        }
+
+    @classmethod
+    def get_usage(cls, request: Request) -> dict:
+        """Obtiene uso actual sin incrementar"""
+        ip = cls._get_client_ip(request)
+        ip_hash = cls._hash_ip(ip)
+        counter = cls._counters.get(ip_hash, {
+            "hourly": 0,
+            "daily": 0,
+            "hour_reset": datetime.utcnow() + timedelta(hours=1),
+            "day_reset": datetime.utcnow() + timedelta(days=1)
+        })
+        return {
+            "hourly_limit": cls.DEFAULT_HOURLY_LIMIT,
+            "hourly_used": counter["hourly"],
+            "hourly_remaining": max(0, cls.DEFAULT_HOURLY_LIMIT - counter["hourly"]),
+            "daily_limit": cls.DEFAULT_DAILY_LIMIT,
+            "daily_used": counter["daily"],
+            "daily_remaining": max(0, cls.DEFAULT_DAILY_LIMIT - counter["daily"]),
+            "hour_reset_at": counter["hour_reset"].isoformat() if isinstance(counter["hour_reset"], datetime) else counter["hour_reset"],
+            "day_reset_at": counter["day_reset"].isoformat() if isinstance(counter["day_reset"], datetime) else counter["day_reset"]
+        }
+
+
 def add_rate_limit_headers(response, info: dict):
     """Agrega headers de rate limit a la respuesta"""
     if info.get("limit") == "unlimited":
