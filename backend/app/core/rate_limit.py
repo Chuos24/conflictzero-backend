@@ -11,7 +11,6 @@ from typing import Optional
 import hashlib
 
 from app.core.database import get_db
-from app.core.security import RateLimiter
 from app.models_v2 import Company, ApiKey
 
 security = HTTPBearer(auto_error=False)

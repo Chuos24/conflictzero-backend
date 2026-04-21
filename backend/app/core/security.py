@@ -111,6 +111,21 @@ def generate_api_key():
     api_key_hash = get_password_hash(api_key)
     return api_key, api_key_hash
 
+def get_current_founder(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> Company:
+    """Get the current authenticated founder from JWT token."""
+    company = get_current_company(credentials, db)
+    
+    if not company.is_founder:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Founder access required"
+        )
+    
+    return company
+
 def require_admin(current_company: Company = Depends(get_current_company)) -> Company:
     """Ensure company has admin privileges (founder or specific flag)."""
     # For now, founders have admin-like access

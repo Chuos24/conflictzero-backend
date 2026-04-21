@@ -45,6 +45,16 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized")
 
+def test_connection() -> bool:
+    """Test database connection."""
+    try:
+        with engine.connect() as conn:
+            conn.execute("SELECT 1")
+        return True
+    except Exception as e:
+        logger.warning(f"Database connection test failed: {e}")
+        return False
+
 # Connection event listeners
 @event.listens_for(engine, "connect")
 def on_connect(dbapi_conn, connection_record):
