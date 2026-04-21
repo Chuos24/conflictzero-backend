@@ -385,3 +385,15 @@ def send_invite_email(to_email: str, invite_code: str, inviter_name: str) -> dic
         invite_code=invite_code,
         registration_link="https://czperu.com/register"
     )
+
+
+def send_email(to_email: str, subject: str, html_content: str) -> dict:
+    """
+    Envío genérico de email.
+    Stub para compatibilidad con imports existentes.
+    """
+    return email_service._send_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content
+    )

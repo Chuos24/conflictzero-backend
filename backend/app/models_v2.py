@@ -5,14 +5,19 @@ UUID PK, RUC encriptado, soft delete, contractual obligation
 
 import uuid
 import hashlib
+import os
 from datetime import datetime, timedelta
 from typing import Optional, List
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Float, Text, ForeignKey, CheckConstraint, UniqueConstraint, event
-from sqlalchemy.dialects.postgresql import UUID, JSONB, BYTEA
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Float, Text, ForeignKey, CheckConstraint, UniqueConstraint, event, LargeBinary
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, declarative_base, validates
 from sqlalchemy.sql import func
 
 Base = declarative_base()
+
+# Usar tipos genéricos compatibles con PostgreSQL y SQLite
+JSONB_TYPE = Text  # Para SQLite; en PostgreSQL se puede usar JSONB
+BYTEA_TYPE = LargeBinary  # Funciona en ambos
 
 # ============================================================
 # UTILS PARA ENCRIPTACIÓN
@@ -38,7 +43,7 @@ class Company(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # RUC encriptado (AES-256 via pgcrypto en DB, o application layer)
-    ruc_encrypted = Column(BYTEA, nullable=False)
+    ruc_encrypted = Column(BYTEA_TYPE, nullable=False)
     ruc_hash = Column(String(64), unique=True, nullable=False, index=True)
     
     # Slug público para URLs
@@ -161,7 +166,7 @@ class FounderApplication(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # RUC encriptado
-    ruc_encrypted = Column(BYTEA, nullable=False)
+    ruc_encrypted = Column(BYTEA_TYPE, nullable=False)
     ruc_hash = Column(String(64), nullable=False, index=True)
     
     company_name = Column(String(255), nullable=False)
@@ -180,6 +185,9 @@ class FounderApplication(Base):
     
     ip_address = Column(String(45))
     user_agent = Column(Text)
+    
+    # Soft delete
+    deleted_at = Column(DateTime)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -350,7 +358,7 @@ class VerificationRequest(Base):
     consultant_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
     
     target_ruc_hash = Column(String(64), nullable=False, index=True)
-    target_ruc_encrypted = Column(BYTEA)
+    target_ruc_encrypted = Column(BYTEA_TYPE)
     target_company_name = Column(String(255))
     
     score = Column(Integer, nullable=False)
@@ -361,19 +369,19 @@ class VerificationRequest(Base):
     sunat_contributor_status = Column(String(50))
     
     osce_sanctions_count = Column(Integer, default=0)
-    osce_sanctions_details = Column(JSONB, default=list)
+    osce_sanctions_details = Column(JSONB_TYPE, default=list)
     tce_sanctions_count = Column(Integer, default=0)
-    tce_sanctions_details = Column(JSONB, default=list)
+    tce_sanctions_details = Column(JSONB_TYPE, default=list)
     
     ml_anomaly_score = Column(Float, default=0)
-    ml_risk_factors = Column(JSONB, default=list)
+    ml_risk_factors = Column(JSONB_TYPE, default=list)
     
     certificate_url = Column(String(500))
     certificate_hash = Column(String(64))
     digital_signature_id = Column(String(100))
     digital_signature_timestamp = Column(DateTime)
     
-    raw_data = Column(JSONB)
+    raw_data = Column(JSONB_TYPE)
     
     is_cached = Column(Boolean, default=False)
     cache_expires_at = Column(DateTime)
@@ -464,7 +472,7 @@ class ApiKey(Base):
     revoked_at = Column(DateTime)
     revoked_reason = Column(Text)
     
-    scopes = Column(JSONB, default=list)
+    scopes = Column(JSONB_TYPE, default=list)
     
     deleted_at = Column(DateTime)
     
@@ -487,7 +495,7 @@ class Webhook(Base):
     url = Column(String(500), nullable=False)
     secret = Column(String(255), nullable=False)
     
-    events = Column(JSONB, nullable=False)
+    events = Column(JSONB_TYPE, nullable=False)
     
     is_active = Column(Boolean, default=True)
     
@@ -514,7 +522,7 @@ class WebhookDelivery(Base):
     webhook_id = Column(UUID(as_uuid=True), ForeignKey("webhooks.id", ondelete="CASCADE"), nullable=False, index=True)
     
     event_type = Column(String(50), nullable=False)
-    payload = Column(JSONB, nullable=False)
+    payload = Column(JSONB_TYPE, nullable=False)
     
     status = Column(String(20), default="pending")
     http_status = Column(Integer)
@@ -524,7 +532,7 @@ class WebhookDelivery(Base):
     completed_at = Column(DateTime)
     
     __table_args__ = (
-        CheckConstraint("status IN (pending, delivered, failed)", name="valid_delivery_status"),
+        CheckConstraint("status IN ('pending', 'delivered', 'failed')", name="valid_delivery_status"),
     )
 
 
@@ -538,7 +546,7 @@ class ApiCache(Base):
     query_type = Column(String(50), nullable=False, index=True)
     query_identifier = Column(String(100), nullable=False, index=True)
     
-    response_json = Column(JSONB, nullable=False)
+    response_json = Column(JSONB_TYPE, nullable=False)
     status_code = Column(Integer, default=200)
     
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -573,9 +581,9 @@ class AuditLog(Base):
     resource_type = Column(String(50), nullable=False)
     resource_id = Column(String(255))
     
-    old_values = Column(JSONB)
-    new_values = Column(JSONB)
-    audit_metadata = Column(JSONB)  # Renamed from 'metadata' to avoid SQLAlchemy reserved word
+    old_values = Column(JSONB_TYPE)
+    new_values = Column(JSONB_TYPE)
+    audit_metadata = Column(JSONB_TYPE)  # Renamed from 'metadata' to avoid SQLAlchemy reserved word
     
     ip_address = Column(String(45))
     user_agent = Column(Text)
@@ -601,7 +609,7 @@ class DigitalSignature(Base):
     verification_id = Column(UUID(as_uuid=True), ForeignKey("verification_requests.id"), nullable=False, index=True)
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
     
-    signature_data = Column(BYTEA, nullable=False)
+    signature_data = Column(BYTEA_TYPE, nullable=False)
     certificate_id = Column(String(100), nullable=False)
     certificate_issuer = Column(String(255))
     
@@ -625,6 +633,25 @@ class DigitalSignature(Base):
 
 
 # ============================================================
+# 11b. COMPARISON REQUESTS
+# ============================================================
+
+class ComparisonRequest(Base):
+    __tablename__ = "comparison_requests"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    rucs = Column(JSONB_TYPE, default=list)
+    results = Column(JSONB_TYPE)
+    
+    status = Column(String(20), default="completed")
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ============================================================
 # 12. SYSTEM CONFIG
 # ============================================================
 
@@ -632,7 +659,7 @@ class SystemConfig(Base):
     __tablename__ = "system_config"
     
     key = Column(String(100), primary_key=True)
-    value = Column(JSONB, nullable=False)
+    value = Column(JSONB_TYPE, nullable=False)
     description = Column(Text)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     updated_by = Column(String(255))

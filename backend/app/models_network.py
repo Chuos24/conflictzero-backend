@@ -6,11 +6,15 @@ Alertas y snapshots para monitoreo continuo de proveedores
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional, List
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Float, Text, ForeignKey, CheckConstraint, Index, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID, JSONB, BYTEA
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Float, Text, ForeignKey, CheckConstraint, Index, UniqueConstraint, LargeBinary
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.models_v2 import Base, hash_ruc
+
+# Tipos genéricos compatibles con PostgreSQL y SQLite
+JSONB_TYPE = Text
+BYTEA_TYPE = LargeBinary
 
 
 # ============================================================
@@ -42,10 +46,10 @@ class SupplierAlert(Base):
     new_risk_level = Column(String(20))
     
     # Datos adicionales del cambio (JSON)
-    change_details = Column(JSONB, default=dict)
+    change_details = Column(JSONB_TYPE, default=dict)
     
     # Estado de la alerta
-    is_read = Column(Boolean, default=False)
+    is_read = Column(Boolean, default=False, nullable=False)
     read_at = Column(DateTime)
     
     # Severidad
@@ -111,12 +115,12 @@ class CompanySnapshot(Base):
     
     # Datos OSCE/TCE
     osce_sanctions_count = Column(Integer, default=0)
-    osce_sanctions_details = Column(JSONB, default=list)
+    osce_sanctions_details = Column(JSONB_TYPE, default=list)
     tce_sanctions_count = Column(Integer, default=0)
-    tce_sanctions_details = Column(JSONB, default=list)
+    tce_sanctions_details = Column(JSONB_TYPE, default=list)
     
     # Datos completos en JSON
-    full_data = Column(JSONB)
+    full_data = Column(JSONB_TYPE)
     
     # Metadatos
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -153,25 +157,25 @@ class SupplierNetwork(Base):
     
     # RUC del proveedor monitoreado
     supplier_ruc_hash = Column(String(64), nullable=False, index=True)
-    supplier_ruc_encrypted = Column(BYTEA)
+    supplier_ruc_encrypted = Column(BYTEA_TYPE)
     supplier_company_name = Column(String(255))
     
     # Estado del monitoreo
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, nullable=False)
     
     # Última verificación
     last_verified_at = Column(DateTime)
     last_snapshot_id = Column(UUID(as_uuid=True), ForeignKey("company_snapshots.id", ondelete="SET NULL"))
     
     # Configuración de alertas
-    alert_on_score_change = Column(Boolean, default=True)
-    alert_on_new_sanction = Column(Boolean, default=True)
-    alert_on_debt_increase = Column(Boolean, default=True)
+    alert_on_score_change = Column(Boolean, default=True, nullable=False)
+    alert_on_new_sanction = Column(Boolean, default=True, nullable=False)
+    alert_on_debt_increase = Column(Boolean, default=True, nullable=False)
     alert_threshold = Column(Integer, default=10)  # Mínimo cambio en score para alertar
     
     # Notas
     notes = Column(Text)
-    tags = Column(JSONB, default=list)  # Tags personalizados
+    tags = Column(JSONB_TYPE, default=list)  # Tags personalizados
     
     # Metadatos
     created_at = Column(DateTime, default=datetime.utcnow)

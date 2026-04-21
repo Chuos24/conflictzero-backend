@@ -14,7 +14,86 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models_v2 import ApiCache, Company
 
-# Configuración de APIs externas
+# ============================================================
+# DATA COLLECTION SERVICE (Clase)
+# ============================================================
+
+class DataCollectionService:
+    """Servicio para colectar datos de fuentes externas."""
+    
+    def get_sunat_data(self, ruc: str) -> Dict[str, Any]:
+        """Obtiene datos de SUNAT para un RUC."""
+        from app.core.database import SessionLocal
+        db = SessionLocal()
+        try:
+            return get_sunat_data(ruc, db)
+        finally:
+            db.close()
+    
+    def get_osce_data(self, ruc: str) -> Dict[str, Any]:
+        """Obtiene datos de OSCE para un RUC."""
+        from app.core.database import SessionLocal
+        db = SessionLocal()
+        try:
+            sanctions = get_osce_sanctions(ruc, db)
+            return {
+                "ruc": ruc,
+                "sanctions": sanctions,
+                "sanctions_count": len(sanctions)
+            }
+        finally:
+            db.close()
+    
+    def get_tce_data(self, ruc: str) -> Dict[str, Any]:
+        """Obtiene datos de TCE para un RUC."""
+        from app.core.database import SessionLocal
+        db = SessionLocal()
+        try:
+            sanctions = get_tce_sanctions(ruc, db)
+            return {
+                "ruc": ruc,
+                "sanctions": sanctions,
+                "sanctions_count": len(sanctions)
+            }
+        finally:
+            db.close()
+    
+    def _mock_sunat_data(self, ruc: str) -> Dict[str, Any]:
+        """Genera datos mock de SUNAT."""
+        return {
+            "found": True,
+            "ruc": ruc,
+            "razon_social": f"EMPRESA DEMO S.A.C. ({ruc[:6]})",
+            "tax_status": "ACTIVO",
+            "contributor_status": "HABIDO",
+            "direccion": "Av. Demo 123, Lima",
+            "departamento": "Lima",
+            "provincia": "Lima",
+            "distrito": "Miraflores",
+            "debt_amount": 0,
+            "source": "mock"
+        }
+    
+    def _mock_osce_data(self, ruc: str) -> Dict[str, Any]:
+        """Genera datos mock de OSCE."""
+        return {
+            "ruc": ruc,
+            "sanctions": [],
+            "sanctions_count": 0
+        }
+    
+    def _mock_tce_data(self, ruc: str) -> Dict[str, Any]:
+        """Genera datos mock de TCE."""
+        return {
+            "ruc": ruc,
+            "sanctions": [],
+            "sanctions_count": 0
+        }
+
+
+# ============================================================
+# FUNCIONES ORIGINALES (Mantener compatibilidad)
+# ============================================================
 PERU_API_TOKEN = os.getenv("PERU_API_TOKEN", "")
 PERU_API_BASE = "https://api.peruapi.com/v1"
 

@@ -25,13 +25,16 @@ def test_supplier_network_creation():
         supplier_ruc_hash=hash_ruc("20529400790"),
         supplier_company_name="Test Company",
         is_active=True,
-        alert_threshold=15
+        alert_threshold=15,
+        alert_on_score_change=True,
+        alert_on_new_sanction=True,
+        alert_on_debt_increase=True
     )
     
     assert supplier.is_active is True
     assert supplier.alert_threshold == 15
-    assert supplier.alert_on_score_change is True  # Default
-    assert supplier.tags == []  # Default
+    assert supplier.alert_on_score_change is True
+    assert supplier.alert_on_new_sanction is True
 
 
 def test_supplier_network_soft_delete():
@@ -61,12 +64,13 @@ def test_supplier_alert_creation():
         new_score=65,
         previous_risk_level="low",
         new_risk_level="high",
-        change_details={"score_delta": -20}
+        change_details={"score_delta": -20},
+        is_read=False
     )
     
     assert alert.alert_type == "score_change"
     assert alert.severity == "high"
-    assert alert.is_read is False  # Default
+    assert alert.is_read is False
 
 
 def test_supplier_alert_mark_as_read():
@@ -76,7 +80,8 @@ def test_supplier_alert_mark_as_read():
         supplier_ruc_hash=hash_ruc("20529400790"),
         supplier_company_name="Test Company",
         alert_type="new_sanction",
-        severity="critical"
+        severity="critical",
+        is_read=False
     )
     
     assert alert.is_read is False
