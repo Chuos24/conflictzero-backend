@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api } from '../services/api'
+import api from '../services/api'
 import { downloadFile } from '../utils/helpers'
 
 export function useExport() {
