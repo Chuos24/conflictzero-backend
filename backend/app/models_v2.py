@@ -165,8 +165,8 @@ class FounderApplication(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
-    # RUC encriptado
-    ruc_encrypted = Column(BYTEA_TYPE, nullable=False)
+    # RUC encriptado (nullable hasta que se implemente encriptación real en el endpoint)
+    ruc_encrypted = Column(BYTEA_TYPE, nullable=True)
     ruc_hash = Column(String(64), nullable=False, index=True)
     
     company_name = Column(String(255), nullable=False)

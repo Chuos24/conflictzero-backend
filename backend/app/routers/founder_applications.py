@@ -120,7 +120,13 @@ async def create_founder_application(
     
     print(f"✅ Nueva aplicación Founder recibida: {application.company_name} ({application.ruc})")
     
-    return new_app
+    return FounderApplicationResponse(
+        id=str(new_app.id),
+        ruc_hash=new_app.ruc_hash,
+        company_name=new_app.company_name,
+        status=new_app.status,
+        created_at=new_app.created_at
+    )
 
 
 @router.get(
@@ -323,21 +329,36 @@ async def get_application_stats(
     db: Session = Depends(get_db)
 ):
     """Stats para dashboard admin"""
-    stats = db.query(
-        func.count(FounderApplication.id).label('total'),
-        func.count(func.case([(FounderApplication.status == 'pending', 1)])).label('pending'),
-        func.count(func.case([(FounderApplication.status == 'under_review', 1)])).label('under_review'),
-        func.count(func.case([(FounderApplication.status == 'approved', 1)])).label('approved'),
-        func.count(func.case([(FounderApplication.status == 'rejected', 1)])).label('rejected'),
-    ).filter(
+    # SQLite-compatible query: count with filter conditions
+    total = db.query(FounderApplication).filter(
         FounderApplication.deleted_at.is_(None)
-    ).first()
+    ).count()
+    
+    pending = db.query(FounderApplication).filter(
+        FounderApplication.deleted_at.is_(None),
+        FounderApplication.status == 'pending'
+    ).count()
+    
+    under_review = db.query(FounderApplication).filter(
+        FounderApplication.deleted_at.is_(None),
+        FounderApplication.status == 'under_review'
+    ).count()
+    
+    approved = db.query(FounderApplication).filter(
+        FounderApplication.deleted_at.is_(None),
+        FounderApplication.status == 'approved'
+    ).count()
+    
+    rejected = db.query(FounderApplication).filter(
+        FounderApplication.deleted_at.is_(None),
+        FounderApplication.status == 'rejected'
+    ).count()
     
     return {
-        "total": stats.total,
-        "pending": stats.pending,
-        "under_review": stats.under_review,
-        "approved": stats.approved,
-        "rejected": stats.rejected,
-        "conversion_rate": round(stats.approved / stats.total * 100, 1) if stats.total > 0 else 0
+        "total": total,
+        "pending": pending,
+        "under_review": under_review,
+        "approved": approved,
+        "rejected": rejected,
+        "conversion_rate": round(approved / total * 100, 1) if total > 0 else 0
     }
