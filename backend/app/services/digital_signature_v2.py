@@ -406,8 +406,8 @@ class DigitalSignatureService:
             "is_demo": self.is_demo_mode(),
             "issuer": str(self._certificate.issuer) if self._certificate else None,
             "subject": str(self._certificate.subject) if self._certificate else None,
-            "not_before": self._certificate.not_valid_before_utc.isoformat() if self._certificate else None,
-            "not_after": self._certificate.not_valid_after_utc.isoformat() if self._certificate else None,
+            "not_before": self._certificate.not_valid_before.isoformat() if self._certificate else None,
+            "not_after": self._certificate.not_valid_after.isoformat() if self._certificate else None,
             "has_watermark": self.is_demo_mode()
         }
 
