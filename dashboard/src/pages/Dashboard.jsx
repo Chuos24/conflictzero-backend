@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import api from '../services/api'
+import { useDashboardStats } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -12,55 +12,36 @@ import './Dashboard.css'
 
 const COLORS = ['#d4af37', '#4caf50', '#f44336', '#2196f3', '#ff9800']
 
+// Mock chart data (server-side rendering fallback)
+const defaultChartData = {
+  verificationsByMonth: [
+    { month: 'Ene', count: 12, score: 78 },
+    { month: 'Feb', count: 18, score: 82 },
+    { month: 'Mar', count: 25, score: 85 },
+    { month: 'Abr', count: 32, score: 88 }
+  ],
+  complianceDistribution: [
+    { name: 'Compliant', value: 75, color: '#4caf50' },
+    { name: 'Warning', value: 15, color: '#ff9800' },
+    { name: 'Critical', value: 10, color: '#f44336' }
+  ],
+  topRiskFactors: [
+    { factor: 'OSCE Sanciones', count: 5 },
+    { factor: 'TCE Sanciones', count: 3 },
+    { factor: 'Deuda Tributaria', count: 2 },
+    { factor: 'Indecopi', count: 1 }
+  ]
+}
+
 function Dashboard() {
   const { user } = useAuth()
-  const [stats, setStats] = useState(null)
-  const [chartData, setChartData] = useState(null)
-  const [recentActivity, setRecentActivity] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: stats, isLoading } = useDashboardStats()
 
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
+  // Use server data when available, fallback to mock
+  const chartData = stats?.chart_data || defaultChartData
+  const recentActivity = stats?.recent_activity || []
 
-  const fetchDashboardData = async () => {
-    try {
-      const [statsRes, chartRes, activityRes] = await Promise.all([
-        api.get('/dashboard/stats'),
-        api.get('/dashboard/chart-data'),
-        api.get('/dashboard/activity')
-      ])
-      setStats(statsRes.data)
-      setChartData(chartRes.data)
-      setRecentActivity(activityRes.data || [])
-    } catch (err) {
-      console.error('Error fetching dashboard:', err)
-      // Use mock data if API fails
-      setChartData({
-        verificationsByMonth: [
-          { month: 'Ene', count: 12, score: 78 },
-          { month: 'Feb', count: 18, score: 82 },
-          { month: 'Mar', count: 25, score: 85 },
-          { month: 'Abr', count: 32, score: 88 }
-        ],
-        complianceDistribution: [
-          { name: 'Compliant', value: 75, color: '#4caf50' },
-          { name: 'Warning', value: 15, color: '#ff9800' },
-          { name: 'Critical', value: 10, color: '#f44336' }
-        ],
-        topRiskFactors: [
-          { factor: 'OSCE Sanciones', count: 5 },
-          { factor: 'TCE Sanciones', count: 3 },
-          { factor: 'Deuda Tributaria', count: 2 },
-          { factor: 'Indecopi', count: 1 }
-        ]
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="dashboard-loading">
         <LoadingSpinner size="large" text="Cargando dashboard..." />

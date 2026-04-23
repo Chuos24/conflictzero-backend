@@ -1,40 +1,55 @@
-import React, { useState } from 'react'
+import React, { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
+import { profileSchema } from '../lib/validations'
 import api from '../services/api'
 import './Profile.css'
 
 export default function Profile() {
   const { user, setUser } = useAuth()
-  const [isEditing, setIsEditing] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [formData, setFormData] = useState({
-    contact_name: user?.contact_name || '',
-    contact_phone: user?.contact_phone || '',
-    razon_social: user?.razon_social || ''
+  const { showToast } = useToast()
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      razon_social: user?.razon_social || '',
+      contact_name: user?.contact_name || '',
+      contact_phone: user?.contact_phone || '',
+    },
   })
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+  // Sync form when user data changes
+  useEffect(() => {
+    if (user) {
+      reset({
+        razon_social: user.razon_social || '',
+        contact_name: user.contact_name || '',
+        contact_phone: user.contact_phone || '',
+      })
+    }
+  }, [user, reset])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage('')
-
+  const onSubmit = async (data) => {
     try {
-      const response = await api.patch('/api/v1/company/profile', formData)
-      setMessage('Perfil actualizado correctamente')
-      setUser({ ...user, ...formData })
-      setIsEditing(false)
+      const response = await api.patch('/api/v1/company/profile', data)
+      setUser({ ...user, ...data })
+      showToast('Perfil actualizado correctamente', 'success')
     } catch (err) {
-      setMessage('Error al actualizar perfil')
-      console.error(err)
-    } finally {
-      setLoading(false)
+      const message = err.response?.data?.detail || 'Error al actualizar perfil'
+      setError('root', { message })
+      showToast(message, 'error')
     }
   }
+
+  const [isEditing, setIsEditing] = React.useState(false)
 
   return (
     <div className="profile-container">
@@ -56,49 +71,54 @@ export default function Profile() {
           </div>
         </div>
 
-        {message && (
-          <div className={`message ${message.includes('Error') ? 'error' : 'success'}`}>
-            {message}
-          </div>
+        {errors.root && (
+          <div className="message error">{errors.root.message}</div>
         )}
 
         {isEditing ? (
-          <form onSubmit={handleSubmit} className="profile-form">
+          <form onSubmit={handleSubmit(onSubmit)} className="profile-form" noValidate>
             <div className="form-group">
-              <label>Razón Social</label>
+              <label htmlFor="razon_social">Razón Social</label>
               <input
                 type="text"
-                name="razon_social"
-                value={formData.razon_social}
-                onChange={handleChange}
-                required
+                id="razon_social"
+                {...register('razon_social')}
+                aria-invalid={errors.razon_social ? 'true' : 'false'}
               />
+              {errors.razon_social && (
+                <span className="field-error" role="alert">{errors.razon_social.message}</span>
+              )}
             </div>
             <div className="form-group">
-              <label>Nombre de Contacto</label>
+              <label htmlFor="contact_name">Nombre de Contacto</label>
               <input
                 type="text"
-                name="contact_name"
-                value={formData.contact_name}
-                onChange={handleChange}
-                required
+                id="contact_name"
+                {...register('contact_name')}
+                aria-invalid={errors.contact_name ? 'true' : 'false'}
               />
+              {errors.contact_name && (
+                <span className="field-error" role="alert">{errors.contact_name.message}</span>
+              )}
             </div>
             <div className="form-group">
-              <label>Teléfono</label>
+              <label htmlFor="contact_phone">Teléfono</label>
               <input
                 type="tel"
-                name="contact_phone"
-                value={formData.contact_phone}
-                onChange={handleChange}
+                id="contact_phone"
+                {...register('contact_phone')}
+                aria-invalid={errors.contact_phone ? 'true' : 'false'}
               />
+              {errors.contact_phone && (
+                <span className="field-error" role="alert">{errors.contact_phone.message}</span>
+              )}
             </div>
             <div className="form-actions">
-              <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? 'Guardando...' : 'Guardar Cambios'}
+              <button type="submit" className="btn-primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn-secondary"
                 onClick={() => setIsEditing(false)}
               >
@@ -134,7 +154,7 @@ export default function Profile() {
                 {user?.used_queries_this_month} / {user?.max_monthly_queries}
               </span>
             </div>
-            <button 
+            <button
               className="btn-primary edit-btn"
               onClick={() => setIsEditing(true)}
             >

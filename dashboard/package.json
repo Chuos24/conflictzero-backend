@@ -9,15 +9,22 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.100.0",
+    "@tanstack/react-query-devtools": "^5.100.0",
     "axios": "^1.6.2",
     "html2pdf.js": "^0.10.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.73.1",
     "react-router-dom": "^6.20.0",
-    "recharts": "^2.10.3"
+    "recharts": "^2.10.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.5",
@@ -32,6 +39,18 @@
     "eslint-plugin-react-refresh": "^0.4.4",
     "jsdom": "^23.0.1",
     "vite": "^5.0.0",
-    "vitest": "^1.0.4"
+    "vitest": "^1.0.4",
+    "storybook": "^10.3.5",
+    "@storybook/react-vite": "^10.3.5",
+    "@chromatic-com/storybook": "^5.1.2",
+    "@storybook/addon-vitest": "^10.3.5",
+    "@storybook/addon-a11y": "^10.3.5",
+    "@storybook/addon-docs": "^10.3.5",
+    "@storybook/addon-onboarding": "^10.3.5",
+    "prop-types": "^15.8.1",
+    "eslint-plugin-storybook": "^10.3.5",
+    "playwright": "^1.59.1",
+    "@vitest/browser": "^1.0.4",
+    "@vitest/coverage-v8": "^1.0.4"
   }
 }

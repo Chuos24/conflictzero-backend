@@ -1,77 +1,46 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
+import { useVerifications, useVerifyRuc } from '../hooks/useQueries'
+import { verifyRucSchema } from '../lib/validations'
+import LoadingSpinner from '../components/LoadingSpinner'
 import './Verifications.css'
 
 function Verifications() {
   const { user } = useAuth()
-  const [ruc, setRuc] = useState('')
-  const [results, setResults] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [history, setHistory] = useState([])
-  const [error, setError] = useState('')
+  const { data: historyData, isLoading: historyLoading } = useVerifications()
+  const verifyMutation = useVerifyRuc()
 
-  // Cargar historial al montar
-  useEffect(() => {
-    fetchHistory()
-  }, [])
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: zodResolver(verifyRucSchema),
+    defaultValues: { ruc: '' },
+  })
 
-  const fetchHistory = async () => {
+  const [results, setResults] = React.useState(null)
+
+  const onSubmit = async (data) => {
     try {
-      const token = localStorage.getItem('cz_token')
-      const response = await fetch('/api/v1/verify/history', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const result = await verifyMutation.mutateAsync(data.ruc)
+      setResults({
+        ...result,
+        ruc: data.ruc,
+        company_name: result.target_company_name,
       })
-      if (response.ok) {
-        const data = await response.json()
-        setHistory(data.items || [])
-      }
+      reset()
     } catch (err) {
-      console.error('Error cargando historial:', err)
+      // Error handled by mutation
     }
   }
 
-  const handleVerify = async (e) => {
-    e.preventDefault()
-    if (ruc.length !== 11) {
-      setError('El RUC debe tener 11 dígitos')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-    setResults(null)
-
-    try {
-      const token = localStorage.getItem('cz_token')
-      const response = await fetch('/api/v1/verify/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ ruc })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setResults({
-          ...data,
-          ruc: ruc,
-          company_name: data.target_company_name
-        })
-        fetchHistory() // Actualizar historial
-      } else {
-        setError(data.detail || 'Error al verificar')
-      }
-    } catch (err) {
-      setError('Error de conexión')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const history = historyData?.items || []
+  const loading = verifyMutation.isPending
+  const error = verifyMutation.error?.response?.data?.detail || errors.ruc?.message
 
   const getRiskColor = (level) => {
     switch (level) {
@@ -106,25 +75,26 @@ function Verifications() {
         {/* Formulario de búsqueda */}
         <div className="verify-card">
           <h2>Nueva Verificación</h2>
-          <form onSubmit={handleVerify}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="search-box">
               <input
                 type="text"
-                value={ruc}
-                onChange={(e) => setRuc(e.target.value.replace(/\D/g, ''))}
                 placeholder="Ingresa el RUC (11 dígitos)"
                 maxLength={11}
                 className="ruc-input"
+                {...register('ruc')}
+                aria-invalid={errors.ruc ? 'true' : 'false'}
               />
               <button
                 type="submit"
                 className="verify-btn"
-                disabled={loading || ruc.length !== 11}
+                disabled={loading}
               >
                 {loading ? 'Verificando...' : 'Verificar'}
               </button>
             </div>
             {error && <div className="error-text">{error}</div>}
+            {errors.ruc && <div className="error-text">{errors.ruc.message}</div>}
           </form>
 
           {/* Resultados */}

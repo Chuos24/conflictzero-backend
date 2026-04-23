@@ -1,60 +1,43 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import './Network.css'
-import { networkApi } from '../services/api'
+import { useNetworkSuppliers, useNetworkStats, useNetworkAlerts, useAddSupplier, useRemoveSupplier, useMarkAlertRead } from '../hooks/useQueries'
 import { useToast } from '../context/ToastContext'
 import LoadingSpinner from '../components/LoadingSpinner'
+import Modal from '../components/Modal'
 
 function Network() {
-  const [suppliers, setSuppliers] = useState([])
-  const [stats, setStats] = useState(null)
-  const [alerts, setAlerts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { showToast } = useToast()
   const [showAddModal, setShowAddModal] = useState(false)
   const [newSupplier, setNewSupplier] = useState({ ruc: '', name: '', alert_threshold: 10 })
   const [activeTab, setActiveTab] = useState('suppliers')
-  const { showToast } = useToast()
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  const { data: suppliersData, isLoading: suppliersLoading } = useNetworkSuppliers()
+  const { data: stats } = useNetworkStats()
+  const { data: alertsData } = useNetworkAlerts()
+  const addSupplier = useAddSupplier()
+  const removeSupplier = useRemoveSupplier()
+  const markAlertRead = useMarkAlertRead()
 
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      const [suppliersRes, statsRes, alertsRes] = await Promise.all([
-        networkApi.getSuppliers(),
-        networkApi.getStats(),
-        networkApi.getAlerts()
-      ])
-      setSuppliers(suppliersRes.data || [])
-      setStats(statsRes.data)
-      setAlerts(alertsRes.data || [])
-    } catch (error) {
-      showToast('Error cargando datos de Mi Red', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const suppliers = suppliersData || []
+  const alerts = alertsData || []
 
   const handleAddSupplier = async (e) => {
     e.preventDefault()
     try {
-      await networkApi.addSupplier(newSupplier)
+      await addSupplier.mutateAsync(newSupplier)
       showToast('Proveedor agregado exitosamente', 'success')
       setShowAddModal(false)
       setNewSupplier({ ruc: '', name: '', alert_threshold: 10 })
-      loadData()
     } catch (error) {
-      showToast(error.response?.data?.detail || 'Error agregando proveedor', 'error')
+      showToast(error?.response?.data?.detail || 'Error agregando proveedor', 'error')
     }
   }
 
   const handleRemoveSupplier = async (id) => {
     if (!confirm('¿Estás seguro de eliminar este proveedor de tu red?')) return
     try {
-      await networkApi.removeSupplier(id)
+      await removeSupplier.mutateAsync(id)
       showToast('Proveedor eliminado', 'success')
-      loadData()
     } catch (error) {
       showToast('Error eliminando proveedor', 'error')
     }
@@ -62,8 +45,7 @@ function Network() {
 
   const handleMarkAlertRead = async (alertId) => {
     try {
-      await networkApi.markAlertRead(alertId)
-      loadData()
+      await markAlertRead.mutateAsync(alertId)
     } catch (error) {
       showToast('Error marcando alerta', 'error')
     }
@@ -79,7 +61,7 @@ function Network() {
     return labels[level] || level
   }
 
-  if (loading) return <LoadingSpinner />
+  const isLoading = suppliersLoading || addSupplier.isPending || removeSupplier.isPending
 
   return (
     <div className="network-page">
@@ -210,54 +192,54 @@ function Network() {
       )}
 
       {/* Add Supplier Modal */}
-      {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2>Agregar Proveedor</h2>
-            <form onSubmit={handleAddSupplier}>
-              <div className="form-group">
-                <label>RUC del proveedor</label>
-                <input 
-                  type="text" 
-                  maxLength="11"
-                  value={newSupplier.ruc}
-                  onChange={e => setNewSupplier({...newSupplier, ruc: e.target.value})}
-                  placeholder="20100190797"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Nombre (opcional)</label>
-                <input 
-                  type="text"
-                  value={newSupplier.name}
-                  onChange={e => setNewSupplier({...newSupplier, name: e.target.value})}
-                  placeholder="Nombre del proveedor"
-                />
-              </div>
-              <div className="form-group">
-                <label>Umbral de alerta (% de cambio)</label>
-                <input 
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={newSupplier.alert_threshold}
-                  onChange={e => setNewSupplier({...newSupplier, alert_threshold: parseInt(e.target.value)})}
-                />
-                <small>Notificar cuando el score cambie más de este porcentaje</small>
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn" onClick={() => setShowAddModal(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Agregar
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Agregar Proveedor"
+        size="medium"
+      >
+        <form onSubmit={handleAddSupplier}>
+          <div className="form-group">
+            <label>RUC del proveedor</label>
+            <input 
+              type="text" 
+              maxLength="11"
+              value={newSupplier.ruc}
+              onChange={e => setNewSupplier({...newSupplier, ruc: e.target.value})}
+              placeholder="20100190797"
+              required
+            />
           </div>
-        </div>
-      )}
+          <div className="form-group">
+            <label>Nombre (opcional)</label>
+            <input 
+              type="text"
+              value={newSupplier.name}
+              onChange={e => setNewSupplier({...newSupplier, name: e.target.value})}
+              placeholder="Nombre del proveedor"
+            />
+          </div>
+          <div className="form-group">
+            <label>Umbral de alerta (% de cambio)</label>
+            <input 
+              type="number"
+              min="1"
+              max="50"
+              value={newSupplier.alert_threshold}
+              onChange={e => setNewSupplier({...newSupplier, alert_threshold: parseInt(e.target.value)})}
+            />
+            <small>Notificar cuando el score cambie más de este porcentaje</small>
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn" onClick={() => setShowAddModal(false)}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={addSupplier.isPending}>
+              {addSupplier.isPending ? 'Agregando...' : 'Agregar'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

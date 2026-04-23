@@ -1,32 +1,42 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
+import { loginSchema } from '../lib/validations'
 import './Login.css'
 
 function Login() {
-  const [ruc, setRuc] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      ruc: '',
+      password: '',
+    },
+  })
 
+  const onSubmit = async (data) => {
     try {
-      const result = await login(ruc, password)
+      const result = await login(data.ruc, data.password)
       if (result.success) {
         navigate('/dashboard')
       } else {
-        setError(result.error || 'Error al iniciar sesión')
+        setError('root', {
+          message: result.error || 'Error al iniciar sesión',
+        })
       }
     } catch (err) {
-      setError('Error de conexión. Intente nuevamente.')
-    } finally {
-      setLoading(false)
+      setError('root', {
+        message: 'Error de conexión. Intente nuevamente.',
+      })
     }
   }
 
@@ -41,24 +51,26 @@ function Login() {
           <p>Plataforma de Compliance y Verificación</p>
         </div>
 
-        {error && (
+        {errors.root && (
           <div className="error-message">
-            {error}
+            {errors.root.message}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
           <div className="form-group">
             <label htmlFor="ruc">RUC</label>
             <input
               type="text"
               id="ruc"
-              value={ruc}
-              onChange={(e) => setRuc(e.target.value)}
               placeholder="20123456789"
               maxLength={11}
-              required
+              {...register('ruc')}
+              aria-invalid={errors.ruc ? 'true' : 'false'}
             />
+            {errors.ruc && (
+              <span className="field-error" role="alert">{errors.ruc.message}</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -66,19 +78,21 @@ function Login() {
             <input
               type="password"
               id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              required
+              {...register('password')}
+              aria-invalid={errors.password ? 'true' : 'false'}
             />
+            {errors.password && (
+              <span className="field-error" role="alert">{errors.password.message}</span>
+            )}
           </div>
 
           <button
             type="submit"
             className="login-btn"
-            disabled={loading}
+            disabled={isSubmitting}
           >
-            {loading ? 'Ingresando...' : 'Ingresar'}
+            {isSubmitting ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
 
