@@ -5,6 +5,20 @@ All notable changes to Conflict Zero will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- React component tests (Badge, Card, Modal) with Vitest + React Testing Library
+- Skeleton component with variants: Skeleton, SkeletonCard, SkeletonTable, SkeletonProfile
+- Vitest configuration for frontend testing
+- Test setup with jsdom and jest-dom matchers
+- Plan de desarrollo Fase 2 en `docs/plan.md`
+
+### Changed
+- Backend version bump: v2.0.0
+- Dashboard version bump: v2.0.0
+- Frontend testing infrastructure ready
+
 ## [2.0.0] - 2026-04-23
 
 ### Added

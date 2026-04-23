@@ -1,6 +1,6 @@
 """
 Conflict Zero - Main FastAPI Application
-Backend v2.0 (Demo Mode)
+Backend v2.0.0 (Production Ready)
 """
 
 from fastapi import FastAPI, Depends, HTTPException, Request, BackgroundTasks
