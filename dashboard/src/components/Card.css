@@ -1,0 +1,84 @@
+/* Card Component Styles */
+
+.card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.card--hoverable:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.card--clickable {
+  cursor: pointer;
+}
+
+.card--clickable:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.card--clickable:focus {
+  outline: 2px solid var(--primary-color, #2196f3);
+  outline-offset: 2px;
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.card__title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: var(--bg-icon, rgba(33, 150, 243, 0.1));
+  color: var(--primary-color, #2196f3);
+  font-size: 1.25rem;
+}
+
+.card__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #333333);
+  line-height: 1.4;
+}
+
+.card__action {
+  flex-shrink: 0;
+}
+
+.card__body {
+  color: var(--text-secondary, #666666);
+  line-height: 1.5;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .card {
+    --bg-card: #1e1e1e;
+    --bg-icon: rgba(100, 181, 246, 0.15);
+    --text-primary: #ffffff;
+    --text-secondary: #aaaaaa;
+    --border-color: #333333;
+    --primary-color: #64b5f6;
+  }
+}
