@@ -72,8 +72,9 @@ Escalar a mercados internacionales y capas enterprise.
 ## Tareas Técnicas Pendientes
 
 ### Corto plazo (1-2 semanas)
-- [ ] Tests para componentes React (Badge, Card, Modal, DataTable)
-- [ ] Skeleton screens para loading states
+- [x] Tests para componentes React (Badge, Card, Modal, DataTable, Skeleton)
+- [x] Tests para hooks personalizados (useLocalStorage, useDebounce, useWindowSize, useToggle)
+- [x] Skeleton screens para loading states
 - [ ] Storybook para documentación visual de componentes
 - [ ] Validaciones de formularios con react-hook-form + zod
 - [ ] React Query para cacheo de datos server-side

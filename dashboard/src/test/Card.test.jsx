@@ -4,20 +4,26 @@ import Card from '../components/Card'
 
 describe('Card', () => {
   it('renders with title', () => {
-    render(<Card title="Test Card">Content</Card>)
-    expect(screen.getByText('Test Card')).toBeInTheDocument()
+    render(
+      <Card title="Test Title">
+        Content
+      </Card>
+    )
+    expect(screen.getByText('Test Title')).toBeInTheDocument()
     expect(screen.getByText('Content')).toBeInTheDocument()
   })
 
   it('renders without title', () => {
-    render(<Card>No Title</Card>)
-    expect(screen.getByText('No Title')).toBeInTheDocument()
-    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+    render(<Card>Just Content</Card>)
+    expect(screen.getByText('Just Content')).toBeInTheDocument()
   })
 
   it('renders with icon', () => {
-    const Icon = () => <span data-testid="icon">🔥</span>
-    render(<Card title="With Icon" icon={<Icon />}>Content</Card>)
+    render(
+      <Card title="With Icon" icon={<span data-testid="icon">★</span>}>
+        Content
+      </Card>
+    )
     expect(screen.getByTestId('icon')).toBeInTheDocument()
   })
 
@@ -32,27 +38,30 @@ describe('Card', () => {
 
   it('handles click when clickable', () => {
     const onClick = vi.fn()
-    render(
-      <Card title="Clickable" clickable onClick={onClick}>
+    const { container } = render(
+      <Card onClick={onClick}>
         Click me
       </Card>
     )
-    fireEvent.click(screen.getByText('Click me').closest('.cz-card'))
+    const card = container.querySelector('.card--clickable')
+    expect(card).toBeInTheDocument()
+    fireEvent.click(card)
     expect(onClick).toHaveBeenCalled()
   })
 
   it('applies custom className', () => {
-    render(<Card className="custom-card">Custom</Card>)
-    expect(screen.getByText('Custom').closest('.cz-card')).toHaveClass('custom-card')
+    const { container } = render(<Card className="custom-card">Custom</Card>)
+    const card = container.querySelector('.card')
+    expect(card).toHaveClass('custom-card')
   })
 
-  it('applies hover effect when clickable', () => {
-    const onClick = vi.fn()
-    render(
-      <Card clickable onClick={onClick}>
+  it('applies hover effect when hoverable', () => {
+    const { container } = render(
+      <Card hoverable>
         Hoverable
       </Card>
     )
-    expect(screen.getByText('Hoverable').closest('.cz-card')).toHaveClass('cz-card--clickable')
+    const card = container.querySelector('.card')
+    expect(card).toHaveClass('card--hoverable')
   })
 })

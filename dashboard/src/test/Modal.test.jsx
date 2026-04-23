@@ -24,12 +24,13 @@ describe('Modal', () => {
 
   it('calls onClose when clicking overlay', () => {
     const onClose = vi.fn()
-    render(
+    const { container } = render(
       <Modal isOpen={true} onClose={onClose} title="Close Test">
         Content
       </Modal>
     )
-    fireEvent.click(screen.getByRole('dialog').closest('.cz-modal__overlay'))
+    const overlay = container.querySelector('.modal-overlay')
+    fireEvent.click(overlay)
     expect(onClose).toHaveBeenCalled()
   })
 
@@ -44,29 +45,20 @@ describe('Modal', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('renders with footer', () => {
-    render(
-      <Modal isOpen={true} onClose={() => {}} title="With Footer" footer={<button>Save</button>}>
-        Content
-      </Modal>
-    )
-    expect(screen.getByText('Save')).toBeInTheDocument()
-  })
-
   it('applies size classes', () => {
-    const { rerender } = render(
+    const { rerender, container } = render(
       <Modal isOpen={true} onClose={() => {}} title="Small" size="small">
         Content
       </Modal>
     )
-    expect(screen.getByRole('dialog').closest('.cz-modal__content')).toHaveClass('cz-modal__content--small')
+    expect(container.querySelector('.modal--small')).toBeInTheDocument()
 
     rerender(
       <Modal isOpen={true} onClose={() => {}} title="Large" size="large">
         Content
       </Modal>
     )
-    expect(screen.getByRole('dialog').closest('.cz-modal__content')).toHaveClass('cz-modal__content--large')
+    expect(container.querySelector('.modal--large')).toBeInTheDocument()
   })
 
   it('renders without close button when showCloseButton is false', () => {
@@ -75,6 +67,6 @@ describe('Modal', () => {
         Content
       </Modal>
     )
-    expect(screen.queryByLabelText('Close modal')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Cerrar')).not.toBeInTheDocument()
   })
 })

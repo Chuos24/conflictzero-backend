@@ -8,11 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- React component tests (Badge, Card, Modal) with Vitest + React Testing Library
+- React component tests (Badge, Card, Modal, DataTable, Skeleton) with Vitest + React Testing Library
+- Hook tests (useLocalStorage, useDebounce, useWindowSize, useToggle, useDocumentTitle)
 - Skeleton component with variants: Skeleton, SkeletonCard, SkeletonTable, SkeletonProfile
 - Vitest configuration for frontend testing
 - Test setup with jsdom and jest-dom matchers
 - Plan de desarrollo Fase 2 en `docs/plan.md`
+
+### Fixed
+- Frontend tests using incorrect CSS class selectors (`cz-*` → actual class names)
+- Modal tests now correctly target overlay and size classes
+- Card tests use container queries for clickable/hoverable class checks
 
 ### Changed
 - Backend version bump: v2.0.0
