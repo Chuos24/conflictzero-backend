@@ -2,11 +2,19 @@ import { useState } from 'react'
 import api from '../services/api'
 import { downloadFile } from '../utils/helpers'
 
-export function useExport() {
-  const [exporting, setExporting] = useState(false)
-  const [error, setError] = useState(null)
+export interface UseExportReturn {
+  exporting: boolean
+  error: string | null
+  exportToCSV: (endpoint: string, filename: string) => Promise<boolean>
+  exportVerifications: () => Promise<boolean>
+  exportToPDF: (elementId: string, filename: string) => Promise<boolean>
+}
 
-  const exportToCSV = async (endpoint, filename) => {
+export function useExport(): UseExportReturn {
+  const [exporting, setExporting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const exportToCSV = async (endpoint: string, filename: string): Promise<boolean> => {
     setExporting(true)
     setError(null)
     
@@ -15,17 +23,18 @@ export function useExport() {
         responseType: 'blob'
       })
       
-      downloadFile(response.data, filename)
+      downloadFile(response.data as Blob, filename)
       return true
-    } catch (err) {
-      setError(err.message || 'Error al exportar')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al exportar'
+      setError(message)
       return false
     } finally {
       setExporting(false)
     }
   }
 
-  const exportVerifications = async () => {
+  const exportVerifications = async (): Promise<boolean> => {
     const date = new Date().toISOString().split('T')[0]
     return exportToCSV(
       '/dashboard/export/csv',
@@ -33,12 +42,11 @@ export function useExport() {
     )
   }
 
-  const exportToPDF = async (elementId, filename) => {
+  const exportToPDF = async (elementId: string, filename: string): Promise<boolean> => {
     setExporting(true)
     setError(null)
     
     try {
-      // Dynamically import html2pdf only when needed
       const html2pdf = (await import('html2pdf.js')).default
       
       const element = document.getElementById(elementId)
@@ -56,8 +64,9 @@ export function useExport() {
 
       await html2pdf().set(opt).from(element).save()
       return true
-    } catch (err) {
-      setError(err.message || 'Error al generar PDF')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al generar PDF'
+      setError(message)
       return false
     } finally {
       setExporting(false)

@@ -38,7 +38,9 @@ export default defineConfig({
       '@utils': '/src/utils',
       '@context': '/src/context',
       '@lib': '/src/lib',
+      '@types': '/src/types',
     },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   server: {
     port: 3000,

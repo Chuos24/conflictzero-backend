@@ -2,26 +2,20 @@ import { useState, useEffect, useCallback } from 'react'
 
 /**
  * Custom hook for managing localStorage with JSON support
- * @param {string} key - localStorage key
- * @param {any} initialValue - Default value if key doesn't exist
- * @returns {[any, Function, Function]} - [value, setValue, removeValue]
  */
-export function useLocalStorage(key, initialValue = null) {
-  // Get initial value from localStorage or use default
-  const [storedValue, setStoredValue] = useState(() => {
+export function useLocalStorage<T>(key: string, initialValue: T | null = null): [T | null, (value: T | ((prev: T | null) => T)) => void, () => void] {
+  const [storedValue, setStoredValue] = useState<T | null>(() => {
     try {
       const item = window.localStorage.getItem(key)
-      return item ? JSON.parse(item) : initialValue
+      return item ? JSON.parse(item) as T : initialValue
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error)
       return initialValue
     }
   })
 
-  // Return a wrapped version of useState's setter function
-  const setValue = useCallback((value) => {
+  const setValue = useCallback((value: T | ((prev: T | null) => T)) => {
     try {
-      // Allow value to be a function so we have same API as useState
       const valueToStore = value instanceof Function ? value(storedValue) : value
       setStoredValue(valueToStore)
       window.localStorage.setItem(key, JSON.stringify(valueToStore))
@@ -30,7 +24,6 @@ export function useLocalStorage(key, initialValue = null) {
     }
   }, [key, storedValue])
 
-  // Remove value from localStorage
   const removeValue = useCallback(() => {
     try {
       window.localStorage.removeItem(key)
@@ -45,12 +38,9 @@ export function useLocalStorage(key, initialValue = null) {
 
 /**
  * Custom hook for debounced values
- * @param {any} value - Value to debounce
- * @param {number} delay - Delay in milliseconds
- * @returns {any} - Debounced value
  */
-export function useDebounce(value, delay = 300) {
-  const [debouncedValue, setDebouncedValue] = useState(value)
+export function useDebounce<T>(value: T, delay = 300): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -67,10 +57,14 @@ export function useDebounce(value, delay = 300) {
 
 /**
  * Custom hook for window size
- * @returns {{width: number, height: number}} - Window dimensions
  */
-export function useWindowSize() {
-  const [windowSize, setWindowSize] = useState({
+export interface WindowSize {
+  width: number
+  height: number
+}
+
+export function useWindowSize(): WindowSize {
+  const [windowSize, setWindowSize] = useState<WindowSize>({
     width: window.innerWidth,
     height: window.innerHeight
   })
@@ -92,15 +86,20 @@ export function useWindowSize() {
 
 /**
  * Custom hook for API calls with loading/error states
- * @param {Function} apiFunction - Async function to call
- * @returns {{data: any, loading: boolean, error: Error|null, execute: Function}}
  */
-export function useApi(apiFunction) {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+interface UseApiReturn<T> {
+  data: T | null
+  loading: boolean
+  error: Error | null
+  execute: (...args: unknown[]) => Promise<T>
+}
 
-  const execute = useCallback(async (...args) => {
+export function useApi<T>(apiFunction: (...args: unknown[]) => Promise<T>): UseApiReturn<T> {
+  const [data, setData] = useState<T | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const execute = useCallback(async (...args: unknown[]) => {
     try {
       setLoading(true)
       setError(null)
@@ -108,8 +107,9 @@ export function useApi(apiFunction) {
       setData(result)
       return result
     } catch (err) {
-      setError(err)
-      throw err
+      const error = err instanceof Error ? err : new Error(String(err))
+      setError(error)
+      throw error
     } finally {
       setLoading(false)
     }
@@ -120,10 +120,8 @@ export function useApi(apiFunction) {
 
 /**
  * Custom hook for document title
- * @param {string} title - Page title
- * @param {string} suffix - Appended suffix (default: " | Conflict Zero")
  */
-export function useDocumentTitle(title, suffix = ' | Conflict Zero') {
+export function useDocumentTitle(title: string, suffix = ' | Conflict Zero'): void {
   useEffect(() => {
     const previousTitle = document.title
     document.title = title + suffix
@@ -135,10 +133,15 @@ export function useDocumentTitle(title, suffix = ' | Conflict Zero') {
 
 /**
  * Custom hook for toggle state
- * @param {boolean} initialValue - Initial toggle value
- * @returns {[boolean, Function]} - [value, toggle]
  */
-export function useToggle(initialValue = false) {
+export interface UseToggleReturn {
+  value: boolean
+  toggle: () => void
+  setTrue: () => void
+  setFalse: () => void
+}
+
+export function useToggle(initialValue = false): UseToggleReturn {
   const [value, setValue] = useState(initialValue)
 
   const toggle = useCallback(() => {
@@ -158,15 +161,21 @@ export function useToggle(initialValue = false) {
 
 /**
  * Custom hook for form input with validation
- * @param {string} initialValue - Initial input value
- * @param {Function} validator - Validation function
- * @returns {{value: string, onChange: Function, error: string|null, isValid: boolean}}
  */
-export function useFormInput(initialValue = '', validator = null) {
+export interface UseFormInputReturn {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  error: string | null
+  isValid: boolean
+  setValue: (value: string) => void
+  setTouched: (touched: boolean) => void
+}
+
+export function useFormInput(initialValue = '', validator: ((value: string) => string | null) | null = null): UseFormInputReturn {
   const [value, setValue] = useState(initialValue)
   const [touched, setTouched] = useState(false)
 
-  const onChange = useCallback((e) => {
+  const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setValue(e.target.value)
     if (!touched) setTouched(true)
   }, [touched])
@@ -179,15 +188,13 @@ export function useFormInput(initialValue = '', validator = null) {
 
 /**
  * Custom hook for click outside detection
- * @param {Function} onClickOutside - Callback when clicking outside
- * @returns {Object} - Ref to attach to element
  */
-export function useClickOutside(onClickOutside) {
-  const ref = useState({ current: null })[0]
+export function useClickOutside(onClickOutside: () => void): React.RefObject<HTMLElement | null> {
+  const ref = useState<React.RefObject<HTMLElement | null>>({ current: null })[0]
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
         onClickOutside()
       }
     }

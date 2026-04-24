@@ -21,7 +21,7 @@ const Network = lazy(() => import('./pages/Network'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
 
-function PageLoader() {
+function PageLoader(): JSX.Element {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
       <LoadingSpinner size="large" />
@@ -29,7 +29,7 @@ function PageLoader() {
   );
 }
 
-function App() {
+function App(): JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

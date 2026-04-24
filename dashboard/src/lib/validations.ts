@@ -97,3 +97,10 @@ export const inviteSchema = z.object({
     .max(500, 'El mensaje no puede exceder 500 caracteres')
     .optional(),
 })
+
+export type LoginFormData = z.infer<typeof loginSchema>
+export type RegisterFormData = z.infer<typeof registerSchema>
+export type ProfileFormData = z.infer<typeof profileSchema>
+export type VerifyRucFormData = z.infer<typeof verifyRucSchema>
+export type CompareFormData = z.infer<typeof compareSchema>
+export type InviteFormData = z.infer<typeof inviteSchema>

@@ -1,16 +1,16 @@
-import React, { createContext, useState, useContext, useEffect } from 'react'
+import React, { createContext, useState, useContext, useEffect, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import type { User, AuthContextType } from '../types'
 
-const AuthContext = createContext(null)
+const AuthContext = createContext<AuthContextType | null>(null)
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Check for stored token on mount
     const token = localStorage.getItem('cz_token')
     if (token) {
       fetchUser(token)
@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const fetchUser = async (token) => {
+  const fetchUser = async (token: string) => {
     try {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       const response = await api.get('/api/v1/auth/me')
@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const login = async (email, password) => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await api.post('/api/v1/auth/login', { email, password })
       const { access_token, user } = response.data
@@ -43,10 +43,11 @@ export function AuthProvider({ children }) {
       setUser(user)
       
       return { success: true }
-    } catch (error) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } }
       return {
         success: false,
-        error: error.response?.data?.detail || 'Error de autenticación'
+        error: err.response?.data?.detail || 'Error de autenticación'
       }
     }
   }
@@ -58,7 +59,7 @@ export function AuthProvider({ children }) {
     navigate('/login')
   }
 
-  const value = {
+  const value: AuthContextType = {
     user,
     loading,
     login,
@@ -69,7 +70,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider')

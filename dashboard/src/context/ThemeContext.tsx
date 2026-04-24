@@ -1,32 +1,32 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 
-const ThemeContext = createContext(null)
+export interface ThemeContextType {
+  theme: 'light' | 'dark'
+  isDark: boolean
+  toggleTheme: () => void
+  setDark: () => void
+  setLight: () => void
+}
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    // Check localStorage first
+const ThemeContext = createContext<ThemeContextType | null>(null)
+
+export function ThemeProvider({ children }: { children: ReactNode }): JSX.Element {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('cz_theme')
-    if (saved) return saved
-    
-    // Check system preference
+    if (saved === 'light' || saved === 'dark') return saved
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark'
     }
-    
-    return 'dark' // Default to dark for Conflict Zero brand
+    return 'dark'
   })
   
   const [isDark, setIsDark] = useState(theme === 'dark')
 
   useEffect(() => {
     setIsDark(theme === 'dark')
-    
-    // Apply theme to document
     document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.classList.toggle('dark', theme === 'dark')
     document.documentElement.classList.toggle('light', theme === 'light')
-    
-    // Store preference
     localStorage.setItem('cz_theme', theme)
   }, [theme])
 
@@ -44,7 +44,7 @@ export function ThemeProvider({ children }) {
   )
 }
 
-export function useTheme() {
+export function useTheme(): ThemeContextType {
   const context = useContext(ThemeContext)
   if (!context) {
     throw new Error('useTheme must be used within ThemeProvider')

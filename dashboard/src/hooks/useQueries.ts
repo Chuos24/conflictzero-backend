@@ -1,9 +1,36 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api, { authAPI, verificationAPI, compareAPI, inviteAPI, complianceAPI, companyAPI, networkApi } from '../services/api'
+import api, {
+  authAPI,
+  verificationAPI,
+  compareAPI,
+  inviteAPI,
+  complianceAPI,
+  companyAPI,
+  networkApi,
+} from '../services/api'
+import type {
+  User,
+  VerificationRequest,
+  VerificationResult,
+  Comparison,
+  Invite,
+  InviteCreate,
+  InviteStats,
+  ComplianceStatus,
+  ComplianceObligation,
+  Company,
+  CompanyUpdate,
+  ApiKey,
+  NetworkSupplier,
+  NetworkAlert,
+  NetworkStats,
+  DashboardStats,
+  PaginatedResponse,
+} from '../types'
 
 // Auth hooks
 export const useAuthMe = () => {
-  return useQuery({
+  return useQuery<User>({
     queryKey: ['auth', 'me'],
     queryFn: async () => {
       const { data } = await authAPI.me()
@@ -15,7 +42,7 @@ export const useAuthMe = () => {
 
 // Verification hooks
 export const useVerifications = () => {
-  return useQuery({
+  return useQuery<PaginatedResponse<VerificationRequest>>({
     queryKey: ['verifications', 'history'],
     queryFn: async () => {
       const { data } = await verificationAPI.history()
@@ -27,8 +54,8 @@ export const useVerifications = () => {
 export const useVerifyRuc = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (ruc) => {
+  return useMutation<VerificationResult, Error, string>({
+    mutationFn: async (ruc: string) => {
       const { data } = await verificationAPI.verify(ruc)
       return data
     },
@@ -43,8 +70,8 @@ export const useVerifyRuc = () => {
 export const useCompare = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (rucs) => {
+  return useMutation<Comparison, Error, string[]>({
+    mutationFn: async (rucs: string[]) => {
       const { data } = await compareAPI.compare(rucs)
       return data
     },
@@ -56,7 +83,7 @@ export const useCompare = () => {
 }
 
 export const useCompareHistory = () => {
-  return useQuery({
+  return useQuery<PaginatedResponse<Comparison>>({
     queryKey: ['compare', 'history'],
     queryFn: async () => {
       const { data } = await compareAPI.history()
@@ -67,7 +94,7 @@ export const useCompareHistory = () => {
 
 // Invite hooks
 export const useInvites = () => {
-  return useQuery({
+  return useQuery<PaginatedResponse<Invite>>({
     queryKey: ['invites', 'list'],
     queryFn: async () => {
       const { data } = await inviteAPI.list()
@@ -77,7 +104,7 @@ export const useInvites = () => {
 }
 
 export const useInviteStats = () => {
-  return useQuery({
+  return useQuery<InviteStats>({
     queryKey: ['invites', 'stats'],
     queryFn: async () => {
       const { data } = await inviteAPI.stats()
@@ -89,8 +116,8 @@ export const useInviteStats = () => {
 export const useCreateInvite = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (inviteData) => {
+  return useMutation<Invite, Error, InviteCreate>({
+    mutationFn: async (inviteData: InviteCreate) => {
       const { data } = await inviteAPI.create(inviteData)
       return data
     },
@@ -103,7 +130,7 @@ export const useCreateInvite = () => {
 
 // Compliance hooks
 export const useComplianceStatus = () => {
-  return useQuery({
+  return useQuery<ComplianceStatus>({
     queryKey: ['compliance', 'status'],
     queryFn: async () => {
       const { data } = await complianceAPI.status()
@@ -113,7 +140,7 @@ export const useComplianceStatus = () => {
 }
 
 export const useComplianceObligations = () => {
-  return useQuery({
+  return useQuery<PaginatedResponse<ComplianceObligation>>({
     queryKey: ['compliance', 'obligations'],
     queryFn: async () => {
       const { data } = await complianceAPI.obligations()
@@ -123,7 +150,7 @@ export const useComplianceObligations = () => {
 }
 
 export const useComplianceNetwork = () => {
-  return useQuery({
+  return useQuery<NetworkStats>({
     queryKey: ['compliance', 'network'],
     queryFn: async () => {
       const { data } = await complianceAPI.network()
@@ -134,7 +161,7 @@ export const useComplianceNetwork = () => {
 
 // Company hooks
 export const useCompanyProfile = () => {
-  return useQuery({
+  return useQuery<Company>({
     queryKey: ['company', 'profile'],
     queryFn: async () => {
       const { data } = await companyAPI.profile()
@@ -146,8 +173,8 @@ export const useCompanyProfile = () => {
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (profileData) => {
+  return useMutation<Company, Error, CompanyUpdate>({
+    mutationFn: async (profileData: CompanyUpdate) => {
       const { data } = await companyAPI.update(profileData)
       return data
     },
@@ -159,7 +186,7 @@ export const useUpdateProfile = () => {
 }
 
 export const useApiKeys = () => {
-  return useQuery({
+  return useQuery<ApiKey[]>({
     queryKey: ['company', 'apiKeys'],
     queryFn: async () => {
       const { data } = await companyAPI.apiKeys()
@@ -170,7 +197,7 @@ export const useApiKeys = () => {
 
 // Network hooks (Mi Red)
 export const useNetworkSuppliers = () => {
-  return useQuery({
+  return useQuery<PaginatedResponse<NetworkSupplier>>({
     queryKey: ['network', 'suppliers'],
     queryFn: async () => {
       const { data } = await networkApi.getSuppliers()
@@ -180,7 +207,7 @@ export const useNetworkSuppliers = () => {
 }
 
 export const useNetworkStats = () => {
-  return useQuery({
+  return useQuery<NetworkStats>({
     queryKey: ['network', 'stats'],
     queryFn: async () => {
       const { data } = await networkApi.getStats()
@@ -190,7 +217,7 @@ export const useNetworkStats = () => {
 }
 
 export const useNetworkAlerts = () => {
-  return useQuery({
+  return useQuery<PaginatedResponse<NetworkAlert>>({
     queryKey: ['network', 'alerts'],
     queryFn: async () => {
       const { data } = await networkApi.getAlerts()
@@ -202,7 +229,7 @@ export const useNetworkAlerts = () => {
 export const useAddSupplier = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
+  return useMutation<NetworkSupplier, Error, { ruc: string; notes?: string; tags?: string[] }>({
     mutationFn: async (supplierData) => {
       const { data } = await networkApi.addSupplier(supplierData)
       return data
@@ -217,10 +244,9 @@ export const useAddSupplier = () => {
 export const useRemoveSupplier = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (id) => {
-      const { data } = await networkApi.removeSupplier(id)
-      return data
+  return useMutation<void, Error, string>({
+    mutationFn: async (id: string) => {
+      await networkApi.removeSupplier(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['network'] })
@@ -232,10 +258,9 @@ export const useRemoveSupplier = () => {
 export const useMarkAlertRead = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (id) => {
-      const { data } = await networkApi.markAlertRead(id)
-      return data
+  return useMutation<void, Error, string>({
+    mutationFn: async (id: string) => {
+      await networkApi.markAlertRead(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['network', 'alerts'] })
@@ -245,7 +270,7 @@ export const useMarkAlertRead = () => {
 
 // Dashboard stats hook
 export const useDashboardStats = () => {
-  return useQuery({
+  return useQuery<DashboardStats>({
     queryKey: ['dashboard', 'stats'],
     queryFn: async () => {
       const { data } = await api.get('/api/v1/dashboard/stats')

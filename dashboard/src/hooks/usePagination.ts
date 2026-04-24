@@ -1,12 +1,19 @@
 import { useState, useCallback } from 'react'
 
-/**
- * Custom hook for pagination
- * @param {Array} items - Array of items to paginate
- * @param {number} itemsPerPage - Number of items per page
- * @returns {Object} - Pagination state and helpers
- */
-export function usePagination(items = [], itemsPerPage = 10) {
+export interface UsePaginationReturn<T> {
+  currentPage: number
+  totalPages: number
+  currentItems: T[]
+  goToPage: (page: number) => void
+  nextPage: () => void
+  prevPage: () => void
+  resetPagination: () => void
+  hasNextPage: boolean
+  hasPrevPage: boolean
+  totalItems: number
+}
+
+export function usePagination<T>(items: T[] = [], itemsPerPage = 10): UsePaginationReturn<T> {
   const [currentPage, setCurrentPage] = useState(1)
   
   const totalPages = Math.ceil(items.length / itemsPerPage)
@@ -14,7 +21,7 @@ export function usePagination(items = [], itemsPerPage = 10) {
   const endIndex = startIndex + itemsPerPage
   const currentItems = items.slice(startIndex, endIndex)
   
-  const goToPage = useCallback((page) => {
+  const goToPage = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page)
     }
@@ -50,13 +57,16 @@ export function usePagination(items = [], itemsPerPage = 10) {
   }
 }
 
-/**
- * Custom hook for search/filter
- * @param {Array} items - Array of items to search
- * @param {Array} fields - Fields to search in
- * @returns {Object} - Search state and helpers
- */
-export function useSearch(items = [], fields = []) {
+export interface UseSearchReturn<T> {
+  searchTerm: string
+  setSearchTerm: (term: string) => void
+  filteredItems: T[]
+  clearSearch: () => void
+  hasResults: boolean
+  resultCount: number
+}
+
+export function useSearch<T extends Record<string, unknown>>(items: T[] = [], fields: (keyof T)[] = []): UseSearchReturn<T> {
   const [searchTerm, setSearchTerm] = useState('')
   
   const filteredItems = searchTerm
@@ -83,16 +93,17 @@ export function useSearch(items = [], fields = []) {
   }
 }
 
-/**
- * Custom hook for sorting
- * @param {Array} items - Array of items to sort
- * @param {string} defaultField - Default sort field
- * @param {string} defaultDirection - Default sort direction (asc/desc)
- * @returns {Object} - Sort state and helpers
- */
-export function useSort(items = [], defaultField = null, defaultDirection = 'asc') {
-  const [sortField, setSortField] = useState(defaultField)
-  const [sortDirection, setSortDirection] = useState(defaultDirection)
+export interface UseSortReturn<T> {
+  sortField: keyof T | null
+  sortDirection: 'asc' | 'desc'
+  sortedItems: T[]
+  toggleSort: (field: keyof T) => void
+  getSortIcon: (field: keyof T) => string
+}
+
+export function useSort<T extends Record<string, unknown>>(items: T[] = [], defaultField: keyof T | null = null, defaultDirection: 'asc' | 'desc' = 'asc'): UseSortReturn<T> {
+  const [sortField, setSortField] = useState<keyof T | null>(defaultField)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(defaultDirection)
   
   const sortedItems = sortField
     ? [...items].sort((a, b) => {
@@ -102,19 +113,21 @@ export function useSort(items = [], defaultField = null, defaultDirection = 'asc
         if (aValue === null || aValue === undefined) return 1
         if (bValue === null || bValue === undefined) return -1
         
-        if (typeof aValue === 'string') {
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
           return sortDirection === 'asc'
             ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue)
         }
         
+        const aNum = Number(aValue)
+        const bNum = Number(bValue)
         return sortDirection === 'asc'
-          ? aValue - bValue
-          : bValue - aValue
+          ? aNum - bNum
+          : bNum - aNum
       })
     : items
   
-  const toggleSort = useCallback((field) => {
+  const toggleSort = useCallback((field: keyof T) => {
     if (sortField === field) {
       setSortDirection(dir => dir === 'asc' ? 'desc' : 'asc')
     } else {
@@ -123,7 +136,7 @@ export function useSort(items = [], defaultField = null, defaultDirection = 'asc
     }
   }, [sortField])
   
-  const getSortIcon = useCallback((field) => {
+  const getSortIcon = useCallback((field: keyof T): string => {
     if (sortField !== field) return '⇅'
     return sortDirection === 'asc' ? '↑' : '↓'
   }, [sortField, sortDirection])
@@ -137,15 +150,16 @@ export function useSort(items = [], defaultField = null, defaultDirection = 'asc
   }
 }
 
-/**
- * Custom hook for combining search, sort, and pagination
- * @param {Array} items - Array of items
- * @param {Array} searchFields - Fields to search in
- * @param {string} sortField - Default sort field
- * @param {number} itemsPerPage - Items per page
- * @returns {Object} - Combined state and helpers
- */
-export function useDataTable(items = [], searchFields = [], sortField = null, itemsPerPage = 10) {
+export interface UseDataTableReturn<T> extends UseSearchReturn<T>, UseSortReturn<T>, UsePaginationReturn<T> {
+  displayItems: T[]
+}
+
+export function useDataTable<T extends Record<string, unknown>>(
+  items: T[] = [],
+  searchFields: (keyof T)[] = [],
+  sortField: keyof T | null = null,
+  itemsPerPage = 10
+): UseDataTableReturn<T> {
   const search = useSearch(items, searchFields)
   const sort = useSort(search.filteredItems, sortField)
   const pagination = usePagination(sort.sortedItems, itemsPerPage)
