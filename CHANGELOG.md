@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - React component tests (Badge, Card, Modal, DataTable, Skeleton) with Vitest + React Testing Library
-- Hook tests (useLocalStorage, useDebounce, useWindowSize, useToggle, useDocumentTitle)
+- Hook tests (useLocalStorage, useDebounce, useWindowSize, useToggle)
 - Skeleton component with variants: Skeleton, SkeletonCard, SkeletonTable, SkeletonProfile
 - Vitest configuration for frontend testing
 - Test setup with jsdom and jest-dom matchers
 - Plan de desarrollo Fase 2 en `docs/plan.md`
+- Storybook stories for Charts, ErrorBoundary, Layout, ProtectedRoute
+- Three new hooks: useDebounce, useWindowSize, useToggle
+- Full Storybook coverage: 12 component stories
+- React Query integration with 20+ server-state hooks
+- Zod validation schemas for all forms
+- React Hook Form integration on Login, Profile, Verifications pages
 
 ### Fixed
 - Frontend tests using incorrect CSS class selectors (`cz-*` → actual class names)
@@ -24,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backend version bump: v2.0.0
 - Dashboard version bump: v2.0.0
 - Frontend testing infrastructure ready
+- Completed all short-term tasks from docs/plan.md
 
 ## [2.0.0] - 2026-04-23
 
