@@ -80,13 +80,14 @@ Desarrollo continuo de Conflict Zero. Se completaron las **tareas de corto plazo
 - [x] Validaciones con react-hook-form + zod → 3 páginas
 - [x] React Query → 20+ hooks
 
-### Mediano Plazo (1-2 meses) - 🟡 EN PROGRESO (60%)
+### Mediano Plazo (1-2 meses) - 🟡 EN PROGRESO (80%)
 - [x] **Tests E2E con Playwright** → 2 suites, 8 tests ✅
 - [x] **Configurar Prettier + ESLint stricter** → .prettierrc, .eslintrc.cjs ✅
 - [x] **Base TypeScript** → tsconfig.json, tsconfig.node.json ✅
 - [x] **Implementar PWA** → manifest, VitePWA, service worker ✅
 - [x] **Optimización de bundle** → code splitting, lazy loading ✅
-- [ ] **Migración completa a TypeScript** → Migrar todos los .jsx a .tsx (pendiente)
+- [x] **Migración TypeScript - Infraestructura** → Tipos globales, servicios, hooks, contextos, utilidades (18 archivos) ✅
+- [ ] **Migración TypeScript - Componentes y páginas** → 22 archivos .jsx restantes
 
 ### Largo Plazo (3-6 meses) - 📋 PENDIENTE
 - [ ] Microservicios
