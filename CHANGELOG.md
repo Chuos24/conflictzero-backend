@@ -21,16 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zod validation schemas for all forms
 - React Hook Form integration on Login, Profile, Verifications pages
 
-### Fixed
-- Frontend tests using incorrect CSS class selectors (`cz-*` → actual class names)
-- Modal tests now correctly target overlay and size classes
-- Card tests use container queries for clickable/hoverable class checks
-
 ### Changed
 - Backend version bump: v2.0.0
 - Dashboard version bump: v2.0.0
 - Frontend testing infrastructure ready
 - Completed all short-term tasks from docs/plan.md
+- **TypeScript migration: All 23 JSX files migrated to TSX**
+  - Components: 12 files (Badge, Card, Charts, DataTable, ErrorBoundary, Layout, LoadingSpinner, Modal, ProtectedRoute, Skeleton, ThemeToggle, Toast)
+  - Pages: 9 files (Compare, Compliance, Dashboard, Invites, Login, Network, Profile, Settings, Verifications)
+  - Types: html2pdf.d.ts declarations added
+
+### Fixed
+- Frontend tests using incorrect CSS class selectors (`cz-*` → actual class names)
+- Modal tests now correctly target overlay and size classes
+- Card tests use container queries for clickable/hoverable class checks
 
 ## [2.0.0] - 2026-04-23
 
