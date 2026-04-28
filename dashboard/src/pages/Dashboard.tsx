@@ -1,19 +1,44 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardStats } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { 
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area
 } from 'recharts'
 import './Dashboard.css'
 
-const COLORS = ['#d4af37', '#4caf50', '#f44336', '#2196f3', '#ff9800']
+interface ChartDataPoint {
+  month: string
+  count: number
+  score: number
+}
+
+interface ComplianceDistributionItem {
+  name: string
+  value: number
+  color: string
+}
+
+interface RiskFactorItem {
+  factor: string
+  count: number
+}
+
+interface DefaultChartData {
+  verificationsByMonth: ChartDataPoint[]
+  complianceDistribution: ComplianceDistributionItem[]
+  topRiskFactors: RiskFactorItem[]
+}
+
+interface ActivityItem {
+  title: string
+  status: string
+  date: string
+}
 
 // Mock chart data (server-side rendering fallback)
-const defaultChartData = {
+const defaultChartData: DefaultChartData = {
   verificationsByMonth: [
     { month: 'Ene', count: 12, score: 78 },
     { month: 'Feb', count: 18, score: 82 },
@@ -33,13 +58,13 @@ const defaultChartData = {
   ]
 }
 
-function Dashboard() {
+function Dashboard(): JSX.Element {
   const { user } = useAuth()
   const { data: stats, isLoading } = useDashboardStats()
 
   // Use server data when available, fallback to mock
-  const chartData = stats?.chart_data || defaultChartData
-  const recentActivity = stats?.recent_activity || []
+  const chartData: DefaultChartData = stats?.chart_data || defaultChartData
+  const recentActivity: ActivityItem[] = stats?.recent_activity || []
 
   if (isLoading) {
     return (
@@ -55,8 +80,8 @@ function Dashboard() {
         <div>
           <h1>Bienvenido, {user?.company_name}</h1>
           <p className="dashboard-subtitle">
-            {user?.plan_tier === 'founder' 
-              ? 'Programa Founder - Acceso completo' 
+            {user?.plan_tier === 'founder'
+              ? 'Programa Founder - Acceso completo'
               : `Plan ${user?.plan_tier || 'Bronze'}`}
           </p>
         </div>
@@ -120,16 +145,16 @@ function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis dataKey="month" stroke="#888" />
                 <YAxis stroke="#888" />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                   labelStyle={{ color: '#d4af37' }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#d4af37" 
-                  fillOpacity={1} 
-                  fill="url(#colorCount)" 
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#d4af37"
+                  fillOpacity={1}
+                  fill="url(#colorCount)"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -152,7 +177,7 @@ function Dashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                 />
                 <Legend />
@@ -167,7 +192,7 @@ function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis type="number" stroke="#888" />
                 <YAxis dataKey="factor" type="category" stroke="#888" width={120} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                   labelStyle={{ color: '#d4af37' }}
                 />
@@ -236,8 +261,8 @@ function Dashboard() {
               <span>{stats?.invites_accepted || 0}/10 invitaciones</span>
             </div>
             <div className="progress-bar">
-              <div 
-                className="progress-fill" 
+              <div
+                className="progress-fill"
                 style={{ width: `${Math.min((stats?.invites_accepted || 0) / 10 * 100, 100)}%` }}
               ></div>
             </div>

@@ -1,4 +1,4 @@
-import React from 'react'
+import { type ReactNode, type ChangeEvent } from 'react'
 import { useDataTable } from '../hooks/usePagination'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import LoadingSpinner from './LoadingSpinner'
@@ -9,8 +9,9 @@ export interface DataTableColumn<T = Record<string, unknown>> {
   title: string
   sortable?: boolean
   searchable?: boolean
+  defaultSort?: boolean
   width?: string
-  render?: (value: unknown, row: T) => React.ReactNode
+  render?: (value: unknown, row: T) => ReactNode
 }
 
 export interface DataTableProps<T = Record<string, unknown>> {
@@ -52,14 +53,10 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
     searchTerm,
     setSearchTerm,
     clearSearch,
-    sortedItems,
-    sortField,
-    sortDirection,
     toggleSort,
     getSortIcon,
     currentPage,
     totalPages,
-    currentItems,
     goToPage,
     nextPage,
     prevPage,
@@ -70,25 +67,34 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
     resultCount
   } = useDataTable(data as Record<string, unknown>[], searchFields, defaultSort, itemsPerPage)
   
-  const [selectedRows, setSelectedRows] = useLocalStorage<(string | number)[]>('datatable-selection', [])
+  const [selectedRowsRaw, setSelectedRows] = useLocalStorage<(string | number)[]>('datatable-selection', [])
+  const selectedRows = selectedRowsRaw ?? []
   
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectAll = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedRows(displayItems.map(row => (row as T).id).filter(Boolean))
+      const ids = displayItems
+        .map(row => (row as T).id)
+        .filter((id): id is string | number => id !== undefined)
+      setSelectedRows(ids)
     } else {
       setSelectedRows([])
     }
   }
   
-  const handleSelectRow = (id: string | number) => {
-    setSelectedRows(prev => 
-      prev.includes(id) 
-        ? prev.filter(rowId => rowId !== id)
-        : [...prev, id]
-    )
+  const handleSelectRow = (id: string | number | undefined) => {
+    if (id === undefined) return
+    setSelectedRows(prev => {
+      const current = prev ?? []
+      return current.includes(id)
+        ? current.filter(rowId => rowId !== id)
+        : [...current, id]
+    })
   }
   
-  const isAllSelected = displayItems.length > 0 && displayItems.every(row => selectedRows.includes((row as T).id))
+  const isAllSelected = displayItems.length > 0 && displayItems.every(row => {
+    const id = (row as T).id
+    return id !== undefined && selectedRows.includes(id)
+  })
   
   if (loading) {
     return (
@@ -178,7 +184,7 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
                     <td className="datatable__td datatable__td--select">
                       <input 
                         type="checkbox"
-                        checked={selectedRows.includes((row as T).id)}
+                        checked={selectedRows.includes((row as T).id ?? '')}
                         onChange={() => handleSelectRow((row as T).id)}
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -198,7 +204,7 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="datatable__pagination">

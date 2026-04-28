@@ -1,15 +1,24 @@
-import React from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
 import { useVerifications, useVerifyRuc } from '../hooks/useQueries'
 import { verifyRucSchema } from '../lib/validations'
-import LoadingSpinner from '../components/LoadingSpinner'
+import type { z } from 'zod'
+import type { VerificationResult } from '../types'
 import './Verifications.css'
 
-function Verifications() {
+type VerifyFormData = z.infer<typeof verifyRucSchema>
+
+interface ExtendedVerificationResult extends VerificationResult {
+  ruc: string
+  company_name: string
+  certificate_url?: string
+}
+
+function Verifications(): JSX.Element {
   const { user } = useAuth()
-  const { data: historyData, isLoading: historyLoading } = useVerifications()
+  const { data: historyData } = useVerifications()
   const verifyMutation = useVerifyRuc()
 
   const {
@@ -17,20 +26,20 @@ function Verifications() {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm({
+  } = useForm<VerifyFormData>({
     resolver: zodResolver(verifyRucSchema),
     defaultValues: { ruc: '' },
   })
 
-  const [results, setResults] = React.useState(null)
+  const [results, setResults] = useState<ExtendedVerificationResult | null>(null)
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: VerifyFormData): Promise<void> => {
     try {
       const result = await verifyMutation.mutateAsync(data.ruc)
       setResults({
         ...result,
         ruc: data.ruc,
-        company_name: result.target_company_name,
+        company_name: result.razon_social || 'Empresa desconocida',
       })
       reset()
     } catch (err) {
@@ -40,9 +49,9 @@ function Verifications() {
 
   const history = historyData?.items || []
   const loading = verifyMutation.isPending
-  const error = verifyMutation.error?.response?.data?.detail || errors.ruc?.message
+  const error = (verifyMutation.error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || errors.ruc?.message
 
-  const getRiskColor = (level) => {
+  const getRiskColor = (level: string): string => {
     switch (level) {
       case 'low': return 'success'
       case 'medium': return 'warning'
@@ -52,7 +61,7 @@ function Verifications() {
     }
   }
 
-  const getRiskLabel = (level) => {
+  const getRiskLabel = (level: string): string => {
     switch (level) {
       case 'low': return 'Bajo'
       case 'medium': return 'Medio'
@@ -122,22 +131,16 @@ function Verifications() {
                   <span>RUC:</span>
                   <span>{results.ruc}</span>
                 </div>
-                {results.sunat_tax_status && (
+                {results.sunat_status && (
                   <div className="detail-row">
                     <span>Estado SUNAT:</span>
-                    <span>{results.sunat_tax_status}</span>
+                    <span>{results.sunat_status}</span>
                   </div>
                 )}
-                {results.osce_sanctions_count > 0 && (
+                {results.sanctions_count > 0 && (
                   <div className="detail-row warning">
-                    <span>Sanciones OSCE:</span>
-                    <span>{results.osce_sanctions_count}</span>
-                  </div>
-                )}
-                {results.tce_sanctions_count > 0 && (
-                  <div className="detail-row warning">
-                    <span>Sanciones TCE:</span>
-                    <span>{results.tce_sanctions_count}</span>
+                    <span>Sanciones totales:</span>
+                    <span>{results.sanctions_count}</span>
                   </div>
                 )}
               </div>
@@ -167,12 +170,12 @@ function Verifications() {
               {history.map((item) => (
                 <div key={item.id} className="history-item">
                   <div className="history-info">
-                    <span className="history-name">{item.target_company_name || 'Empresa desconocida'}</span>
-                    <span className="history-ruc">{item.target_ruc_hash}</span>
+                    <span className="history-name">{item.result?.razon_social || 'Empresa desconocida'}</span>
+                    <span className="history-ruc">{item.ruc}</span>
                   </div>
                   <div className="history-meta">
-                    <span className={`risk-dot ${getRiskColor(item.risk_level)}`}></span>
-                    <span className="history-score">{item.score}/100</span>
+                    <span className={`risk-dot ${getRiskColor(item.result?.risk_level || '')}`}></span>
+                    <span className="history-score">{item.result?.score || 0}/100</span>
                     <span className="history-date">
                       {new Date(item.created_at).toLocaleDateString()}
                     </span>
@@ -191,7 +194,7 @@ function Verifications() {
           <div
             className="usage-fill"
             style={{
-              width: `${(user?.used_queries_this_month / user?.max_monthly_queries) * 100}%`
+              width: `${((user?.used_queries_this_month || 0) / (user?.max_monthly_queries || 1000)) * 100}%`
             }}
           ></div>
         </div>

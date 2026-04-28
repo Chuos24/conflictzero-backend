@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, type ReactNode } from 'react'
+import { createContext, useState, useContext, useEffect, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import type { User, AuthContextType } from '../types'
@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     loading,
     login,
     logout,
+    setUser,
     isAuthenticated: !!user
   }
 

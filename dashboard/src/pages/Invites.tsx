@@ -1,32 +1,53 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext'
 import './Invites.css'
 
-function Invites() {
+interface InviteItem {
+  id: string
+  email: string
+  company_name: string
+  status: string
+  created_at: string
+}
+
+interface InviteStatsData {
+  total_sent: number
+  accepted: number
+  pending: number
+  conversion_rate: number
+}
+
+interface InviteFormData {
+  email: string
+  company_name: string
+  message: string
+}
+
+function Invites(): JSX.Element {
   const { user } = useAuth()
-  const [invites, setInvites] = useState([])
-  const [stats, setStats] = useState({
+  const [invites, setInvites] = useState<InviteItem[]>([])
+  const [stats, setStats] = useState<InviteStatsData>({
     total_sent: 0,
     accepted: 0,
     pending: 0,
     conversion_rate: 0
   })
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({
+  const [loading, setLoading] = useState<boolean>(true)
+  const [showForm, setShowForm] = useState<boolean>(false)
+  const [formData, setFormData] = useState<InviteFormData>({
     email: '',
     company_name: '',
     message: ''
   })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [error, setError] = useState<string>('')
+  const [success, setSuccess] = useState<string>('')
 
   useEffect(() => {
     fetchInvites()
     fetchStats()
   }, [])
 
-  const fetchInvites = async () => {
+  const fetchInvites = async (): Promise<void> => {
     try {
       const response = await fetch('/api/v2/invites', {
         headers: {
@@ -42,7 +63,7 @@ function Invites() {
     }
   }
 
-  const fetchStats = async () => {
+  const fetchStats = async (): Promise<void> => {
     try {
       const response = await fetch('/api/v2/invites/stats', {
         headers: {
@@ -60,7 +81,7 @@ function Invites() {
     }
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
     setError('')
     setSuccess('')
@@ -90,7 +111,7 @@ function Invites() {
     }
   }
 
-  const handleResend = async (inviteId) => {
+  const handleResend = async (inviteId: string): Promise<void> => {
     try {
       const response = await fetch(`/api/v2/invites/${inviteId}/resend`, {
         method: 'POST',
@@ -108,8 +129,8 @@ function Invites() {
     }
   }
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
+  const getStatusBadge = (status: string): JSX.Element => {
+    const statusConfig: Record<string, { class: string; label: string }> = {
       pending: { class: 'status-pending', label: 'Pendiente' },
       accepted: { class: 'status-accepted', label: 'Aceptada' },
       expired: { class: 'status-expired', label: 'Expirada' }
@@ -164,7 +185,7 @@ function Invites() {
       {success && <div className="alert alert-success">{success}</div>}
 
       <div className="invites-actions">
-        <button 
+        <button
           className="btn btn-primary"
           onClick={() => setShowForm(!showForm)}
         >
@@ -182,7 +203,7 @@ function Invites() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="contacto@empresa.com"
                   required
                 />
@@ -192,7 +213,7 @@ function Invites() {
                 <input
                   type="text"
                   value={formData.company_name}
-                  onChange={(e) => setFormData({...formData, company_name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                   placeholder="Constructora Ejemplo S.A.C."
                   required
                 />
@@ -202,7 +223,7 @@ function Invites() {
               <label>Mensaje Personalizado (opcional)</label>
               <textarea
                 value={formData.message}
-                onChange={(e) => setFormData({...formData, message: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 placeholder="Hola, te invito a unirte a Conflict Zero..."
                 rows={3}
               />
@@ -242,7 +263,7 @@ function Invites() {
                   <td>{new Date(invite.created_at).toLocaleDateString('es-PE')}</td>
                   <td>
                     {invite.status === 'pending' && (
-                      <button 
+                      <button
                         className="btn btn-sm btn-secondary"
                         onClick={() => handleResend(invite.id)}
                       >

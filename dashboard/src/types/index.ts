@@ -24,8 +24,19 @@ export interface User {
   id: number;
   email: string;
   ruc?: string;
+  ruc_hash?: string;
+  ruc_display?: string;
   company_name?: string;
+  razon_social?: string;
+  contact_name?: string;
+  contact_phone?: string;
+  contact_email?: string;
   status: string;
+  plan_tier?: PlanTier;
+  is_founder?: boolean;
+  used_queries_this_month?: number;
+  max_monthly_queries?: number;
+  api_key_prefix?: string;
   created_at?: string;
   founder_program: boolean;
 }
@@ -304,6 +315,17 @@ export interface DashboardStats {
   verifications_this_month: number;
   remaining_queries: number;
   average_score: number;
+  verifications_count?: number;
+  comparisons_count?: number;
+  invites_sent?: number;
+  invites_accepted?: number;
+  compliance_score?: number;
+  chart_data?: {
+    verificationsByMonth: Array<{ month: string; count: number; score: number }>;
+    complianceDistribution: Array<{ name: string; value: number; color: string }>;
+    topRiskFactors: Array<{ factor: string; count: number }>;
+  };
+  recent_activity?: Array<{ title: string; status: string; date: string }>;
   risk_distribution: {
     low: number;
     medium: number;
@@ -360,7 +382,20 @@ export interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isAuthenticated: boolean;
+}
+
+export interface ToastContextType {
+  success: (message: string, duration?: number) => void;
+  error: (message: string, duration?: number) => void;
+  warning: (message: string, duration?: number) => void;
+  info: (message: string, duration?: number) => void;
+}
+
+export interface ThemeContextType {
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
 }
 
 export interface PaginationParams {

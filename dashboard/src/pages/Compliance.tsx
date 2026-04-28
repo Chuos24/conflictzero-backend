@@ -1,21 +1,51 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import './Compliance.css'
 
-export default function Compliance() {
+interface ComplianceData {
+  status: string
+  description: string
+  contractual_obligation?: boolean
+  contractual_signed_at?: string
+  founder_expires_at?: string
+}
+
+interface ObligationsData {
+  invites_sent: number
+  invites_converted: number
+  conversion_rate: number
+  estimated_commission: number
+  required_invites: number
+}
+
+interface NetworkInvite {
+  id: string
+  email: string
+  status: string
+  created_at: string
+}
+
+interface NetworkData {
+  total_invited: number
+  total_paid: number
+  network_depth: number
+  recent_invites?: NetworkInvite[]
+}
+
+export default function Compliance(): JSX.Element {
   const { user } = useAuth()
-  const [compliance, setCompliance] = useState(null)
-  const [obligations, setObligations] = useState(null)
-  const [network, setNetwork] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [compliance, setCompliance] = useState<ComplianceData | null>(null)
+  const [obligations, setObligations] = useState<ObligationsData | null>(null)
+  const [network, setNetwork] = useState<NetworkData | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>('')
 
   useEffect(() => {
     fetchComplianceData()
   }, [])
 
-  const fetchComplianceData = async () => {
+  const fetchComplianceData = async (): Promise<void> => {
     try {
       setLoading(true)
       const [complianceRes, obligationsRes, networkRes] = await Promise.all([
@@ -23,7 +53,7 @@ export default function Compliance() {
         api.get('/api/v2/founder/obligations'),
         api.get('/api/v2/founder/network')
       ])
-      
+
       setCompliance(complianceRes.data)
       setObligations(obligationsRes.data)
       setNetwork(networkRes.data)
@@ -35,8 +65,8 @@ export default function Compliance() {
     }
   }
 
-  const getStatusColor = (status) => {
-    const colors = {
+  const getStatusColor = (status: string): string => {
+    const colors: Record<string, string> = {
       'cumpliendo': 'success',
       'en_riesgo': 'warning',
       'riesgo_inminente': 'danger',
@@ -51,7 +81,7 @@ export default function Compliance() {
   return (
     <div className="compliance-container">
       <h1>Compliance de Founder</h1>
-      
+
       {!user?.is_founder && (
         <div className="not-founder-alert">
           <p>No eres parte del programa Founder. Aplica para acceder a beneficios exclusivos.</p>
@@ -66,12 +96,12 @@ export default function Compliance() {
             {compliance.status}
           </div>
           <p className="status-description">{compliance.description}</p>
-          
+
           {compliance.contractual_obligation && (
             <div className="obligation-details">
               <h3>Obligación Contractual</h3>
-              <p>Firmada: {new Date(compliance.contractual_signed_at).toLocaleDateString()}</p>
-              <p>Expira: {new Date(compliance.founder_expires_at).toLocaleDateString()}</p>
+              <p>Firmada: {compliance.contractual_signed_at ? new Date(compliance.contractual_signed_at).toLocaleDateString() : 'N/A'}</p>
+              <p>Expira: {compliance.founder_expires_at ? new Date(compliance.founder_expires_at).toLocaleDateString() : 'N/A'}</p>
             </div>
           )}
         </div>
@@ -98,13 +128,13 @@ export default function Compliance() {
               <span className="metric-label">Comisión Estimada</span>
             </div>
           </div>
-          
+
           {obligations.required_invites > 0 && (
             <div className="progress-section">
               <p>Progreso hacia meta mensual</p>
               <div className="progress-bar">
-                <div 
-                  className="progress-fill" 
+                <div
+                  className="progress-fill"
                   style={{ width: `${Math.min((obligations.invites_converted / obligations.required_invites) * 100, 100)}%` }}
                 />
               </div>
@@ -133,8 +163,8 @@ export default function Compliance() {
               <span className="stat-label">Profundidad de Red</span>
             </div>
           </div>
-          
-          {network.recent_invites?.length > 0 && (
+
+          {network.recent_invites && network.recent_invites.length > 0 && (
             <div className="recent-invites">
               <h3>Invitaciones Recientes</h3>
               <table className="invites-table">

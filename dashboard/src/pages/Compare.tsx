@@ -1,36 +1,52 @@
-import React, { useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useState, FormEvent } from 'react'
 import './Compare.css'
 
-function Compare() {
-  const [rucs, setRucs] = useState(['', ''])
-  const [results, setResults] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+interface CompareResult {
+  companies?: Array<{
+    ruc: string
+    name: string
+    score: number
+    risk_level: string
+    sunat_status: string
+    osce_sanctions: number
+    tce_sanctions: number
+  }>
+  analysis?: {
+    best?: { name: string; score: number }
+    worst?: { name: string; score: number }
+    average_score: number
+  }
+  recommendation?: string
+}
 
-  const addRucField = () => {
+function Compare(): JSX.Element {
+  const [rucs, setRucs] = useState<string[]>(['', ''])
+  const [results, setResults] = useState<CompareResult | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+
+  const addRucField = (): void => {
     if (rucs.length < 10) {
       setRucs([...rucs, ''])
     }
   }
 
-  const removeRucField = (index) => {
+  const removeRucField = (index: number): void => {
     if (rucs.length > 2) {
       const newRucs = rucs.filter((_, i) => i !== index)
       setRucs(newRucs)
     }
   }
 
-  const updateRuc = (index, value) => {
+  const updateRuc = (index: number, value: string): void => {
     const newRucs = [...rucs]
     newRucs[index] = value.replace(/\D/g, '').slice(0, 11)
     setRucs(newRucs)
   }
 
-  const handleCompare = async (e) => {
+  const handleCompare = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
-    
-    // Validar que todos los RUCs tengan 11 dígitos
+
     const validRucs = rucs.filter(r => r.length === 11)
     if (validRucs.length < 2) {
       setError('Se necesitan al menos 2 RUCs válidos de 11 dígitos')
@@ -66,15 +82,15 @@ function Compare() {
     }
   }
 
-  const getScoreColor = (score) => {
+  const getScoreColor = (score: number): string => {
     if (score >= 80) return 'success'
     if (score >= 60) return 'warning'
     if (score >= 40) return 'danger'
     return 'critical'
   }
 
-  const getRiskLabel = (level) => {
-    const labels = {
+  const getRiskLabel = (level: string): string => {
+    const labels: Record<string, string> = {
       'low': 'Bajo',
       'medium': 'Medio',
       'high': 'Alto',
@@ -144,8 +160,7 @@ function Compare() {
         {results && (
           <div className="results-card">
             <h2>Resultados de la Comparación</h2>
-            
-            {/* Tabla de comparación */}
+
             <div className="comparison-table-wrapper">
               <table className="comparison-table">
                 <thead>
@@ -201,7 +216,6 @@ function Compare() {
               </table>
             </div>
 
-            {/* Análisis comparativo */}
             <div className="analysis-section">
               <h3>Análisis Comparativo</h3>
               <div className="analysis-grid">
@@ -223,7 +237,6 @@ function Compare() {
               </div>
             </div>
 
-            {/* Recomendación */}
             {results.recommendation && (
               <div className="recommendation-box">
                 <h4>💡 Recomendación</h4>
@@ -231,13 +244,12 @@ function Compare() {
               </div>
             )}
 
-            {/* Exportar */}
             <div className="export-actions">
               <button className="export-btn pdf">
                 📄 Exportar PDF
               </button>
               <button className="export-btn excel">
-    📊 Exportar Excel
+                📊 Exportar Excel
               </button>
             </div>
           </div>

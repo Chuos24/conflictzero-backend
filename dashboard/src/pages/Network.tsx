@@ -1,67 +1,83 @@
-import React, { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import './Network.css'
-import { useNetworkSuppliers, useNetworkStats, useNetworkAlerts, useAddSupplier, useRemoveSupplier, useMarkAlertRead } from '../hooks/useQueries'
+import {
+  useNetworkSuppliers,
+  useNetworkStats,
+  useNetworkAlerts,
+  useAddSupplier,
+  useRemoveSupplier,
+  useMarkAlertRead
+} from '../hooks/useQueries'
 import { useToast } from '../context/ToastContext'
-import LoadingSpinner from '../components/LoadingSpinner'
 import Modal from '../components/Modal'
+import type { NetworkSupplier, NetworkAlert } from '../types'
 
-function Network() {
-  const { showToast } = useToast()
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [newSupplier, setNewSupplier] = useState({ ruc: '', name: '', alert_threshold: 10 })
-  const [activeTab, setActiveTab] = useState('suppliers')
+interface NewSupplierForm {
+  ruc: string
+  name: string
+  alert_threshold: number
+}
 
-  const { data: suppliersData, isLoading: suppliersLoading } = useNetworkSuppliers()
+function Network(): JSX.Element {
+  const { success, error } = useToast()
+  const [showAddModal, setShowAddModal] = useState<boolean>(false)
+  const [newSupplier, setNewSupplier] = useState<NewSupplierForm>({ ruc: '', name: '', alert_threshold: 10 })
+  const [activeTab, setActiveTab] = useState<string>('suppliers')
+
+  const { data: suppliersData } = useNetworkSuppliers()
   const { data: stats } = useNetworkStats()
   const { data: alertsData } = useNetworkAlerts()
   const addSupplier = useAddSupplier()
   const removeSupplier = useRemoveSupplier()
   const markAlertRead = useMarkAlertRead()
 
-  const suppliers = suppliersData || []
-  const alerts = alertsData || []
+  const suppliers: NetworkSupplier[] = suppliersData?.items || []
+  const alerts: NetworkAlert[] = alertsData?.items || []
 
-  const handleAddSupplier = async (e) => {
+  const handleAddSupplier = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
     try {
-      await addSupplier.mutateAsync(newSupplier)
-      showToast('Proveedor agregado exitosamente', 'success')
+      await addSupplier.mutateAsync({
+        ruc: newSupplier.ruc,
+        notes: newSupplier.name,
+        tags: []
+      })
+      success('Proveedor agregado exitosamente')
       setShowAddModal(false)
       setNewSupplier({ ruc: '', name: '', alert_threshold: 10 })
-    } catch (error) {
-      showToast(error?.response?.data?.detail || 'Error agregando proveedor', 'error')
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Error agregando proveedor'
+      error(errMsg)
     }
   }
 
-  const handleRemoveSupplier = async (id) => {
+  const handleRemoveSupplier = async (id: string): Promise<void> => {
     if (!confirm('¿Estás seguro de eliminar este proveedor de tu red?')) return
     try {
       await removeSupplier.mutateAsync(id)
-      showToast('Proveedor eliminado', 'success')
-    } catch (error) {
-      showToast('Error eliminando proveedor', 'error')
+      success('Proveedor eliminado')
+    } catch (err: unknown) {
+      error('Error eliminando proveedor')
     }
   }
 
-  const handleMarkAlertRead = async (alertId) => {
+  const handleMarkAlertRead = async (alertId: string): Promise<void> => {
     try {
       await markAlertRead.mutateAsync(alertId)
-    } catch (error) {
-      showToast('Error marcando alerta', 'error')
+    } catch (err: unknown) {
+      error('Error marcando alerta')
     }
   }
 
-  const getRiskColor = (level) => {
-    const colors = { low: '#22c55e', medium: '#eab308', high: '#f97316', critical: '#ef4444' }
+  const getRiskColor = (level: string): string => {
+    const colors: Record<string, string> = { low: '#22c55e', medium: '#eab308', high: '#f97316', critical: '#ef4444' }
     return colors[level] || '#6b7280'
   }
 
-  const getRiskLabel = (level) => {
-    const labels = { low: 'Bajo', medium: 'Medio', high: 'Alto', critical: 'Crítico' }
+  const getRiskLabel = (level: string): string => {
+    const labels: Record<string, string> = { low: 'Bajo', medium: 'Medio', high: 'Alto', critical: 'Crítico' }
     return labels[level] || level
   }
-
-  const isLoading = suppliersLoading || addSupplier.isPending || removeSupplier.isPending
 
   return (
     <div className="network-page">
@@ -80,15 +96,15 @@ function Network() {
             <div className="stat-label">Proveedores</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{stats.avg_network_score?.toFixed(1) || 'N/A'}</div>
+            <div className="stat-value">{stats.avg_score?.toFixed(1) || 'N/A'}</div>
             <div className="stat-label">Score Promedio</div>
           </div>
           <div className="stat-card alert-card">
-            <div className="stat-value">{stats.total_alerts}</div>
+            <div className="stat-value">{stats.unread_alerts || 0}</div>
             <div className="stat-label">Alertas Activas</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{stats.suppliers_at_risk || 0}</div>
+            <div className="stat-value">{stats.high_risk_count || 0}</div>
             <div className="stat-label">En Riesgo</div>
           </div>
         </div>
@@ -96,17 +112,17 @@ function Network() {
 
       {/* Tabs */}
       <div className="tabs">
-        <button 
+        <button
           className={`tab ${activeTab === 'suppliers' ? 'active' : ''}`}
           onClick={() => setActiveTab('suppliers')}
         >
           Proveedores ({suppliers.length})
         </button>
-        <button 
+        <button
           className={`tab ${activeTab === 'alerts' ? 'active' : ''}`}
           onClick={() => setActiveTab('alerts')}
         >
-          Alertas ({alerts.filter(a => !a.read).length} nuevas)
+          Alertas ({alerts.filter(a => a.status === 'unread').length} nuevas)
         </button>
       </div>
 
@@ -124,30 +140,30 @@ function Network() {
             suppliers.map(supplier => (
               <div key={supplier.id} className="supplier-card">
                 <div className="supplier-info">
-                  <h3>{supplier.supplier_name || 'Sin nombre'}</h3>
-                  <p className="ruc">RUC: {supplier.supplier_ruc}</p>
-                  <p className="added">Agregado: {new Date(supplier.created_at).toLocaleDateString()}</p>
+                  <h3>{supplier.razon_social || 'Sin nombre'}</h3>
+                  <p className="ruc">RUC: {supplier.ruc}</p>
+                  <p className="added">Agregado: {new Date(supplier.added_at).toLocaleDateString()}</p>
                 </div>
                 <div className="supplier-metrics">
                   <div className="metric">
                     <span className="label">Score:</span>
-                    <span className="value" style={{ color: getRiskColor(supplier.current_risk_level) }}>
+                    <span className="value" style={{ color: getRiskColor(supplier.risk_level) }}>
                       {supplier.current_score || 'N/A'}
                     </span>
                   </div>
                   <div className="metric">
                     <span className="label">Riesgo:</span>
-                    <span className="badge" style={{ backgroundColor: getRiskColor(supplier.current_risk_level) }}>
-                      {getRiskLabel(supplier.current_risk_level)}
+                    <span className="badge" style={{ backgroundColor: getRiskColor(supplier.risk_level) }}>
+                      {getRiskLabel(supplier.risk_level)}
                     </span>
                   </div>
                   <div className="metric">
-                    <span className="label">Umbral:</span>
-                    <span className="value">{supplier.alert_threshold}%</span>
+                    <span className="label">Estado:</span>
+                    <span className="value">{supplier.status}</span>
                   </div>
                 </div>
                 <div className="supplier-actions">
-                  <button className="btn btn-sm" onClick={() => window.open(`/compare?ruc=${supplier.supplier_ruc}`, '_blank')}>
+                  <button className="btn btn-sm" onClick={() => window.open(`/compare?ruc=${supplier.ruc}`, '_blank')}>
                     Ver detalle
                   </button>
                   <button className="btn btn-sm btn-danger" onClick={() => handleRemoveSupplier(supplier.id)}>
@@ -169,18 +185,18 @@ function Network() {
             </div>
           ) : (
             alerts.map(alert => (
-              <div key={alert.id} className={`alert-card ${alert.read ? 'read' : 'unread'}`}>
+              <div key={alert.id} className={`alert-card ${alert.status === 'read' ? 'read' : 'unread'}`}>
                 <div className="alert-header">
                   <span className={`severity-badge ${alert.severity}`}>{alert.severity}</span>
                   <span className="alert-date">{new Date(alert.created_at).toLocaleString()}</span>
                 </div>
-                <h4>{alert.title}</h4>
+                <h4>{alert.supplier_name}</h4>
                 <p>{alert.message}</p>
                 <div className="alert-meta">
-                  <span>Proveedor: {alert.supplier_ruc}</span>
-                  <span>Tipo: {alert.alert_type}</span>
+                  <span>Proveedor: {alert.supplier_id}</span>
+                  <span>Tipo: {alert.type}</span>
                 </div>
-                {!alert.read && (
+                {alert.status === 'unread' && (
                   <button className="btn btn-sm" onClick={() => handleMarkAlertRead(alert.id)}>
                     Marcar como leída
                   </button>
@@ -201,32 +217,32 @@ function Network() {
         <form onSubmit={handleAddSupplier}>
           <div className="form-group">
             <label>RUC del proveedor</label>
-            <input 
-              type="text" 
-              maxLength="11"
+            <input
+              type="text"
+              maxLength={11}
               value={newSupplier.ruc}
-              onChange={e => setNewSupplier({...newSupplier, ruc: e.target.value})}
+              onChange={e => setNewSupplier({ ...newSupplier, ruc: e.target.value })}
               placeholder="20100190797"
               required
             />
           </div>
           <div className="form-group">
             <label>Nombre (opcional)</label>
-            <input 
+            <input
               type="text"
               value={newSupplier.name}
-              onChange={e => setNewSupplier({...newSupplier, name: e.target.value})}
+              onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })}
               placeholder="Nombre del proveedor"
             />
           </div>
           <div className="form-group">
             <label>Umbral de alerta (% de cambio)</label>
-            <input 
+            <input
               type="number"
-              min="1"
-              max="50"
+              min={1}
+              max={50}
               value={newSupplier.alert_threshold}
-              onChange={e => setNewSupplier({...newSupplier, alert_threshold: parseInt(e.target.value)})}
+              onChange={e => setNewSupplier({ ...newSupplier, alert_threshold: parseInt(e.target.value) })}
             />
             <small>Notificar cuando el score cambie más de este porcentaje</small>
           </div>

@@ -1,10 +1,6 @@
 import { useState, useCallback } from 'react'
 
-export interface UseToggleReturn {
-  value: boolean
-  toggle: () => void
-  setValue: (value: boolean) => void
-}
+export type UseToggleReturn = [boolean, () => void, () => void, () => void, (value: boolean) => void]
 
 export function useToggle(initialValue = false): UseToggleReturn {
   const [value, setValue] = useState(initialValue)
@@ -13,5 +9,13 @@ export function useToggle(initialValue = false): UseToggleReturn {
     setValue(v => !v)
   }, [])
 
-  return { value, toggle, setValue }
+  const setTrue = useCallback(() => {
+    setValue(true)
+  }, [])
+
+  const setFalse = useCallback(() => {
+    setValue(false)
+  }, [])
+
+  return [value, toggle, setTrue, setFalse, setValue]
 }

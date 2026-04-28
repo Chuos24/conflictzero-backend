@@ -1,4 +1,4 @@
-import React, { Component, type ReactNode, type ErrorInfo } from 'react'
+import { Component, type ReactNode, type ErrorInfo } from 'react'
 import './ErrorBoundary.css'
 
 export interface ErrorBoundaryProps {
@@ -48,7 +48,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             <h1>Algo salió mal</h1>
             <p>Ha ocurrido un error inesperado. Por favor, intenta recargar la página.</p>
             
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <div className="error-details">
                 <h3>Detalles del error:</h3>
                 <pre>{this.state.error.toString()}</pre>

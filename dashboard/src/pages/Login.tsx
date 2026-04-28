@@ -1,12 +1,14 @@
-import React from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
 import { loginSchema } from '../lib/validations'
+import type { z } from 'zod'
 import './Login.css'
 
-function Login() {
+type LoginFormData = z.infer<typeof loginSchema>
+
+function Login(): JSX.Element {
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -15,7 +17,7 @@ function Login() {
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-  } = useForm({
+  } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       ruc: '',
@@ -23,7 +25,7 @@ function Login() {
     },
   })
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: LoginFormData): Promise<void> => {
     try {
       const result = await login(data.ruc, data.password)
       if (result.success) {
