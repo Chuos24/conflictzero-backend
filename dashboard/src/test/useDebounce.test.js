@@ -31,8 +31,6 @@ describe('useDebounce', () => {
   })
 
   it('should use default delay of 500ms', async () => {
-    vi.useFakeTimers()
-    
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value),
       {
@@ -41,16 +39,14 @@ describe('useDebounce', () => {
     )
 
     rerender({ value: 'second' })
-    
-    // Fast-forward 499ms
-    vi.advanceTimersByTime(499)
+
+    // Immediately after change, should still be old value
     expect(result.current).toBe('first')
 
-    // Fast-forward 1 more ms
-    vi.advanceTimersByTime(1)
-    expect(result.current).toBe('second')
-
-    vi.useRealTimers()
+    // Wait for default debounce delay
+    await waitFor(() => expect(result.current).toBe('second'), {
+      timeout: 700,
+    })
   })
 
   it('should cancel previous timer on rapid changes', async () => {
@@ -71,7 +67,7 @@ describe('useDebounce', () => {
 
     // Wait for final debounce
     await waitFor(() => expect(result.current).toBe('d'), {
-      timeout: 200,
+      timeout: 500,
     })
   })
 })

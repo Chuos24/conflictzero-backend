@@ -1,5 +1,5 @@
-import { describe, it, expect, act } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useToggle } from '../hooks/useToggle'
 
 describe('useToggle', () => {

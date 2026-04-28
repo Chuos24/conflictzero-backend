@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useWindowSize } from '../hooks/useWindowSize'
 
 describe('useWindowSize', () => {
@@ -100,8 +100,10 @@ describe('useWindowSize', () => {
       value: 500,
     })
 
-    // Trigger resize event
-    window.dispatchEvent(new Event('resize'))
+    // Trigger resize event wrapped in act
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
 
     expect(result.current.width).toBe(500)
     expect(result.current.isMobile).toBe(true)
