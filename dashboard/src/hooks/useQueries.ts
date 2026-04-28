@@ -279,3 +279,132 @@ export const useDashboardStats = () => {
     staleTime: 1000 * 60 * 2, // 2 minutos
   })
 }
+
+// ───────────────────────────────────────────────
+// Monitoring hooks (Fase 2)
+// ───────────────────────────────────────────────
+
+export interface MonitoringStats {
+  total_snapshots: number
+  total_changes_detected: number
+  pending_alerts: number
+  critical_changes: number
+  warning_changes: number
+  last_run: {
+    id: number | null
+    status: string | null
+    completed_at: string | null
+  }
+}
+
+export interface MonitoringAlert {
+  id: number
+  change_id: number
+  company_id: number
+  title: string
+  message: string
+  channel: string
+  status: string
+  created_at: string
+  sent_at: string | null
+  read_at: string | null
+}
+
+export interface MonitoringChange {
+  id: number
+  company_id: number
+  change_type: string
+  description: string
+  severity: string
+  previous_value: string | null
+  new_value: string | null
+  alert_sent: boolean
+  created_at: string
+}
+
+export interface MonitoringRule {
+  id: number
+  company_id: number | null
+  rule_type: string
+  conditions: Record<string, unknown>
+  notify_email: boolean
+  notify_dashboard: boolean
+  notify_webhook: boolean
+  webhook_url: string | null
+  frequency: string
+  is_active: boolean
+  created_at: string
+}
+
+export const useMonitoringStats = () => {
+  return useQuery<MonitoringStats>({
+    queryKey: ['monitoring', 'stats'],
+    queryFn: async () => {
+      const { data } = await api.get('/api/v2/monitoring/stats')
+      return data
+    },
+    staleTime: 1000 * 60 * 2,
+  })
+}
+
+export const useMonitoringAlerts = (status?: string) => {
+  return useQuery<MonitoringAlert[]>({
+    queryKey: ['monitoring', 'alerts', status],
+    queryFn: async () => {
+      const params = status && status !== 'all' ? { status } : {}
+      const { data } = await api.get('/api/v2/monitoring/alerts', { params })
+      return data
+    },
+    staleTime: 1000 * 60,
+  })
+}
+
+export const useMonitoringChanges = (severity?: string) => {
+  return useQuery<MonitoringChange[]>({
+    queryKey: ['monitoring', 'changes', severity],
+    queryFn: async () => {
+      const params = severity ? { severity } : {}
+      const { data } = await api.get('/api/v2/monitoring/changes', { params })
+      return data
+    },
+    staleTime: 1000 * 60,
+  })
+}
+
+export const useMonitoringRules = () => {
+  return useQuery<MonitoringRule[]>({
+    queryKey: ['monitoring', 'rules'],
+    queryFn: async () => {
+      const { data } = await api.get('/api/v2/monitoring/rules')
+      return data
+    },
+  })
+}
+
+export const useMarkMonitoringAlertRead = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation<void, Error, number>({
+    mutationFn: async (alertId: number) => {
+      await api.post(`/api/v2/monitoring/alerts/${alertId}/read`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['monitoring', 'alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['monitoring', 'stats'] })
+    },
+  })
+}
+
+export const useDismissMonitoringAlert = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation<void, Error, number>({
+    mutationFn: async (alertId: number) => {
+      await api.post(`/api/v2/monitoring/alerts/${alertId}/dismiss`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['monitoring', 'alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['monitoring', 'stats'] })
+    },
+  })
+}

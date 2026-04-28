@@ -20,6 +20,7 @@ const Compliance = lazy(() => import('./pages/Compliance'));
 const Network = lazy(() => import('./pages/Network'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Monitoring = lazy(() => import('./pages/Monitoring'));
 
 function PageLoader(): JSX.Element {
   return (
@@ -51,6 +52,7 @@ function App(): JSX.Element {
                       <Route path="/invites" element={<Invites />} />
                       <Route path="/compliance" element={<Compliance />} />
                       <Route path="/network" element={<Network />} />
+                      <Route path="/monitoring" element={<Monitoring />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/settings" element={<Settings />} />
                     </Route>

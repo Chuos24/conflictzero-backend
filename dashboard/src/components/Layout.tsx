@@ -24,6 +24,7 @@ function Layout(): JSX.Element {
     { path: '/verifications', label: 'Verificaciones', icon: '✓' },
     { path: '/compare', label: 'Comparar', icon: '⚖️' },
     { path: '/network', label: 'Mi Red', icon: '🌐' },
+    { path: '/monitoring', label: 'Monitoreo', icon: '🔔' },
     { path: '/invites', label: 'Invitaciones', icon: '📧' },
     { path: '/compliance', label: 'Compliance', icon: '🛡️' },
     { path: '/profile', label: 'Perfil', icon: '👤' },
