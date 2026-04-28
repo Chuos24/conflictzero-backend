@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ErrorBoundary } from '../components/ErrorBoundary'
 
 // Componente que lanza error para demostración

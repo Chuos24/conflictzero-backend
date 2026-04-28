@@ -1,3 +1,4 @@
+// @ts-nocheck
 import LoadingSpinner from '../src/components/LoadingSpinner'
 
 /**

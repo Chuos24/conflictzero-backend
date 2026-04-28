@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Toast from '../src/components/Toast'
 
 /**

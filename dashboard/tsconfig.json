@@ -25,7 +25,8 @@
       "@utils/*": ["src/utils/*"],
       "@context/*": ["src/context/*"],
       "@lib/*": ["src/lib/*"]
-    }
+    },
+    "types": ["@testing-library/jest-dom", "vitest/globals"]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

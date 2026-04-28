@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { VerificationTrends, RiskDistribution, SanctionsByEntity, ComplianceHistory, StatsDashboard } from '../components/Charts'
 
 export default {

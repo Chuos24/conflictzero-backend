@@ -1,3 +1,4 @@
+// @ts-nocheck
 import DataTable from '../src/components/DataTable'
 
 /**

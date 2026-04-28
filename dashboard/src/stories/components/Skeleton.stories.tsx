@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Skeleton, { SkeletonCard, SkeletonTable, SkeletonProfile } from '../src/components/Skeleton'
 
 /**

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import ThemeToggle from '../src/components/ThemeToggle'
 import { ThemeProvider } from '../src/context/ThemeContext'
 

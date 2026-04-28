@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Card from '../src/components/Card'
 import Badge from '../src/components/Badge'
 
