@@ -1,110 +1,92 @@
 # Conflict Zero - Fase 2 Progress Report
 
-**Fecha:** 2026-04-29 10:19 AM (Asia/Shanghai)  
+**Fecha:** 2026-04-29 18:19 PM (Asia/Shanghai)  
 **Cron Job:** conflict-zero-dev-progress  
-**Estado:** 🚀 Fase 2 AVANZADA - Integraciones + Mobile App
+**Estado:** 🚀 Fase 2 AVANZADA - ~70% completado
 
 ---
 
 ## Resumen Ejecutivo
 
-Se continuó el desarrollo de la **Fase 2** con la creación de la **integración con Make (Integromat)** y el esqueleto de la **Mobile App React Native + Expo**. Se agregaron todos los archivos pendientes al tracking de Git.
+Continuación del desarrollo de Conflict Zero Fase 2. Se identificaron archivos faltantes en el frontend y se completó la **gestión de Webhooks** en el dashboard — una pieza crítica que tenía backend completo pero sin UI. Se corrigieron inconsistencias entre frontend y backend en las rutas de la API de webhooks.
 
 ---
 
-## ✅ Trabajo Realizado Hoy
+## ✅ Trabajo Realizado Hoy (Sesión 18:19)
 
-### 1. Integración Make (Integromat) - 2 archivos nuevos
-| Archivo | Líneas | Descripción |
+### 1. Webhooks Management UI — 4 archivos modificados
+| Archivo | Cambio | Descripción |
 |---------|--------|-------------|
-| `integrations/make/manifest.json` | ~280 | Definición completa de app Make |
-| `integrations/make/README.md` | ~150 | Documentación de integración |
+| `dashboard/src/pages/Settings.tsx` | +243 líneas | Tab Webhooks con CRUD completo |
+| `dashboard/src/pages/Settings.css` | +137 líneas | Estilos responsive para webhooks |
+| `dashboard/src/services/api.ts` | Fix URLs | Corrige rutas de webhookAPI para coincidir con backend |
+| `dashboard/src/types/index.ts` | +8 líneas | Agrega tipo `WebhookDelivery` |
 
-**Acciones implementadas:**
-- Verify RUC
-- Compare Companies
-- Get Risk Score
-- Add to Network
-- Get Monitoring Alerts
-- Create Webhook
-- Get Compliance Certificate
-- Search Company
+**Funcionalidades implementadas:**
+- **Crear webhook**: URL, selección múltiple de eventos, secreto HMAC opcional
+- **Listar webhooks**: Muestra URL, eventos con labels traducidos, indicador 🔒 HMAC
+- **Probar webhook**: Botón de envío de evento de prueba con notificación de resultado
+- **Eliminar webhook**: Confirmación + recarga de lista
+- **Historial de entregas**: Expandible por webhook, tabla con estado (delivered/failed/pending), HTTP status, fecha
 
-**Triggers:**
-- New Alert
-- Supplier Changed
-- Score Updated
+**Eventos soportados:**
+- `verification.completed` — Verificación completada
+- `score.updated` — Score actualizado
+- `supplier.changed` — Proveedor cambió
+- `alert.created` — Nueva alerta
+- `invite.registered` — Invitado registrado
 
-**Searches:**
-- Search Company
+**Fix crítico:** Las URLs en `webhookAPI` apuntaban a endpoints inexistentes (`/api/v1/webhooks`, `/api/v1/webhooks/{id}`). Se corrigieron a las rutas reales del backend: `/api/v1/webhooks/list`, `/api/v1/webhooks/register`, `/api/v1/webhooks/{id}`, `/api/v1/webhooks/{id}/test`, `/api/v1/webhooks/{id}/deliveries`.
 
-### 2. Mobile App React Native + Expo - 13 archivos nuevos
-| Archivo | Líneas | Descripción |
-|---------|--------|-------------|
-| `mobile/package.json` | ~100 | Configuración Expo SDK 50 |
-| `mobile/App.tsx` | ~90 | Navegación Stack + Bottom Tabs |
-| `mobile/tsconfig.json` | ~25 | Config TypeScript |
-| `mobile/src/context/AuthContext.tsx` | ~80 | Auth con SecureStore |
-| `mobile/src/context/ThemeContext.tsx` | ~50 | Dark/light mode |
-| `mobile/src/components/index.tsx` | ~40 | Text, Input, Button |
-| `mobile/src/screens/LoginScreen.tsx` | ~70 | Login con JWT |
-| `mobile/src/screens/VerifyScreen.tsx` | ~120 | Verificación RUC |
-| `mobile/src/screens/NetworkScreen.tsx` | ~80 | Lista de proveedores |
-| `mobile/src/screens/AlertsScreen.tsx` | ~100 | Alertas con marcar leído |
-| `mobile/src/screens/ProfileScreen.tsx` | ~90 | Peril + logout |
-| `mobile/src/screens/ScanScreen.tsx` | ~90 | Escaneo QR de RUC |
-| `mobile/src/screens/CompanyDetailScreen.tsx` | ~130 | Detalle empresa |
-| `mobile/README.md` | ~60 | Documentación mobile |
+### 2. Build de producción
+- `vite build` exitoso en 8.13s
+- PWA regenerada con 30 entries precache
+- Sin errores de TypeScript ni de empaquetado
 
-**Características Mobile:**
-- 6 pantallas principales
-- Autenticación JWT con SecureStore
-- Escaneo QR con expo-barcode-scanner
-- Navegación Stack + Bottom Tabs
-- Dark mode nativo
-- TypeScript 100%
-
-### 3. Git Tracking - Archivos agregados
-Se agregaron al repositorio todos los archivos que estaban sin tracking:
-- `sdk/` (Python + JavaScript)
-- `integrations/make/` (nueva)
-- `integrations/zapier/` (existente)
-- `mobile/` (nueva)
-- `backend/tests/test_monitoring.py`
-- `dashboard/src/pages/Monitoring.test.tsx`
+### 3. Git
+- 1 commit: `95df1db` feat(dashboard): Webhooks management UI en Settings
 
 ---
 
 ## 📊 Estado de Tareas del Plan
 
-### Fase 1.5+ - ✅ 100% COMPLETADO
+### Fase 1.5+ — ✅ 100% COMPLETADO
 - [x] Backend completo (45+ endpoints)
 - [x] Dashboard React 100% TypeScript
 - [x] Tests frontend (51 tests)
 - [x] Tests E2E Playwright
 - [x] PWA implementada
 
-### Fase 2 - 🚀 EN PROGRESO (~55%)
-- [x] **Monitoreo Automático de Proveedores** - ✅ COMPLETADO
-- [x] **API Pública Documentada** - ✅ SDKs CREADOS
+### Fase 2 — 🚀 EN PROGRESO (~70%)
+- [x] **Monitoreo Automático de Proveedores** — ✅ COMPLETADO
+- [x] **API Pública Documentada** — ✅ SDKs creados
   - [x] SDK Python v1.0.0
   - [x] SDK JavaScript v1.0.0
-  - [ ] API keys con rate limiting por tier
-  - [ ] Webhooks HMAC firmados
-- [x] **Integraciones ERP** - 🟡 AVANZADO
-  - [x] Zapier - Manifest creado
-  - [x] Make (Integromat) - Manifest creado
-  - [ ] SAP - Conector via REST API
-  - [ ] Oracle NetSuite - SuiteScript
-  - [ ] Microsoft Dynamics - Power Automate
-- [x] **Mobile App** - 🟡 MVP ESTRUCTURADO
+  - [x] Rate limiting por tier (bronze/silver/gold/founder) — implementado en backend
+  - [x] API keys management backend — CRUD en `company.py`
+  - [ ] API keys management frontend — Settings tiene solo regeneración simple
+- [x] **Webhooks HMAC** — ✅ COMPLETADO
+  - [x] Backend: firma de payloads con HMAC-SHA256 en `deliver_webhook`
+  - [x] Frontend: UI completa de gestión de webhooks
+- [x] **Integraciones ERP** — 🟡 AVANZADO
+  - [x] Zapier — Manifest creado
+  - [x] Make (Integromat) — Manifest creado
+  - [x] SAP — Conector base (`sap_connector.py`, 152 líneas)
+  - [x] Oracle NetSuite — Conector base (`netsuite_connector.py`, 141 líneas)
+  - [x] Microsoft Dynamics — Conector base (`dynamics_connector.py`, 146 líneas)
+- [x] **Mobile App** — 🟡 MVP ESTRUCTURADO
   - [x] React Native + Expo esqueleto
   - [x] 6 pantallas principales
-  - [x] Navegación configurada
+  - [x] Navegación Stack + Bottom Tabs
+  - [x] Tests mobile (2 archivos)
   - [ ] Build en iOS/Android
   - [ ] Push notifications
-  - [ ] Tests móviles
-- [ ] **Machine Learning Scoring** - 📋 PENDIENTE
+- [x] **Machine Learning Scoring** — 🟡 MODELO V1.0.0 LISTO
+  - [x] `ml_scoring_service.py` con 5 features ponderadas
+  - [x] Detección de anomalías (score_drop, multiple_sanctions, debt_spike)
+  - [x] Benchmarking sectorial (placeholder)
+  - [ ] Dataset histórico real + entrenamiento
+  - [ ] Exposición del ML score en dashboard
 
 ---
 
@@ -112,45 +94,50 @@ Se agregaron al repositorio todos los archivos que estaban sin tracking:
 
 | Métrica | Valor | Δ |
 |---------|-------|---|
-| Backend archivos Python | 42 | - |
-| Dashboard archivos TSX/TS | 54 | - |
-| SDK archivos | 7 | - |
-| Integraciones archivos | 4 (+2) | **+2** |
-| Mobile app archivos | 14 | **+14** |
-| Tests backend | 41 | - |
-| Tests frontend | 51 | - |
-| Endpoints API | 57+ | - |
-| Modelos SQLAlchemy | 19 | - |
-| Routers activos | 11 | - |
-| Páginas dashboard | 10 | - |
-| Pantallas mobile | 6 | **+6** |
-| SDKs disponibles | 2 | - |
-| Integraciones | 2 (Zapier + Make) | **+1** |
+| Backend archivos Python | 43 | — |
+| Dashboard archivos TSX/TS | 54 | — |
+| SDK archivos | 7 | — |
+| Integraciones archivos | 7 | — |
+| Mobile app archivos | 16 | — |
+| Tests backend | 41 | — |
+| Tests frontend | 51 | — |
+| Tests mobile | 2 | — |
+| Endpoints API | 57+ | — |
+| Modelos SQLAlchemy | 19 | — |
+| Migraciones Alembic | 3 | — |
+| Routers activos | 11 | — |
+| Páginas dashboard | 10 | — |
+| Pantallas mobile | 6 | — |
+| SDKs disponibles | 2 | — |
+| Integraciones ERP | 5 (Zapier + Make + SAP + NetSuite + Dynamics) | — |
+| Webhooks UI | ✅ COMPLETADO | **+1** |
 
 ---
 
 ## 🎯 Siguientes Pasos Recomendados
 
-1. **Git push** - Commits locales pendientes
-2. **Migración Alembic 003** - Tablas de monitoreo (5 tablas)
-3. **API Pública** - Rate limiting por tier, API keys management
-4. **Webhooks HMAC** - Firmar payloads con secreto
-5. **Mobile** - Build de prueba, push notifications, tests
-6. **ML Scoring** - Dataset histórico + modelo v1
-7. **Integraciones ERP** - SAP, NetSuite, Dynamics
+### Corto plazo (próxima semana)
+1. **Git push** — Commit `95df1db` pendiente de push (hay 1 commit local)
+2. **API keys management frontend** — Settings solo tiene "regenerar API key", falta CRUD completo (listar, crear múltiples, revocar, ver uso)
+3. **ML Score en dashboard** — Agregar visualización del ML score en la página de Verifications o Dashboard
+4. **Mobile push notifications** — Configurar Expo push tokens
+
+### Mediano plazo
+5. **Dataset ML** — Generar datos históricos sintéticos o recolectar reales para entrenar modelo v1.5
+6. **Build mobile** — Expo build para iOS TestFlight / Android APK
+7. **Integraciones ERP** — Completar autenticación real en SAP/NetSuite/Dynamics (actualmente son conectores base con mocks)
 
 ---
 
 ## 📝 Notas Técnicas
 
-**Commits pendientes de push:** 9+ commits locales
+**Inconsistencias resueltas hoy:**
+- Frontend `webhookAPI` apuntaba a endpoints inexistentes (`/api/v1/webhooks` en lugar de `/api/v1/webhooks/list`, etc.). Backend nunca tuvo `PATCH /webhooks/{id}`. Se removió del frontend.
 
-**Nuevos archivos creados en esta sesión:**
-- `integrations/make/` - Integración Make completa
-- `mobile/` - App React Native + Expo completa
+**Commits pendientes de push:** 1 (`95df1db`)
 
 ---
 
 *Reporte generado automáticamente por cron job conflict-zero-dev-progress*  
-*Fecha: 2026-04-29 10:19 CST*  
-*Estado: Fase 2 Avanzada - Integraciones + Mobile App* 🚀
+*Fecha: 2026-04-29 18:19 CST*  
+*Estado: Fase 2 Avanzada — Webhooks UI completado* 🚀
