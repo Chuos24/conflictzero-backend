@@ -306,6 +306,14 @@ export interface Webhook {
   secret?: string;
 }
 
+export interface WebhookDelivery {
+  id: string;
+  status: 'pending' | 'delivered' | 'failed';
+  http_status?: number;
+  created_at: string;
+  event: string;
+}
+
 // ============================================================
 // DASHBOARD / ANALYTICS
 // ============================================================

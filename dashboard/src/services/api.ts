@@ -170,14 +170,13 @@ export const paymentAPI = {
 
 // Webhooks API
 export const webhookAPI = {
-  list: () => api.get<Webhook[]>('/api/v1/webhooks'),
-  create: (data: { url: string; events: string[] }) =>
-    api.post<Webhook>('/api/v1/webhooks', data),
-  update: (id: string, data: { url?: string; events?: string[]; is_active?: boolean }) =>
-    api.patch<Webhook>(`/api/v1/webhooks/${id}`, data),
+  list: () => api.get<Webhook[]>('/api/v1/webhooks/list'),
+  create: (data: { url: string; events: string[]; secret?: string }) =>
+    api.post<Webhook>('/api/v1/webhooks/register', data),
   delete: (id: string) => api.delete<void>(`/api/v1/webhooks/${id}`),
+  test: (id: string) => api.post<void>(`/api/v1/webhooks/${id}/test`),
   deliveries: (id: string) =>
-    api.get(`/api/v1/webhooks/${id}/deliveries`)
+    api.get<WebhookDelivery[]>(`/api/v1/webhooks/${id}/deliveries`)
 };
 
 export default api;
