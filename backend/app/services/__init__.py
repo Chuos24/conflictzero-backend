@@ -1,17 +1,25 @@
 """
-Conflict Zero - Services Package
-Exporta todos los servicios del backend
+Servicios del backend de Conflict Zero.
 """
-
-from .digital_signature_v2 import signature_service
-from .email_service import send_verification_certificate, send_invite_email
-from .scoring_service import ScoringService, ScoreResult, scoring_service
+from app.services.email_service import EmailService
+from app.services.scoring_service import ScoringService
+from app.services.compare_service import CompareService
+from app.services.certificate_service import CertificateService
+from app.services.digital_signature import DigitalSignatureService
+from app.services.digital_signature_v2 import DigitalSignatureV2Service
+from app.services.data_collection import DataCollectionService
+from app.services.monitoring_service import MonitoringService
+from app.services.ml_scoring_service import MLScoringService, get_ml_service
 
 __all__ = [
-    "signature_service",
-    "send_verification_certificate",
-    "send_invite_email",
+    "EmailService",
     "ScoringService",
-    "ScoreResult",
-    "scoring_service"
+    "CompareService",
+    "CertificateService",
+    "DigitalSignatureService",
+    "DigitalSignatureV2Service",
+    "DataCollectionService",
+    "MonitoringService",
+    "MLScoringService",
+    "get_ml_service",
 ]
