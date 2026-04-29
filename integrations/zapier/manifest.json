@@ -1,0 +1,323 @@
+{
+  "name": "Conflict Zero",
+  "version": "1.0.0",
+  "platformVersion": "v3",
+  "description": "Verificación y monitoreo de proveedores peruanos. Verifica RUCs, obtén scores de riesgo y monitorea cambios automáticamente.",
+  "category": "business_intelligence",
+  "labels": ["compliance", "suppliers", "peru", "ruc"],
+  "contactEmail": "integrations@conflictzero.com",
+  "supportUrl": "https://conflictzero.com/support",
+  "privacyUrl": "https://conflictzero.com/privacy",
+  "termsUrl": "https://conflictzero.com/terms",
+  "creates": {
+    "verify_ruc": {
+      "key": "verify_ruc",
+      "noun": "RUC",
+      "display": {
+        "label": "Verificar RUC",
+        "description": "Verifica un RUC peruano y obtén datos de la empresa"
+      },
+      "operation": {
+        "inputFields": [
+          {
+            "key": "ruc",
+            "label": "RUC",
+            "type": "string",
+            "required": true,
+            "helpText": "RUC de 11 dígitos a verificar"
+          }
+        ],
+        "perform": "{{perform_verify_ruc}}",
+        "outputFields": [
+          {
+            "key": "ruc",
+            "label": "RUC"
+          },
+          {
+            "key": "company_name",
+            "label": "Nombre de la empresa"
+          },
+          {
+            "key": "status",
+            "label": "Estado"
+          },
+          {
+            "key": "risk_score",
+            "label": "Score de Riesgo"
+          },
+          {
+            "key": "compliance_score",
+            "label": "Score de Compliance"
+          },
+          {
+            "key": "sello_status",
+            "label": "Sello Conflict Zero"
+          }
+        ],
+        "sample": {
+          "ruc": "20100012345",
+          "company_name": "Empresa Demo S.A.C.",
+          "status": "active",
+          "risk_score": 85.5,
+          "compliance_score": 92.0,
+          "sello_status": "gold"
+        }
+      }
+    },
+    "compare_companies": {
+      "key": "compare_companies",
+      "noun": "Comparación",
+      "display": {
+        "label": "Comparar Empresas",
+        "description": "Compara hasta 10 empresas por RUC"
+      },
+      "operation": {
+        "inputFields": [
+          {
+            "key": "rucs",
+            "label": "RUCs",
+            "type": "string",
+            "required": true,
+            "list": true,
+            "helpText": "Lista de RUCs a comparar (máx 10)"
+          }
+        ],
+        "perform": "{{perform_compare_companies}}",
+        "outputFields": [
+          {
+            "key": "comparison_id",
+            "label": "ID de Comparación"
+          },
+          {
+            "key": "best_option",
+            "label": "Mejor Opción"
+          },
+          {
+            "key": "ranking",
+            "label": "Ranking"
+          }
+        ]
+      }
+    },
+    "add_to_network": {
+      "key": "add_to_network",
+      "noun": "Proveedor",
+      "display": {
+        "label": "Agregar a Red",
+        "description": "Agrega un proveedor a tu red de monitoreo"
+      },
+      "operation": {
+        "inputFields": [
+          {
+            "key": "ruc",
+            "label": "RUC",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "name",
+            "label": "Nombre",
+            "type": "string",
+            "required": true
+          },
+          {
+            "key": "tags",
+            "label": "Etiquetas",
+            "type": "string",
+            "list": true,
+            "required": false
+          }
+        ],
+        "perform": "{{perform_add_to_network}}",
+        "outputFields": [
+          {
+            "key": "id",
+            "label": "ID"
+          },
+          {
+            "key": "ruc",
+            "label": "RUC"
+          },
+          {
+            "key": "name",
+            "label": "Nombre"
+          }
+        ]
+      }
+    }
+  },
+  "triggers": {
+    "new_alert": {
+      "key": "new_alert",
+      "noun": "Alerta",
+      "display": {
+        "label": "Nueva Alerta",
+        "description": "Se dispara cuando hay una nueva alerta de monitoreo"
+      },
+      "operation": {
+        "type": "hook",
+        "performSubscribe": "{{subscribe_webhook}}",
+        "performUnsubscribe": "{{unsubscribe_webhook}}",
+        "perform": "{{perform_hook}}",
+        "inputFields": [
+          {
+            "key": "severity",
+            "label": "Severidad mínima",
+            "type": "string",
+            "choices": ["low", "medium", "high", "critical"],
+            "default": "medium",
+            "helpText": "Solo alertas con esta severidad o mayor"
+          }
+        ],
+        "outputFields": [
+          {
+            "key": "id",
+            "label": "ID de Alerta"
+          },
+          {
+            "key": "title",
+            "label": "Título"
+          },
+          {
+            "key": "message",
+            "label": "Mensaje"
+          },
+          {
+            "key": "severity",
+            "label": "Severidad"
+          },
+          {
+            "key": "company_ruc",
+            "label": "RUC Afectado"
+          },
+          {
+            "key": "company_name",
+            "label": "Empresa Afectada"
+          },
+          {
+            "key": "created_at",
+            "label": "Fecha"
+          }
+        ],
+        "sample": {
+          "id": 123,
+          "title": "Alerta: Score cayó",
+          "message": "El proveedor tuvo una caída significativa",
+          "severity": "high",
+          "company_ruc": "20100012345",
+          "company_name": "Empresa Demo S.A.C.",
+          "created_at": "2026-04-28T10:00:00Z"
+        }
+      }
+    },
+    "supplier_change": {
+      "key": "supplier_change",
+      "noun": "Cambio",
+      "display": {
+        "label": "Cambio en Proveedor",
+        "description": "Se dispara cuando se detecta un cambio en un proveedor"
+      },
+      "operation": {
+        "type": "hook",
+        "performSubscribe": "{{subscribe_webhook}}",
+        "performUnsubscribe": "{{unsubscribe_webhook}}",
+        "perform": "{{perform_hook}}",
+        "inputFields": [
+          {
+            "key": "change_types",
+            "label": "Tipos de cambio",
+            "type": "string",
+            "list": true,
+            "choices": [
+              "risk_score_drop",
+              "sanction_new",
+              "address_change",
+              "representative_change",
+              "status_change"
+            ],
+            "helpText": "Filtrar por tipos de cambio específicos"
+          }
+        ],
+        "outputFields": [
+          {
+            "key": "id",
+            "label": "ID de Cambio"
+          },
+          {
+            "key": "change_type",
+            "label": "Tipo"
+          },
+          {
+            "key": "description",
+            "label": "Descripción"
+          },
+          {
+            "key": "severity",
+            "label": "Severidad"
+          },
+          {
+            "key": "old_value",
+            "label": "Valor Anterior"
+          },
+          {
+            "key": "new_value",
+            "label": "Valor Nuevo"
+          }
+        ]
+      }
+    }
+  },
+  "searches": {
+    "find_company": {
+      "key": "find_company",
+      "noun": "Empresa",
+      "display": {
+        "label": "Buscar Empresa",
+        "description": "Busca una empresa por RUC o nombre"
+      },
+      "operation": {
+        "inputFields": [
+          {
+            "key": "query",
+            "label": "Búsqueda",
+            "type": "string",
+            "required": true,
+            "helpText": "RUC o nombre de empresa"
+          }
+        ],
+        "perform": "{{perform_search}}",
+        "outputFields": [
+          {
+            "key": "ruc",
+            "label": "RUC"
+          },
+          {
+            "key": "name",
+            "label": "Nombre"
+          },
+          {
+            "key": "risk_score",
+            "label": "Score de Riesgo"
+          },
+          {
+            "key": "sello_status",
+            "label": "Sello"
+          }
+        ]
+      }
+    }
+  },
+  "authentication": {
+    "type": "apikey",
+    "test": "{{test_auth}}",
+    "fields": [
+      {
+        "key": "api_key",
+        "label": "API Key",
+        "type": "string",
+        "required": true,
+        "helpText": "Obtén tu API key desde https://app.conflictzero.com/settings/api"
+      }
+    ]
+  }
+}

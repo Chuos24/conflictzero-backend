@@ -1,0 +1,36 @@
+{
+  "name": "conflictzero",
+  "version": "1.0.0",
+  "description": "SDK oficial de Conflict Zero - Verificación y monitoreo de proveedores",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "lint": "eslint src/",
+    "build": "rollup -c"
+  },
+  "keywords": [
+    "conflictzero",
+    "compliance",
+    "suppliers",
+    "verification",
+    "ruc",
+    "peru"
+  ],
+  "author": "Conflict Zero",
+  "license": "MIT",
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "eslint": "^8.0.0",
+    "rollup": "^4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/conflictzero/sdk-javascript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/conflictzero/sdk-javascript/issues"
+  },
+  "homepage": "https://conflictzero.com/docs/sdk-js"
+}

@@ -1,0 +1,260 @@
+{
+  "name": "conflictzero-make",
+  "version": "1.0.0",
+  "description": "Conflict Zero integration for Make (Integromat)",
+  "apps": [
+    {
+      "id": "conflictzero",
+      "name": "Conflict Zero",
+      "description": "Verify suppliers and monitor compliance in Peru",
+      "type": "public",
+      "connection": {
+        "type": "api_key",
+        "label": "API Key",
+        "required": true
+      },
+      "baseUrl": "https://api.conflictzero.com/v1",
+      "api": {
+        "verifyRuc": {
+          "label": "Verify RUC",
+          "description": "Verify a Peruvian company by RUC",
+          "url": "/verify/{ruc}",
+          "method": "GET",
+          "parameters": [
+            {
+              "name": "ruc",
+              "type": "text",
+              "label": "RUC",
+              "required": true,
+              "help": "11-digit Peruvian RUC number"
+            }
+          ],
+          "response": {
+            "output": [
+              { "name": "company_name", "type": "text" },
+              { "name": "status", "type": "text" },
+              { "name": "risk_score", "type": "number" },
+              { "name": "risk_level", "type": "text" },
+              { "name": "sanctions_count", "type": "number" },
+              { "name": "sunat_debt", "type": "number" }
+            ]
+          }
+        },
+        "compareCompanies": {
+          "label": "Compare Companies",
+          "description": "Compare up to 5 companies side by side",
+          "url": "/compare",
+          "method": "POST",
+          "parameters": [
+            {
+              "name": "rucs",
+              "type": "array",
+              "label": "RUC List",
+              "required": true,
+              "help": "Array of RUCs to compare"
+            }
+          ],
+          "response": {
+            "output": [
+              { "name": "companies", "type": "array" },
+              { "name": "best_option", "type": "text" },
+              { "name": "risk_summary", "type": "text" }
+            ]
+          }
+        },
+        "getRiskScore": {
+          "label": "Get Risk Score",
+          "description": "Get detailed risk score for a company",
+          "url": "/score/{ruc}",
+          "method": "GET",
+          "parameters": [
+            {
+              "name": "ruc",
+              "type": "text",
+              "label": "RUC",
+              "required": true
+            }
+          ],
+          "response": {
+            "output": [
+              { "name": "total_score", "type": "number" },
+              { "name": "risk_level", "type": "text" },
+              { "name": "factors", "type": "array" }
+            ]
+          }
+        },
+        "addToNetwork": {
+          "label": "Add to Network",
+          "description": "Add a supplier to your monitored network",
+          "url": "/network/suppliers",
+          "method": "POST",
+          "parameters": [
+            {
+              "name": "ruc",
+              "type": "text",
+              "label": "Supplier RUC",
+              "required": true
+            },
+            {
+              "name": "company_name",
+              "type": "text",
+              "label": "Company Name",
+              "required": false
+            }
+          ],
+          "response": {
+            "output": [
+              { "name": "id", "type": "text" },
+              { "name": "status", "type": "text" },
+              { "name": "added_at", "type": "date" }
+            ]
+          }
+        },
+        "getMonitoringAlerts": {
+          "label": "Get Monitoring Alerts",
+          "description": "Get recent alerts from your supplier network",
+          "url": "/monitoring/alerts",
+          "method": "GET",
+          "parameters": [
+            {
+              "name": "status",
+              "type": "select",
+              "label": "Status Filter",
+              "options": ["pending", "sent", "read", "dismissed"],
+              "required": false
+            },
+            {
+              "name": "limit",
+              "type": "number",
+              "label": "Limit",
+              "default": 20,
+              "required": false
+            }
+          ],
+          "response": {
+            "output": [
+              { "name": "alerts", "type": "array" },
+              { "name": "total_count", "type": "number" },
+              { "name": "unread_count", "type": "number" }
+            ]
+          }
+        },
+        "createWebhook": {
+          "label": "Create Webhook",
+          "description": "Register a webhook URL for real-time alerts",
+          "url": "/webhooks",
+          "method": "POST",
+          "parameters": [
+            {
+              "name": "url",
+              "type": "text",
+              "label": "Webhook URL",
+              "required": true
+            },
+            {
+              "name": "events",
+              "type": "array",
+              "label": "Events",
+              "options": ["alert.created", "change.detected", "score.updated"],
+              "required": true
+            }
+          ],
+          "response": {
+            "output": [
+              { "name": "webhook_id", "type": "text" },
+              { "name": "secret", "type": "text" },
+              { "name": "status", "type": "text" }
+            ]
+          }
+        },
+        "getComplianceCertificate": {
+          "label": "Get Compliance Certificate",
+          "description": "Generate or retrieve a compliance certificate",
+          "url": "/certificates/{ruc}",
+          "method": "GET",
+          "parameters": [
+            {
+              "name": "ruc",
+              "type": "text",
+              "label": "RUC",
+              "required": true
+            }
+          ],
+          "response": {
+            "output": [
+              { "name": "certificate_url", "type": "text" },
+              { "name": "expires_at", "type": "date" },
+              { "name": "verification_code", "type": "text" }
+            ]
+          }
+        }
+      },
+      "triggers": {
+        "newAlert": {
+          "label": "New Alert",
+          "description": "Triggers when a new alert is generated",
+          "type": "webhook",
+          "events": ["alert.created"],
+          "output": [
+            { "name": "alert_id", "type": "text" },
+            { "name": "company_ruc", "type": "text" },
+            { "name": "company_name", "type": "text" },
+            { "name": "alert_type", "type": "text" },
+            { "name": "severity", "type": "text" },
+            { "name": "message", "type": "text" },
+            { "name": "created_at", "type": "date" }
+          ]
+        },
+        "supplierChanged": {
+          "label": "Supplier Changed",
+          "description": "Triggers when a monitored supplier status changes",
+          "type": "webhook",
+          "events": ["change.detected"],
+          "output": [
+            { "name": "change_id", "type": "text" },
+            { "name": "company_ruc", "type": "text" },
+            { "name": "change_type", "type": "text" },
+            { "name": "previous_value", "type": "text" },
+            { "name": "new_value", "type": "text" },
+            { "name": "severity", "type": "text" }
+          ]
+        },
+        "scoreUpdated": {
+          "label": "Score Updated",
+          "description": "Triggers when a supplier's risk score changes",
+          "type": "webhook",
+          "events": ["score.updated"],
+          "output": [
+            { "name": "company_ruc", "type": "text" },
+            { "name": "previous_score", "type": "number" },
+            { "name": "new_score", "type": "number" },
+            { "name": "previous_level", "type": "text" },
+            { "name": "new_level", "type": "text" }
+          ]
+        }
+      },
+      "searches": {
+        "searchCompany": {
+          "label": "Search Company",
+          "description": "Search for a company by name or RUC",
+          "url": "/search",
+          "method": "GET",
+          "parameters": [
+            {
+              "name": "query",
+              "type": "text",
+              "label": "Search Query",
+              "required": true
+            }
+          ],
+          "response": {
+            "output": [
+              { "name": "results", "type": "array" },
+              { "name": "total", "type": "number" }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
