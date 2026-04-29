@@ -2,18 +2,13 @@ import { useState, FormEvent, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { webhookAPI } from '../services/api'
 import api from '../services/api'
-import type { Webhook, WebhookDelivery } from '../types'
+import type { Webhook, WebhookDelivery, ApiKey } from '../types'
 import './Settings.css'
 
 interface PasswordData {
   current_password: string
   new_password: string
   confirm_password: string
-}
-
-interface ApiKeyResponse {
-  api_key: string
-  prefix?: string
 }
 
 const WEBHOOK_EVENTS = [
@@ -25,7 +20,7 @@ const WEBHOOK_EVENTS = [
 ]
 
 export default function Settings(): JSX.Element {
-  const { user } = useAuth()
+  const { } = useAuth()
   const [activeTab, setActiveTab] = useState<string>('password')
   const [loading, setLoading] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
@@ -36,8 +31,11 @@ export default function Settings(): JSX.Element {
     confirm_password: ''
   })
 
-  const [apiKey, setApiKey] = useState<ApiKeyResponse | null>(null)
-  const [showApiKey, setShowApiKey] = useState<boolean>(false)
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
+  const [newKeyName, setNewKeyName] = useState('')
+  const [newKeyDesc, setNewKeyDesc] = useState('')
+  const [createdKey, setCreatedKey] = useState<{api_key: string; name: string} | null>(null)
+  const [showCreatedKey, setShowCreatedKey] = useState(false)
 
   // Webhooks state
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
@@ -162,17 +160,51 @@ export default function Settings(): JSX.Element {
     }
   }
 
-  const handleRegenerateApiKey = async (): Promise<void> => {
-    if (!confirm('¿Estás seguro? La API key anterior dejará de funcionar.')) return
+  const loadApiKeys = async () => {
+    try {
+      const response = await api.get('/api/v1/company/api-keys')
+      setApiKeys(response.data.items || [])
+    } catch {
+      setMessage('Error al cargar API keys')
+    }
+  }
+
+  const handleCreateApiKey = async (e: FormEvent): Promise<void> => {
+    e.preventDefault()
+    if (!newKeyName.trim()) {
+      setMessage('El nombre es obligatorio')
+      return
+    }
 
     setLoading(true)
     try {
-      const response = await api.post('/api/v1/auth/regenerate-api-key')
-      setApiKey(response.data)
-      setShowApiKey(true)
-      setMessage('API key generada. Guárdala ahora, no se mostrará de nuevo.')
+      const response = await api.post('/api/v1/company/api-keys', {
+        name: newKeyName,
+        description: newKeyDesc || undefined
+      })
+      setCreatedKey(response.data)
+      setShowCreatedKey(true)
+      setNewKeyName('')
+      setNewKeyDesc('')
+      setMessage('API key creada. Guárdala ahora, no se mostrará de nuevo.')
+      await loadApiKeys()
     } catch (err: unknown) {
-      setMessage('Error al generar API key')
+      setMessage('Error al crear API key')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRevokeApiKey = async (id: string): Promise<void> => {
+    if (!confirm('¿Revocar esta API key? Dejará de funcionar inmediatamente.')) return
+
+    setLoading(true)
+    try {
+      await api.delete(`/api/v1/company/api-keys/${id}`)
+      setMessage('API key revocada')
+      await loadApiKeys()
+    } catch {
+      setMessage('Error al revocar API key')
     } finally {
       setLoading(false)
     }
@@ -183,7 +215,11 @@ export default function Settings(): JSX.Element {
     setMessage('Copiado al portapapeles')
   }
 
-  const typedUser = user as { api_key_prefix?: string } | null
+  useEffect(() => {
+    if (activeTab === 'api') {
+      loadApiKeys()
+    }
+  }, [activeTab])
 
   return (
     <div className="settings-container">
@@ -263,36 +299,104 @@ export default function Settings(): JSX.Element {
 
       {activeTab === 'api' && (
         <div className="settings-card">
-          <h2>API Key</h2>
+          <h2>API Keys</h2>
           <p className="description">
-            Usa esta API key para acceder a nuestra API programáticamente.
+            Gestiona tus API keys para acceder programáticamente a Conflict Zero.
           </p>
 
-          {typedUser?.api_key_prefix && (
-            <div className="current-key">
-              <p>API Key actual: <code>{typedUser.api_key_prefix}...</code></p>
-            </div>
-          )}
-
-          {showApiKey && apiKey && (
-            <div className="api-key-display">
-              <code className="key-value">{apiKey.api_key}</code>
+          {showCreatedKey && createdKey && (
+            <div className="api-key-created">
+              <div className="api-key-display">
+                <label>API Key (solo se muestra una vez):</label>
+                <code className="key-value">{createdKey.api_key}</code>
+                <button
+                  className="btn-copy"
+                  onClick={() => copyToClipboard(createdKey.api_key)}
+                >
+                  Copiar
+                </button>
+              </div>
               <button
-                className="btn-copy"
-                onClick={() => copyToClipboard(apiKey.api_key)}
+                className="btn-small"
+                onClick={() => setShowCreatedKey(false)}
               >
-                Copiar
+                Ocultar
               </button>
             </div>
           )}
 
-          <button
-            className="btn-warning"
-            onClick={handleRegenerateApiKey}
-            disabled={loading}
-          >
-            {loading ? 'Generando...' : 'Generar Nueva API Key'}
-          </button>
+          <form onSubmit={handleCreateApiKey} className="webhook-form">
+            <div className="form-group">
+              <label>Nombre</label>
+              <input
+                type="text"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                placeholder="Ej: Producción, Desarrollo, Zapier"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Descripción (opcional)</label>
+              <input
+                type="text"
+                value={newKeyDesc}
+                onChange={(e) => setNewKeyDesc(e.target.value)}
+                placeholder="Para qué se usará esta key"
+              />
+            </div>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Creando...' : 'Crear API Key'}
+            </button>
+          </form>
+
+          <h3 className="webhooks-list-title">Tus API Keys</h3>
+          {apiKeys.length === 0 ? (
+            <p className="empty-state">No tienes API keys registradas.</p>
+          ) : (
+            <ul className="webhooks-list">
+              {apiKeys.map(key => (
+                <li key={key.id} className="webhook-item">
+                  <div className="webhook-header">
+                    <div className="webhook-info">
+                      <strong>{key.name}</strong>
+                      <code className="webhook-url">{key.key_prefix}...</code>
+                      {key.description && (
+                        <span className="webhook-events">{key.description}</span>
+                      )}
+                      <span className="event-tag">
+                        {key.usage_count} usos
+                      </span>
+                      {key.last_used_at && (
+                        <span className="event-tag">
+                          Último uso: {new Date(key.last_used_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      {key.expires_at && (
+                        <span className="event-tag">
+                          Expira: {new Date(key.expires_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      {!key.is_active && (
+                        <span className="status-badge failed">Revocada</span>
+                      )}
+                    </div>
+                    <div className="webhook-actions">
+                      {key.is_active && (
+                        <button
+                          className="btn-small btn-danger"
+                          onClick={() => handleRevokeApiKey(key.id)}
+                          disabled={loading}
+                        >
+                          Revocar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <div className="api-docs-link">
             <a href="/docs" target="_blank" rel="noopener noreferrer">
