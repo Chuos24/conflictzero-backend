@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useDashboardStats } from '../hooks/useQueries'
+import { useDashboardStats, useMLScore } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
+import Badge from '../components/Badge'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -35,6 +36,7 @@ interface ActivityItem {
   title: string
   status: string
   date: string
+  ruc?: string
 }
 
 // Mock chart data (server-side rendering fallback)
@@ -61,6 +63,10 @@ const defaultChartData: DefaultChartData = {
 function Dashboard(): JSX.Element {
   const { user } = useAuth()
   const { data: stats, isLoading } = useDashboardStats()
+
+  // Tomar el RUC de la última verificación para mostrar ML Score
+  const lastRuc = (stats?.recent_activity?.[0] as ActivityItem & { ruc?: string })?.ruc || null
+  const { data: mlScore } = useMLScore(lastRuc, 90)
 
   // Use server data when available, fallback to mock
   const chartData: DefaultChartData = stats?.chart_data || defaultChartData
@@ -128,6 +134,52 @@ function Dashboard(): JSX.Element {
           </div>
         </div>
       </div>
+
+      {/* ML Score Summary */}
+      {lastRuc && mlScore && (
+        <div className="ml-score-summary">
+          <div className="ml-summary-header">
+            <h3>ML Score de Riesgo Predictivo</h3>
+            <Badge variant="default" size="small">v{mlScore.model_version}</Badge>
+          </div>
+          <div className="ml-summary-content">
+            <div className="ml-summary-item">
+              <span className="ml-summary-ruc">{lastRuc}</span>
+              <div className="ml-summary-score">
+                <span
+                  className="ml-score-value"
+                  style={{
+                    color: mlScore.risk_level === 'low' ? '#22c55e' :
+                           mlScore.risk_level === 'moderate' ? '#eab308' :
+                           mlScore.risk_level === 'high' ? '#f97316' : '#ef4444'
+                  }}
+                >
+                  {mlScore.ml_score}
+                </span>
+                <span className="ml-score-label">/100</span>
+              </div>
+              <Badge
+                variant={
+                  mlScore.risk_level === 'low' ? 'success' :
+                  mlScore.risk_level === 'moderate' ? 'warning' :
+                  mlScore.risk_level === 'high' ? 'error' : 'error'
+                }
+                size="small"
+              >
+                {mlScore.risk_level === 'low' ? 'Bajo Riesgo' :
+                 mlScore.risk_level === 'moderate' ? 'Riesgo Moderado' :
+                 mlScore.risk_level === 'high' ? 'Alto Riesgo' : 'Riesgo Crítico'}
+              </Badge>
+            </div>
+            {mlScore.explanation?.[0] && (
+              <p className="ml-summary-insight">{mlScore.explanation[0]}</p>
+            )}
+            <Link to="/verifications" className="ml-summary-link">
+              Ver análisis completo →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Charts Section */}
       {chartData && (

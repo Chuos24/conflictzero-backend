@@ -11,7 +11,7 @@ from app.models_monitoring import (
     SupplierSnapshot, SupplierChange, MonitoringAlert,
     MonitoringRule, MonitoringSchedule
 )
-from app.models import Company, User
+from app.models import Company
 from app.core.security import get_password_hash
 
 

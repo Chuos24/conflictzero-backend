@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
 import { useVerifications, useVerifyRuc } from '../hooks/useQueries'
 import { verifyRucSchema } from '../lib/validations'
+import MLScoreCard from '../components/MLScoreCard'
 import type { z } from 'zod'
 import type { VerificationResult } from '../types'
 import './Verifications.css'
@@ -155,6 +156,11 @@ function Verifications(): JSX.Element {
                 </a>
               )}
             </div>
+          )}
+
+          {/* ML Score - se muestra cuando hay resultados */}
+          {results && (
+            <MLScoreCard ruc={results.ruc} />
           )}
         </div>
 

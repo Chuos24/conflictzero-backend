@@ -315,6 +315,17 @@ def get_tce_sanctions(ruc: str, db: Session) -> List[Dict[str, Any]]:
         return []
 
 
+# Alias para compatibilidad con monitoring_service.py
+def collect_company_data(ruc: str) -> Dict[str, Any]:
+    """Colecta datos para un RUC (alias para monitoring_service)."""
+    from app.core.database import SessionLocal
+    db = SessionLocal()
+    try:
+        return collect_all_data(ruc, db)
+    finally:
+        db.close()
+
+
 def collect_all_data(ruc: str, db: Session) -> Dict[str, Any]:
     """
     Colecta todos los datos disponibles para un RUC.

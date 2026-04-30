@@ -206,3 +206,48 @@ scoring_service = ScoringService()
 
 def get_scoring_service() -> ScoringService:
     return scoring_service
+
+
+# ============================================================
+# Función standalone para compatibilidad (monitoring_service.py)
+# ============================================================
+
+def calculate_risk_score(raw_data: dict) -> Optional[float]:
+    """
+    Calcula un score de riesgo simple a partir de datos raw.
+    
+    Usado por monitoring_service.py y ml_scoring_service.py.
+    """
+    if not raw_data:
+        return 50.0  # Neutral si no hay datos
+    
+    score = 100.0
+    
+    # Penalizar deuda
+    debt = raw_data.get("deuda", raw_data.get("deuda_tributaria", 0))
+    if debt:
+        try:
+            debt_val = float(debt)
+            if debt_val > 100000:
+                score -= 30
+            elif debt_val > 50000:
+                score -= 20
+            elif debt_val > 10000:
+                score -= 10
+            elif debt_val > 0:
+                score -= 5
+        except (ValueError, TypeError):
+            pass
+    
+    # Penalizar sanciones
+    sanctions = raw_data.get("sanctions", [])
+    if sanctions:
+        score -= min(40, len(sanctions) * 10)
+    
+    # Penalizar estado no activo
+    estado = raw_data.get("estado", raw_data.get("tax_status", ""))
+    if estado and str(estado).lower() not in ["activo", "active", "habido", ""]:
+        score -= 20
+    
+    # Asegurar rango
+    return max(0.0, min(100.0, score))

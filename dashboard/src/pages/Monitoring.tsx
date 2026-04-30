@@ -1,42 +1,23 @@
 import { useState } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { useMonitoringStats, useMonitoringAlerts, useMonitoringChanges } from '../hooks/useQueries'
+import { useMonitoringStats, useMonitoringAlerts, useMonitoringChanges, useMarkMonitoringAlertRead, useDismissMonitoringAlert } from '../hooks/useQueries'
+import type { MonitoringAlert, MonitoringChange } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Badge from '../components/Badge'
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, AreaChart, Area
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts'
 import './Monitoring.css'
 
-interface AlertItem {
-  id: number
-  title: string
-  message: string
-  severity: string
-  status: string
-  created_at: string
-  company_name?: string
-}
-
-interface ChangeItem {
-  id: number
-  change_type: string
-  description: string
-  severity: string
-  created_at: string
-  previous_value?: string
-  new_value?: string
-}
-
 function Monitoring(): JSX.Element {
-  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'overview' | 'alerts' | 'changes' | 'rules'>('overview')
   const [alertFilter, setAlertFilter] = useState<string>('all')
   
   const { data: stats, isLoading: statsLoading } = useMonitoringStats()
   const { data: alerts, isLoading: alertsLoading } = useMonitoringAlerts(alertFilter !== 'all' ? alertFilter : undefined)
   const { data: changes, isLoading: changesLoading } = useMonitoringChanges()
+  const markReadMutation = useMarkMonitoringAlertRead()
+  const dismissMutation = useDismissMonitoringAlert()
 
   const isLoading = statsLoading || alertsLoading || changesLoading
 
@@ -48,7 +29,7 @@ function Monitoring(): JSX.Element {
     )
   }
 
-  const getSeverityVariant = (severity: string): string => {
+  const getSeverityVariant = (severity: string): 'info' | 'warning' | 'success' | 'error' | 'default' => {
     switch (severity) {
       case 'critical': return 'error'
       case 'warning': return 'warning'
@@ -155,9 +136,9 @@ function Monitoring(): JSX.Element {
             <div className="chart-card wide">
               <h3>Tendencia de Cambios (30 días)</h3>
               <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={changes?.slice(0, 30).map((c: ChangeItem, i: number) => ({
+                <AreaChart data={changes?.slice(0, 30).map((c: MonitoringChange, i: number) => ({
                   day: i + 1,
-                  count: changes.filter((ch: ChangeItem) => 
+                  count: changes.filter((ch: MonitoringChange) => 
                     new Date(ch.created_at).toDateString() === new Date(c.created_at).toDateString()
                   ).length
                 })) || []}>
@@ -239,23 +220,23 @@ function Monitoring(): JSX.Element {
 
           {alerts && alerts.length > 0 ? (
             <div className="alerts-list">
-              {alerts.map((alert: AlertItem) => (
-                <div key={alert.id} className={`alert-item severity-${alert.severity}`}>
+              {alerts.map((alertItem: MonitoringAlert) => (
+                <div key={alertItem.id} className={`alert-item severity-${alertItem.severity}`}>
                   <div className="alert-header">
-                    <Badge variant={getSeverityVariant(alert.severity)}>
-                      {alert.severity}
+                    <Badge variant={getSeverityVariant(alertItem.severity)}>
+                      {alertItem.severity}
                     </Badge>
                     <span className="alert-date">
-                      {new Date(alert.created_at).toLocaleString('es-PE')}
+                      {new Date(alertItem.created_at).toLocaleString('es-PE')}
                     </span>
                   </div>
-                  <h4 className="alert-title">{alert.title}</h4>
-                  <p className="alert-message">{alert.message}</p>
+                  <h4 className="alert-title">{alertItem.title}</h4>
+                  <p className="alert-message">{alertItem.message}</p>
                   <div className="alert-actions">
-                    <button className="btn-sm" onClick={() => alert(`Marcar leída: ${alert.id}`)}>
+                    <button className="btn-sm" onClick={() => markReadMutation.mutate(alertItem.id)} disabled={markReadMutation.isPending}>
                       Marcar leída
                     </button>
-                    <button className="btn-sm btn-ghost" onClick={() => alert(`Descartar: ${alert.id}`)}>
+                    <button className="btn-sm btn-ghost" onClick={() => dismissMutation.mutate(alertItem.id)} disabled={dismissMutation.isPending}>
                       Descartar
                     </button>
                   </div>
@@ -286,7 +267,7 @@ function Monitoring(): JSX.Element {
                   </tr>
                 </thead>
                 <tbody>
-                  {changes.map((change: ChangeItem) => (
+                  {changes.map((change: MonitoringChange) => (
                     <tr key={change.id} className={`severity-${change.severity}`}>
                       <td>
                         <Badge variant="default" size="small">

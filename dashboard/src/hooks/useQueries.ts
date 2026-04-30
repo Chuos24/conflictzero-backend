@@ -304,6 +304,7 @@ export interface MonitoringAlert {
   title: string
   message: string
   channel: string
+  severity: string
   status: string
   created_at: string
   sent_at: string | null
@@ -406,5 +407,95 @@ export const useDismissMonitoringAlert = () => {
       queryClient.invalidateQueries({ queryKey: ['monitoring', 'alerts'] })
       queryClient.invalidateQueries({ queryKey: ['monitoring', 'stats'] })
     },
+  })
+}
+
+// ───────────────────────────────────────────────
+// ML Scoring hooks (Fase 2)
+// ───────────────────────────────────────────────
+
+export interface MLScore {
+  ruc: string
+  ml_score: number
+  risk_level: string
+  features: {
+    verification_frequency: number
+    score_volatility: number
+    sanction_history: number
+    debt_trend: number
+    compliance_consistency: number
+  }
+  explanation: string[]
+  lookback_days: number
+  calculated_at: string
+  model_version: string
+}
+
+export interface MLAnomalies {
+  ruc: string
+  anomalies: {
+    type: string
+    severity: string
+    description: string
+    detected_at?: string
+    count?: number
+    previous?: number
+    current?: number
+  }[]
+  anomaly_count: number
+  has_anomalies: boolean
+  days_analyzed: number
+  analyzed_at: string
+}
+
+export interface MLBenchmark {
+  ruc: string
+  individual_score: number
+  sector: string | null
+  sector_average: number | null
+  sector_median: number | null
+  percentile: number | null
+  comparison: string
+}
+
+export const useMLScore = (ruc: string | null, lookbackDays: number = 90) => {
+  return useQuery<MLScore>({
+    queryKey: ['ml', 'score', ruc, lookbackDays],
+    queryFn: async () => {
+      const { data } = await api.get(`/api/v2/ml/score/${ruc}`, {
+        params: { lookback_days: lookbackDays }
+      })
+      return data
+    },
+    enabled: !!ruc && ruc.length === 11,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+  })
+}
+
+export const useMLAnomalies = (ruc: string | null, days: number = 30) => {
+  return useQuery<MLAnomalies>({
+    queryKey: ['ml', 'anomalies', ruc, days],
+    queryFn: async () => {
+      const { data } = await api.get(`/api/v2/ml/score/${ruc}/anomalies`, {
+        params: { days }
+      })
+      return data
+    },
+    enabled: !!ruc && ruc.length === 11,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export const useMLBenchmark = (ruc: string | null, sector?: string) => {
+  return useQuery<MLBenchmark>({
+    queryKey: ['ml', 'benchmark', ruc, sector],
+    queryFn: async () => {
+      const params: Record<string, string> = {}
+      if (sector) params.sector = sector
+      const { data } = await api.get(`/api/v2/ml/score/${ruc}/benchmark`, { params })
+      return data
+    },
+    enabled: !!ruc && ruc.length === 11,
+    staleTime: 1000 * 60 * 10,
   })
 }

@@ -27,7 +27,8 @@ from app.routers import (
     admin,
     network,
     payments,
-    monitoring
+    monitoring,
+    ml_scoring
 )
 from app.services.digital_signature_v2 import signature_service
 
@@ -150,6 +151,7 @@ app.include_router(admin.router, prefix="/api/v1")  # Admin router
 app.include_router(network.router, prefix="/api/v2")  # Mi Red - Supplier Network
 app.include_router(payments.router, prefix="/api/v2")  # Pagos - Culqi integration
 app.include_router(monitoring.router, prefix="/api/v2")  # Monitoreo Continuo - Fase 2
+app.include_router(ml_scoring.router, prefix="/api/v2")  # ML Scoring - Fase 2
 
 
 # Error handlers
