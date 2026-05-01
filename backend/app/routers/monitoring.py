@@ -2,20 +2,21 @@
 Router API para monitoreo continuo de proveedores.
 Fase 2 - Conflict Zero
 """
+import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_company
 from app.services.monitoring_service import MonitoringService
 from app.models_monitoring import (
     SupplierSnapshot, SupplierChange, MonitoringAlert, 
     MonitoringRule, MonitoringSchedule
 )
-from app.models_v2 import User
+from app.models_v2 import Company
 
-router = APIRouter(prefix="/api/v2/monitoring", tags=["monitoring"])
+router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
 
 def get_monitoring_service(db: Session = Depends(get_db)) -> MonitoringService:
@@ -28,10 +29,10 @@ def get_monitoring_service(db: Session = Depends(get_db)) -> MonitoringService:
 
 @router.post("/snapshots/{company_id}", response_model=dict)
 def create_snapshot(
-    company_id: int,
+    company_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     service: MonitoringService = Depends(get_monitoring_service),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Crea un snapshot manual de un proveedor."""
     from app.models_v2 import Company
@@ -41,7 +42,9 @@ def create_snapshot(
     if not company:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
     
-    snapshot = service.create_snapshot(company.id, company.ruc)
+    # Obtener RUC: en v2 está encriptado, usar hash como fallback para demo
+    company_ruc = getattr(company, 'ruc', None) or getattr(company, 'ruc_hash', None) or 'unknown'
+    snapshot = service.create_snapshot(company.id, company_ruc)
     
     # Detectar cambios en background
     background_tasks.add_task(service.detect_changes, company.id, snapshot)
@@ -59,10 +62,10 @@ def create_snapshot(
 
 @router.get("/snapshots/{company_id}/history", response_model=List[dict])
 def get_snapshot_history(
-    company_id: int,
+    company_id: uuid.UUID,
     days: int = Query(default=30, ge=1, le=365),
     service: MonitoringService = Depends(get_monitoring_service),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Obtiene historial de snapshots de un proveedor."""
     return service.get_supplier_history(company_id, days)
@@ -74,11 +77,11 @@ def get_snapshot_history(
 
 @router.get("/changes", response_model=List[dict])
 def list_changes(
-    company_id: Optional[int] = Query(None),
-    severity: Optional[str] = Query(None, regex="^(info|warning|critical)$"),
+    company_id: Optional[uuid.UUID] = Query(None),
+    severity: Optional[str] = Query(None, pattern="^(info|warning|critical|high|medium|low)$"),
     limit: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Lista cambios detectados en proveedores."""
     query = db.query(SupplierChange)
@@ -108,9 +111,9 @@ def list_changes(
 
 @router.get("/changes/{change_id}", response_model=dict)
 def get_change(
-    change_id: int,
+    change_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Obtiene detalle de un cambio específico."""
     change = db.query(SupplierChange).filter(SupplierChange.id == change_id).first()
@@ -136,14 +139,14 @@ def get_change(
 
 @router.get("/alerts", response_model=List[dict])
 def list_alerts(
-    status: Optional[str] = Query(None, regex="^(pending|sent|read|dismissed)$"),
+    status: Optional[str] = Query(None, pattern="^(pending|sent|read|dismissed)$"),
     limit: int = Query(default=50, ge=1, le=200),
     service: MonitoringService = Depends(get_monitoring_service),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Lista alertas del usuario actual."""
     query = service.db.query(MonitoringAlert).filter(
-        MonitoringAlert.user_id == current_user.id
+        MonitoringAlert.company_id == current_company.id
     )
     
     if status:
@@ -170,9 +173,9 @@ def list_alerts(
 
 @router.post("/alerts/{alert_id}/read", response_model=dict)
 def mark_alert_read(
-    alert_id: int,
+    alert_id: uuid.UUID,
     service: MonitoringService = Depends(get_monitoring_service),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Marca una alerta como leída."""
     success = service.mark_alert_read(alert_id)
@@ -183,9 +186,9 @@ def mark_alert_read(
 
 @router.post("/alerts/{alert_id}/dismiss", response_model=dict)
 def dismiss_alert(
-    alert_id: int,
+    alert_id: uuid.UUID,
     service: MonitoringService = Depends(get_monitoring_service),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Descarta una alerta."""
     success = service.dismiss_alert(alert_id)
@@ -201,11 +204,11 @@ def dismiss_alert(
 @router.get("/rules", response_model=List[dict])
 def list_rules(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Lista reglas de monitoreo del usuario."""
     rules = db.query(MonitoringRule).filter(
-        MonitoringRule.user_id == current_user.id
+        MonitoringRule.company_id == current_company.id
     ).all()
     
     return [
@@ -226,16 +229,15 @@ def list_rules(
     ]
 
 
-@router.post("/rules", response_model=dict)
+@router.post("/rules", response_model=dict, status_code=201)
 def create_rule(
     rule_data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Crea una nueva regla de monitoreo."""
     rule = MonitoringRule(
-        user_id=current_user.id,
-        company_id=rule_data.get("company_id"),
+        company_id=current_company.id,
         rule_type=rule_data.get("rule_type", "all"),
         conditions=rule_data.get("conditions", {}),
         notify_email=rule_data.get("notify_email", True),
@@ -259,15 +261,15 @@ def create_rule(
 
 @router.patch("/rules/{rule_id}", response_model=dict)
 def update_rule(
-    rule_id: int,
+    rule_id: uuid.UUID,
     rule_data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Actualiza una regla de monitoreo."""
     rule = db.query(MonitoringRule).filter(
         MonitoringRule.id == rule_id,
-        MonitoringRule.user_id == current_user.id
+        MonitoringRule.company_id == current_company.id
     ).first()
     
     if not rule:
@@ -285,14 +287,14 @@ def update_rule(
 
 @router.delete("/rules/{rule_id}", response_model=dict)
 def delete_rule(
-    rule_id: int,
+    rule_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Elimina una regla de monitoreo."""
     rule = db.query(MonitoringRule).filter(
         MonitoringRule.id == rule_id,
-        MonitoringRule.user_id == current_user.id
+        MonitoringRule.company_id == current_company.id
     ).first()
     
     if not rule:
@@ -312,11 +314,11 @@ def delete_rule(
 def run_monitoring(
     background_tasks: BackgroundTasks,
     service: MonitoringService = Depends(get_monitoring_service),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Ejecuta manualmente el monitoreo de todos los proveedores."""
     # Solo admins pueden ejecutar manualmente
-    if not current_user.is_admin:
+    if not current_company.is_founder:
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar monitoreo manual")
     
     schedule = MonitoringSchedule(status="running", schedule_type="manual")
@@ -337,10 +339,10 @@ def run_monitoring(
 def list_schedules(
     limit: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Lista ejecuciones de monitoreo."""
-    if not current_user.is_admin:
+    if not current_company.is_founder:
         raise HTTPException(status_code=403, detail="Solo administradores pueden ver schedules")
     
     schedules = db.query(MonitoringSchedule).order_by(
@@ -371,7 +373,7 @@ def list_schedules(
 @router.get("/stats", response_model=dict)
 def get_monitoring_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_company: Company = Depends(get_current_company)
 ):
     """Estadísticas de monitoreo para el dashboard."""
     from sqlalchemy import func
@@ -380,7 +382,7 @@ def get_monitoring_stats(
     total_snapshots = db.query(func.count(SupplierSnapshot.id)).scalar() or 0
     total_changes = db.query(func.count(SupplierChange.id)).scalar() or 0
     pending_alerts = db.query(func.count(MonitoringAlert.id)).filter(
-        MonitoringAlert.user_id == current_user.id,
+        MonitoringAlert.company_id == current_company.id,
         MonitoringAlert.status == "pending"
     ).scalar() or 0
     

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from fastapi import Depends
 import json
 import hashlib
 

@@ -1,5 +1,4 @@
 from sqlalchemy import create_engine, event
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 from typing import Generator
@@ -7,6 +6,9 @@ from .config import settings
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Base class for models — usar el mismo Base que models_v2 para unificar metadata
+from app.models_v2 import Base
 
 # Create engine with connection pooling
 engine = create_engine(
@@ -22,9 +24,6 @@ engine = create_engine(
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base class for models
-Base = declarative_base()
-
 def get_db() -> Generator[Session, None, None]:
     """Dependency to get database session."""
     db = SessionLocal()
@@ -38,10 +37,17 @@ def init_db() -> None:
     from app.models_v2 import (
         Company, FounderApplication, Invite, PublicProfile,
         VerificationRequest, CompanyHierarchy, DigitalSignature,
-        ApiKey, Comparison, Webhook, WebhookDelivery,
-        ComplianceCheck, SanctionsCache, AuditLog
+        ApiKey, ComparisonRequest, Webhook, WebhookDelivery,
+        AuditLog, SystemConfig
     )
-    
+    from app.models_monitoring import (
+        SupplierSnapshot, SupplierChange, MonitoringAlert,
+        MonitoringRule, MonitoringSchedule
+    )
+    from app.models_network import (
+        SupplierNetwork, SupplierAlert, CompanySnapshot
+    )
+
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized")
 

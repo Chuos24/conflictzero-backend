@@ -378,3 +378,66 @@ class MonitoringService:
                     return False
         
         return False
+
+
+def calculate_severity(change_type: str, value: float) -> str:
+    """Calcula la severidad de un cambio basado en su tipo y magnitud."""
+    if change_type == "sanction_new":
+        return "critical"
+    if change_type == "risk_score_drop":
+        if value >= 25.0:
+            return "high"
+        elif value >= 15.0:
+            return "medium"
+        elif value >= 5.0:
+            return "low"
+        return "info"
+    if change_type == "address_change":
+        return "medium"
+    if change_type == "representative_changed":
+        return "warning"
+    if change_type == "status_changed":
+        return "critical"
+    return "info"
+
+
+def detect_changes(old_data: dict, new_data: dict) -> List[Dict[str, Any]]:
+    """Detecta cambios entre dos snapshots de datos (versión pura sin DB)."""
+    changes = []
+
+    # Detectar caída de score de riesgo
+    old_score = old_data.get("risk_score")
+    new_score = new_data.get("risk_score")
+    if old_score is not None and new_score is not None:
+        diff = old_score - new_score
+        if diff > 0:
+            changes.append({
+                "change_type": "risk_score_drop",
+                "severity": calculate_severity("risk_score_drop", diff),
+                "old_value": str(old_score),
+                "new_value": str(new_score)
+            })
+
+    # Detectar nueva sanción
+    old_sanctions = old_data.get("sanctions_count", 0)
+    new_sanctions = new_data.get("sanctions_count", 0)
+    if new_sanctions > old_sanctions:
+        changes.append({
+            "change_type": "sanction_new",
+            "severity": calculate_severity("sanction_new", float(new_sanctions - old_sanctions)),
+            "old_value": str(old_sanctions),
+            "new_value": str(new_sanctions)
+        })
+
+    # Detectar cambio de dirección
+    old_address = old_data.get("address", "")
+    new_address = new_data.get("address", "")
+    if old_address and new_address and old_address != new_address:
+        changes.append({
+            "change_type": "address_change",
+            "severity": calculate_severity("address_change", 1.0),
+            "old_value": old_address,
+            "new_value": new_address
+        })
+
+    return changes

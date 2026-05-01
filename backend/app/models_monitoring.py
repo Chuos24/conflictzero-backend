@@ -2,21 +2,23 @@
 Modelos para el sistema de monitoreo continuo de proveedores.
 Fase 2 - Conflict Zero
 """
+import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, DateTime, Text, Boolean, 
     ForeignKey, JSON, Float, Index
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.core.database import Base
+from app.models_v2 import Base
 
 
 class SupplierSnapshot(Base):
     """Snapshot periódico del estado de un proveedor."""
     __tablename__ = "supplier_snapshots"
 
-    id = Column(Integer, primary_key=True, index=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     ruc = Column(String(11), nullable=False, index=True)
     
     # Datos capturados
@@ -34,7 +36,6 @@ class SupplierSnapshot(Base):
     snapshot_date = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relaciones
-    company = relationship("Company", back_populates="snapshots")
     changes = relationship("SupplierChange", back_populates="snapshot", cascade="all, delete-orphan")
     
     __table_args__ = (
@@ -46,14 +47,12 @@ class SupplierChange(Base):
     """Registro de cambios detectados entre snapshots."""
     __tablename__ = "supplier_changes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    snapshot_id = Column(Integer, ForeignKey("supplier_snapshots.id", ondelete="CASCADE"), nullable=False)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    snapshot_id = Column(UUID(as_uuid=True), ForeignKey("supplier_snapshots.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     
     # Tipo de cambio
     change_type = Column(String(50), nullable=False, index=True)
-    # Ejemplos: "sanction_added", "representative_changed", "address_changed",
-    #           "score_dropped", "compliance_expired", "new_verification"
     
     # Descripción legible
     description = Column(Text, nullable=False)
@@ -74,7 +73,6 @@ class SupplierChange(Base):
     
     # Relaciones
     snapshot = relationship("SupplierSnapshot", back_populates="changes")
-    company = relationship("Company", back_populates="changes")
     alerts = relationship("MonitoringAlert", back_populates="change", cascade="all, delete-orphan")
     
     __table_args__ = (
@@ -87,10 +85,10 @@ class MonitoringAlert(Base):
     """Alertas generadas por cambios en proveedores."""
     __tablename__ = "monitoring_alerts"
 
-    id = Column(Integer, primary_key=True, index=True)
-    change_id = Column(Integer, ForeignKey("supplier_changes.id", ondelete="CASCADE"), nullable=False)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    change_id = Column(UUID(as_uuid=True), ForeignKey("supplier_changes.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    # user_id eliminado: en Conflict Zero el "usuario" es la empresa misma
     
     # Configuración de la alerta
     channel = Column(String(20), default="email")  # email, dashboard, webhook, push
@@ -112,29 +110,25 @@ class MonitoringAlert(Base):
     
     # Relaciones
     change = relationship("SupplierChange", back_populates="alerts")
-    company = relationship("Company", back_populates="monitoring_alerts")
-    user = relationship("User", back_populates="monitoring_alerts")
     
     __table_args__ = (
-        Index("idx_alert_user_status", "user_id", "status"),
+        Index("idx_alert_company_status", "company_id", "status"),
         Index("idx_alert_company", "company_id"),
     )
 
 
 class MonitoringRule(Base):
-    """Reglas personalizadas de monitoreo por usuario/empresa."""
+    """Reglas personalizadas de monitoreo por empresa."""
     __tablename__ = "monitoring_rules"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     
     # Qué monitorear
     rule_type = Column(String(50), nullable=False)  # all, sanctions, representatives, score_threshold, compliance_expiry
     
     # Condiciones
     conditions = Column(JSON, default=dict, nullable=False)
-    # Ejemplo: {"score_threshold": 30, "compliance_days_before": 30}
     
     # Canales de notificación
     notify_email = Column(Boolean, default=True)
@@ -151,17 +145,13 @@ class MonitoringRule(Base):
     # Metadatos
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relaciones
-    user = relationship("User", back_populates="monitoring_rules")
-    company = relationship("Company", back_populates="monitoring_rules")
 
 
 class MonitoringSchedule(Base):
     """Programación de ejecuciones del monitoreo."""
     __tablename__ = "monitoring_schedules"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # Estado de la ejecución
     status = Column(String(20), default="scheduled")  # scheduled, running, completed, failed
