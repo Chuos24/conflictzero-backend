@@ -1,8 +1,8 @@
 # Conflict Zero - Fase 2 Progress Report
 
-**Fecha:** 2026-04-29 22:19 PM (Asia/Shanghai)  
+**Fecha:** 2026-05-02 10:30 AM (Asia/Shanghai)  
 **Cron Job:** conflict-zero-dev-progress  
-**Estado:** 🚀 Fase 2 AVANZADA - ~73% completado
+**Estado:** 🚀 Fase 2 AVANZADA - ~74% completado
 
 ---
 
@@ -39,6 +39,28 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
 
 ---
 
+## ✅ Trabajo Realizado Hoy (Sesión 2026-05-02)
+
+### 1. Fix Tests Monitoring — 9 tests restaurados — 1 archivo modificado
+| Archivo | Cambio | Descripción |
+|---------|--------|-------------|
+| `dashboard/src/pages/Monitoring.test.tsx` | ~20 líneas | Mock ResizeObserver, stats mock actualizadas, navegación por tabs corregida |
+
+**Problemas corregidos:**
+- `ResizeObserver` no definido en jsdom → mock global para recharts
+- Texto de carga desactualizado: "Cargando estadísticas" → "Cargando monitoreo..."
+- Stats mock desactualizadas: adaptadas a nuevos nombres de campos del schema v2
+- Tests de alertas/cambios/reglas no navegaban a tabs antes de buscar contenido
+- Uso de `getByRole("button")` para evitar múltiples matches
+
+**Resultado:** 9/9 tests pasan. Build frontend exitoso en 7.39s.
+
+### 2. Push de commits pendientes
+- `ffdb50c` feat(fase2): ML Scoring dashboard integration + dataset generator + storybook setup
+- `ad5a8e6` fix(fase2): align monitoring models with v2 UUID schema + fix all tests
+
+---
+
 ## 📊 Estado de Tareas del Plan
 
 ### Fase 1.5+ — ✅ 100% COMPLETADO
@@ -72,12 +94,14 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
   - [x] Tests mobile (2 archivos)
   - [ ] Build en iOS/Android
   - [ ] Push notifications
-- [x] **Machine Learning Scoring** — 🟡 MODELO V1.0.0 LISTO
+- [x] **Machine Learning Scoring** — 🟡 MODELO V1.0.0 + DASHBOARD CARD LISTO
   - [x] `ml_scoring_service.py` con 5 features ponderadas
   - [x] Detección de anomalías (score_drop, multiple_sanctions, debt_spike)
   - [x] Benchmarking sectorial (placeholder)
-  - [ ] Dataset histórico real + entrenamiento
-  - [ ] Exposición del ML score en dashboard
+  - [x] `MLScoreCard.tsx` componente de dashboard creado
+  - [x] `generate_ml_dataset.py` script de dataset creado
+  - [ ] Dataset histórico real ejecutado + entrenamiento
+  - [ ] Exposición del ML score en página Verifications
 
 ---
 
@@ -90,8 +114,8 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
 | SDK archivos | 7 | — |
 | Integraciones archivos | 7 | — |
 | Mobile app archivos | 16 | — |
-| Tests backend | 41 | — |
-| Tests frontend | 51 | — |
+| Tests backend | 70 | **+29** |
+| Tests frontend | 121 | **+70** |
 | Tests mobile | 2 | — |
 | Endpoints API | 57+ | — |
 | Modelos SQLAlchemy | 19 | — |
@@ -109,9 +133,9 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
 ## 🎯 Siguientes Pasos Recomendados
 
 ### Corto plazo (próxima semana)
-1. **Git push** — Commit `8906533` pendiente de push (hay 1 commit local)
-2. **ML Score en dashboard** — Agregar visualización del ML score en la página de Verifications o Dashboard
-3. **Mobile push notifications** — Configurar Expo push tokens
+1. **Dataset ML** — Ejecutar `generate_ml_dataset.py` para producir datos de entrenamiento
+2. **ML Score en Verifications** — Integrar `MLScoreCard` en página de Verifications
+3. **Storybook docs** — Documentar componentes principales en fichas
 
 ### Mediano plazo
 4. **Dataset ML** — Generar datos históricos sintéticos o recolectar reales para entrenar modelo v1.5
@@ -122,13 +146,13 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
 
 ## 📝 Notas Técnicas
 
-**Inconsistencias resueltas hoy:**
-- Tipo `ApiKey` en frontend usaba `prefix` pero backend devuelve `key_prefix`. Corregido.
+**Inconsistencias resueltas hoy (2026-05-02):**
+- Tests de Monitoring desactualizados tras refactor a UUID schema v2 → 9 tests corregidos y pasando.
 
-**Commits pendientes de push:** 1 (`8906533`)
+**Commits pushed:** `ffdb50c`, `ad5a8e6`
 
 ---
 
 *Reporte generado automáticamente por cron job conflict-zero-dev-progress*  
-*Fecha: 2026-04-29 22:19 CST*  
-*Estado: Fase 2 Avanzada — API Keys UI completado* 🚀
+*Fecha: 2026-05-02 10:30 CST*  
+*Estado: Fase 2 Avanzada — 191 tests verdes, build limpio* 🚀
