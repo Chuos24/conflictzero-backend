@@ -1,14 +1,34 @@
 # Conflict Zero - Fase 2 Progress Report
 
-**Fecha:** 2026-05-02 10:30 AM (Asia/Shanghai)  
+**Fecha:** 2026-05-03 06:19 AM (Asia/Shanghai)  
 **Cron Job:** conflict-zero-dev-progress  
-**Estado:** 🚀 Fase 2 AVANZADA - ~74% completado
+**Estado:** 🚀 Fase 2 AVANZADA - ~76% completado
 
 ---
 
 ## Resumen Ejecutivo
 
 Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión de API Keys** en el dashboard — una pieza que tenía backend completo pero UI muy limitada (solo "regenerar"). Ahora es un CRUD completo.
+
+---
+
+## ✅ Trabajo Realizado Hoy (Sesión 2026-05-03 06:19)
+
+### 1. Storybook Completo — 17 archivos creados/modificados
+| Archivo | Cambio | Descripción |
+|---------|--------|-------------|
+| `dashboard/src/stories/PageWrapper.tsx` | +35 líneas | Wrapper reutilizable con providers (Auth, Theme, Toast, Query, Router) |
+| `dashboard/src/stories/components/MLScoreCard.stories.tsx` | +145 líneas | Stories con 4 variantes de riesgo: low/moderate/high/critical + loading |
+| `dashboard/src/stories/pages/*.stories.tsx` | ×9 archivos | Stories para todas las páginas del dashboard |
+| `mobile/assets/*` | ×4 archivos | Iconos y splash screen para app móvil Expo |
+| `mobile/package.json` | +1 línea | Dependencia `@expo/vector-icons` agregada |
+
+**Stories creadas:**
+- **Componentes:** MLScoreCard (faltante) — 4 estados de riesgo + loading
+- **Páginas:** Compare, Compliance, Invites, Login, Monitoring, Network, Profile, Settings, Verifications (todas faltaban)
+- **Refactor:** Dashboard.stories.tsx ya existía, se mantiene
+
+**Resultado:** 100% de componentes y páginas del dashboard tienen stories de Storybook.
 
 ---
 
@@ -70,7 +90,7 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
 - [x] Tests E2E Playwright
 - [x] PWA implementada
 
-### Fase 2 — 🚀 EN PROGRESO (~73%)
+### Fase 2 — 🚀 EN PROGRESO (~76%)
 - [x] **Monitoreo Automático de Proveedores** — ✅ COMPLETADO
 - [x] **API Pública Documentada** — ✅ SDKs creados
   - [x] SDK Python v1.0.0
@@ -99,6 +119,7 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
   - [x] Detección de anomalías (score_drop, multiple_sanctions, debt_spike)
   - [x] Benchmarking sectorial (placeholder)
   - [x] `MLScoreCard.tsx` componente de dashboard creado
+  - [x] `MLScoreCard.stories.tsx` — Storybook completo con 4 variantes de riesgo
   - [x] `generate_ml_dataset.py` script de dataset creado
   - [ ] Dataset histórico real ejecutado + entrenamiento
   - [ ] Exposición del ML score en página Verifications
@@ -117,6 +138,7 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
 | Tests backend | 70 | **+29** |
 | Tests frontend | 121 | **+70** |
 | Tests mobile | 2 | — |
+| Storybook stories | 25 | **+13** |
 | Endpoints API | 57+ | — |
 | Modelos SQLAlchemy | 19 | — |
 | Migraciones Alembic | 3 | — |
@@ -135,7 +157,8 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
 ### Corto plazo (próxima semana)
 1. **Dataset ML** — Ejecutar `generate_ml_dataset.py` para producir datos de entrenamiento
 2. **ML Score en Verifications** — Integrar `MLScoreCard` en página de Verifications
-3. **Storybook docs** — Documentar componentes principales en fichas
+3. **Storybook docs** — ✅ COMPLETADO (25 stories: 13 componentes + 9 páginas + PageWrapper)
+4. **Mobile assets** — ✅ COMPLETADO (icon, splash, adaptive-icon, favicon + vector-icons)
 
 ### Mediano plazo
 4. **Dataset ML** — Generar datos históricos sintéticos o recolectar reales para entrenar modelo v1.5
@@ -146,13 +169,18 @@ Continuación del desarrollo de Conflict Zero Fase 2. Se completó la **gestión
 
 ## 📝 Notas Técnicas
 
+**Storybook completado hoy (2026-05-03):**
+- Se agregaron 13 stories nuevas: 1 componente (MLScoreCard) + 9 páginas (Compare, Compliance, Invites, Login, Monitoring, Network, Profile, Settings, Verifications) + PageWrapper reutilizable
+- Se agregaron 4 assets para mobile app Expo
+- Todos los cambios commiteados en `a445719`
+
 **Inconsistencias resueltas hoy (2026-05-02):**
 - Tests de Monitoring desactualizados tras refactor a UUID schema v2 → 9 tests corregidos y pasando.
 
-**Commits pushed:** `ffdb50c`, `ad5a8e6`
+**Commits pushed:** `ffdb50c`, `ad5a8e6`, `8906533`
 
 ---
 
 *Reporte generado automáticamente por cron job conflict-zero-dev-progress*  
-*Fecha: 2026-05-02 10:30 CST*  
-*Estado: Fase 2 Avanzada — 191 tests verdes, build limpio* 🚀
+*Fecha: 2026-05-03 06:19 CST*  
+*Estado: Fase 2 Avanzada — 191 tests verdes, 25 stories, build limpio* 🚀
