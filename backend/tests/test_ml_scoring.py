@@ -15,15 +15,15 @@ class TestMLScoringEndpoints:
     
     def test_ml_score_endpoint_unauthorized(self):
         """Test que el endpoint de scoring requiere autenticación"""
-        response = client.post("/api/v2/ml/score", json={"ruc": "20100012345"})
-        assert response.status_code == 403 or response.status_code == 401
+        response = client.get("/api/v2/ml/score/20100012345")
+        assert response.status_code in [401, 403]
     
     def test_ml_score_endpoint_invalid_ruc(self):
         """Test que un RUC inválido es rechazado"""
         # Sin auth, pero probamos validación básica
-        response = client.post("/api/v2/ml/score", json={"ruc": "123"})
+        response = client.get("/api/v2/ml/score/123")
         # Debería fallar por auth o por validación
-        assert response.status_code in [401, 403, 422]
+        assert response.status_code in [401, 403, 400]
     
     def test_ml_model_info_endpoint(self):
         """Test que el endpoint de info del modelo es accesible"""
@@ -115,7 +115,8 @@ class TestMLDatasetGeneration:
     def test_dataset_generator_exists(self):
         """Test que el script de generación de dataset existe"""
         import os
-        script_path = "backend/scripts/generate_ml_dataset.py"
+        # Desde backend/, el script está en scripts/
+        script_path = os.path.join(os.path.dirname(__file__), "..", "scripts", "generate_ml_dataset.py")
         assert os.path.exists(script_path)
     
     def test_dataset_generator_importable(self):
@@ -141,8 +142,8 @@ class TestMLDatasetGeneration:
         
         from app.models import Company
         
-        # Verificar campos mínimos necesarios para ML
-        required_fields = ["ruc", "razon_social", "estado", "condicion"]
+        # Verificar campos mínimos necesarios para ML (schema v1)
+        required_fields = ["ruc", "razon_social", "status"]
         
         # SQLAlchemy model inspection
         from sqlalchemy import inspect

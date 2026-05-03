@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -6,8 +6,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { NotificationService } from './src/services/notifications';
 import { VerifyScreen } from './src/screens/VerifyScreen';
 import { NetworkScreen } from './src/screens/NetworkScreen';
 import { AlertsScreen } from './src/screens/AlertsScreen';
@@ -18,6 +19,42 @@ import { LoginScreen } from './src/screens/LoginScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+
+function NotificationHandler() {
+  const { token, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    async function setupPush() {
+      const pushToken = await NotificationService.registerForPushNotifications();
+      if (pushToken) {
+        await NotificationService.syncTokenWithBackend(pushToken.token, token);
+      }
+    }
+
+    setupPush();
+
+    // Escuchar notificaciones recibidas
+    const subReceived = NotificationService.onNotificationReceived((notification) => {
+      console.log('Notificación recibida:', notification.request.content);
+    });
+
+    // Escuchar cuando el usuario toca una notificación
+    const subTapped = NotificationService.onNotificationTapped((response) => {
+      const data = response.notification.request.content.data;
+      console.log('Notificación tocada:', data);
+      // Navegar a pantalla relevante según data.type
+    });
+
+    return () => {
+      NotificationService.removeListener(subReceived);
+      NotificationService.removeListener(subTapped);
+    };
+  }, [isAuthenticated, token]);
+
+  return null;
+}
 
 function MainTabs() {
   return (
@@ -66,6 +103,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <NavigationContainer>
+            <NotificationHandler />
             <Stack.Navigator screenOptions={{ headerShown: false }}>
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Main" component={MainTabs} />

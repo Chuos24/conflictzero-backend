@@ -167,3 +167,108 @@ async def get_ml_score_batch(
         "failed": len(errors),
         "lookback_days": lookback_days
     }
+
+
+@router.get("/model-info", summary="Información del modelo ML")
+async def get_model_info():
+    """
+    Retorna información sobre el modelo de ML actual.
+    
+    - Versión del modelo
+    - Features utilizadas
+    - Pesos de features
+    - Thresholds de riesgo
+    """
+    return {
+        "model_version": "v1.0",
+        "model_type": "heuristic_weighted",
+        "features": list(MLScoringService.FEATURE_WEIGHTS.keys()),
+        "feature_weights": MLScoringService.FEATURE_WEIGHTS,
+        "risk_thresholds": {
+            "low": 40,
+            "medium": 60,
+            "high": 75,
+            "critical": 85
+        },
+        "description": "Modelo base de scoring predictivo basado en features históricas"
+    }
+
+
+@router.get("/health", summary="Health check del servicio ML")
+async def get_ml_health(
+    db: Session = Depends(get_db)
+):
+    """
+    Verifica que el servicio de ML esté operativo.
+    """
+    try:
+        # Verificar que podemos instanciar el servicio
+        service = MLScoringService(db)
+        # Verificar que hay datos suficientes
+        from app.models_monitoring import SupplierSnapshot
+        from sqlalchemy import func
+        count = db.query(func.count(SupplierSnapshot.id)).scalar() or 0
+        
+        return {
+            "status": "healthy",
+            "model_version": "v1.0",
+            "snapshots_count": count,
+            "ready": count >= 10  # Mínimo 10 snapshots para confianza
+        }
+    except Exception as e:
+        # En entornos sin datos (testing), retornar degraded en vez de error
+        return {
+            "status": "degraded",
+            "model_version": "v1.0",
+            "snapshots_count": 0,
+            "ready": False,
+            "note": "Sin conexión a base de datos o datos insuficientes"
+        }
+
+
+@router.get("/features", summary="Features del modelo ML")
+async def get_ml_features():
+    """
+    Lista las features utilizadas por el modelo de ML con descripciones.
+    """
+    return {
+        "features": [
+            {
+                "name": "verification_frequency",
+                "weight": MLScoringService.FEATURE_WEIGHTS["verification_frequency"],
+                "description": "Frecuencia de verificación del proveedor (más frecuente = más confiable)",
+                "type": "frequency",
+                "range": "0-100"
+            },
+            {
+                "name": "score_volatility",
+                "weight": MLScoringService.FEATURE_WEIGHTS["score_volatility"],
+                "description": "Volatilidad del score histórico (menos volátil = más estable)",
+                "type": "volatility",
+                "range": "0-100"
+            },
+            {
+                "name": "sanction_history",
+                "weight": MLScoringService.FEATURE_WEIGHTS["sanction_history"],
+                "description": "Historial de sanciones OSCE/TCE (más sanciones = más riesgo)",
+                "type": "count",
+                "range": "0-100"
+            },
+            {
+                "name": "debt_trend",
+                "weight": MLScoringService.FEATURE_WEIGHTS["debt_trend"],
+                "description": "Tendencia de deuda SUNAT (deuda creciente = más riesgo)",
+                "type": "trend",
+                "range": "0-100"
+            },
+            {
+                "name": "compliance_consistency",
+                "weight": MLScoringService.FEATURE_WEIGHTS["compliance_consistency"],
+                "description": "Consistencia de compliance (cambios frecuentes = menos confiable)",
+                "type": "consistency",
+                "range": "0-100"
+            }
+        ],
+        "total_features": len(MLScoringService.FEATURE_WEIGHTS),
+        "model_version": "v1.0"
+    }

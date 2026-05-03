@@ -272,36 +272,81 @@ class MLScoringService:
     def get_benchmark(
         self,
         ruc: str,
-        sector: Optional[str] = None
+        sector: Optional[str] = None,
+        db: Session = None
     ) -> Dict:
         """
-        Benchmarking del proveedor contra su sector.
+        Benchmarking del proveedor contra su sector o contra el promedio general.
         """
         # Obtener score del proveedor
         provider_score = self.calculate_ml_score(ruc)
+        individual_score = provider_score["ml_score"]
         
-        # Si no hay sector, retornar solo score individual
-        if not sector:
+        # Si no hay DB session, retornar solo score individual
+        if db is None:
             return {
                 "ruc": ruc,
-                "individual_score": provider_score["ml_score"],
-                "sector": None,
+                "individual_score": individual_score,
+                "sector": sector,
                 "sector_average": None,
                 "sector_median": None,
                 "percentile": None,
-                "comparison": "No hay datos de sector para comparar"
+                "comparison": "Datos de benchmarking no disponibles (sin DB)"
             }
         
-        # TODO: Implementar comparación sectorial con datos agregados
-        # Por ahora retornar placeholder
+        # Calcular estadísticas de todos los snapshots con risk_score
+        from sqlalchemy import func
+        stats = db.query(
+            func.avg(SupplierSnapshot.risk_score).label("avg"),
+            func.percentile_cont(0.5).within_group(SupplierSnapshot.risk_score).label("median"),
+            func.min(SupplierSnapshot.risk_score).label("min"),
+            func.max(SupplierSnapshot.risk_score).label("max"),
+            func.count(SupplierSnapshot.id).label("count")
+        ).filter(SupplierSnapshot.risk_score.isnot(None)).first()
+        
+        if not stats or stats.count == 0:
+            return {
+                "ruc": ruc,
+                "individual_score": individual_score,
+                "sector": sector,
+                "sector_average": None,
+                "sector_median": None,
+                "percentile": None,
+                "comparison": "Sin datos históricos suficientes para benchmarking"
+            }
+        
+        sector_avg = round(float(stats.avg or 0), 1)
+        sector_median = round(float(stats.median or 0), 1)
+        
+        # Calcular percentil del proveedor
+        percentile_query = db.query(func.count(SupplierSnapshot.id)).filter(
+            SupplierSnapshot.risk_score.isnot(None),
+            SupplierSnapshot.risk_score <= individual_score
+        ).scalar()
+        total_count = stats.count
+        percentile = round((percentile_query / total_count) * 100, 1) if total_count > 0 else None
+        
+        # Generar comparación textual
+        if individual_score < sector_avg - 10:
+            comparison = f"✅ Score {individual_score} está {round(sector_avg - individual_score, 1)} puntos por debajo del promedio ({sector_avg}) — mejor que la mayoría."
+        elif individual_score > sector_avg + 10:
+            comparison = f"⚠️ Score {individual_score} está {round(individual_score - sector_avg, 1)} puntos por encima del promedio ({sector_avg}) — mayor riesgo que la mayoría."
+        else:
+            comparison = f"ℹ️ Score {individual_score} está alineado con el promedio del sector ({sector_avg})."
+        
         return {
             "ruc": ruc,
-            "individual_score": provider_score["ml_score"],
+            "individual_score": individual_score,
             "sector": sector,
-            "sector_average": None,
-            "sector_median": None,
-            "percentile": None,
-            "comparison": "Benchmarking sectorial requiere dataset de entrenamiento"
+            "sector_average": sector_avg,
+            "sector_median": sector_median,
+            "percentile": percentile,
+            "comparison": comparison,
+            "sample_size": total_count,
+            "range": {
+                "min": round(float(stats.min), 1),
+                "max": round(float(stats.max), 1)
+            }
         }
     
     def detect_anomalies(

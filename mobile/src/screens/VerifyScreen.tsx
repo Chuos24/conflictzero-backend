@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { Text } from '../components';
 import { useTheme } from '../context/ThemeContext';
+import { OfflineStorage } from '../services/offlineStorage';
 
 export function VerifyScreen({ navigation }: any) {
   const [ruc, setRuc] = useState('');
@@ -12,12 +13,24 @@ export function VerifyScreen({ navigation }: any) {
   async function verifyRuc() {
     if (ruc.length !== 11) return;
     setLoading(true);
+    setResult(null);
+
     try {
       const response = await fetch(`https://api.conflictzero.com/v1/verify/${ruc}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setResult(data);
+      // Guardar en cache para uso offline
+      await OfflineStorage.cacheVerification(ruc, data);
     } catch (error) {
-      console.error(error);
+      // Si falla la red, intentar cache
+      const cached = await OfflineStorage.getCachedVerification(ruc);
+      if (cached) {
+        setResult(cached);
+        Alert.alert('Sin conexión', 'Mostrando datos guardados en el dispositivo.');
+      } else {
+        Alert.alert('Error', 'No se pudo verificar y no hay datos guardados.');
+      }
     } finally {
       setLoading(false);
     }

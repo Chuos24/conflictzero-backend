@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { Text } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { OfflineStorage } from '../services/offlineStorage';
 
 export function NetworkScreen({ navigation }: any) {
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -19,10 +20,20 @@ export function NetworkScreen({ navigation }: any) {
       const response = await fetch('https://api.conflictzero.com/v1/network/suppliers', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setSuppliers(data.items || []);
+      // Guardar en cache
+      await OfflineStorage.cacheNetwork(data.items || []);
     } catch (error) {
-      console.error(error);
+      // Intentar cache
+      const cached = await OfflineStorage.getCachedNetwork();
+      if (cached) {
+        setSuppliers(cached);
+        Alert.alert('Sin conexión', 'Mostrando tu red guardada localmente.');
+      } else {
+        Alert.alert('Error', 'No se pudo cargar la red de proveedores.');
+      }
     } finally {
       setLoading(false);
     }

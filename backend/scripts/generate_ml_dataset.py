@@ -37,15 +37,16 @@ def generate_ruc():
     return f"{prefix}{body}{check}"
 
 
-def encrypt_ruc_simple(ruc: str) -> bytes:
+def encrypt_ruc_simple(ruc: str) -> str:
     """Encriptación simple para datos sintéticos (no usar en producción)."""
     # XOR básico con clave fija para testing
+    import base64
     key = b'conflictzero2026'
     ruc_bytes = ruc.encode('utf-8')
     encrypted = bytearray()
     for i, b in enumerate(ruc_bytes):
         encrypted.append(b ^ key[i % len(key)])
-    return bytes(encrypted)
+    return base64.b64encode(bytes(encrypted)).decode('ascii')
 
 
 def generate_company_name():

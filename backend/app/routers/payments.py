@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, Dict, Any
 import hashlib
+import hmac
 import uuid
 import os
 import httpx
@@ -20,6 +21,7 @@ import httpx
 from app.core.database import get_db
 from app.core.security import get_current_company
 from app.core.rate_limit import rate_limited_auth
+from app.core.config import settings
 from app.models_v2 import Company, AuditLog
 
 router = APIRouter(prefix="/payments", tags=["Pagos"])
@@ -431,8 +433,11 @@ async def culqi_webhook(
     - subscription.active
     - subscription.canceled
     
-    NOTA: En producción, verificar firma del webhook para seguridad.
+    Verifica firma HMAC-SHA256 con CULQI_WEBHOOK_SECRET para seguridad.
     """
+    # Leer body raw para verificar firma
+    payload_body = await request.body()
+    
     try:
         payload = await request.json()
     except Exception:
@@ -441,8 +446,15 @@ async def culqi_webhook(
     event_type = payload.get("type", "")
     data = payload.get("data", {})
 
-    # TODO: Verificar firma del webhook con secret de Culqi
-    # signature = request.headers.get("X-Culqi-Signature")
+    # Verificar firma del webhook con secret de Culqi
+    signature = request.headers.get("X-Culqi-Signature")
+    if settings.CULQI_WEBHOOK_SECRET:
+        if not _verify_culqi_signature(payload_body, signature or "", settings.CULQI_WEBHOOK_SECRET):
+            raise HTTPException(status_code=401, detail="Firma de webhook inválida")
+    else:
+        # En desarrollo sin secret configurado, loguear warning
+        import logging
+        logging.getLogger(__name__).warning("CULQI_WEBHOOK_SECRET no configurado — webhook sin verificación de firma")
 
     if event_type == "charge.succeeded":
         # Pago exitoso — ya manejado en /charge
@@ -494,6 +506,21 @@ async def culqi_webhook(
 # ============================================================
 # HELPERS
 # ============================================================
+
+def _verify_culqi_signature(payload_body: bytes, signature: str, secret: str) -> bool:
+    """
+    Verifica la firma HMAC-SHA256 del webhook de Culqi.
+    Culqi envia la firma en el header X-Culqi-Signature.
+    """
+    if not secret or not signature:
+        return False
+    expected = hmac.new(
+        secret.encode('utf-8'),
+        payload_body,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
 
 def _get_plan_limit(plan_type: str) -> int:
     """Retorna el límite mensual de consultas según plan"""

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { Text } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { OfflineStorage } from '../services/offlineStorage';
 
 export function AlertsScreen() {
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -19,10 +20,20 @@ export function AlertsScreen() {
       const response = await fetch('https://api.conflictzero.com/v1/monitoring/alerts', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setAlerts(data.items || []);
+      // Guardar en cache
+      await OfflineStorage.cacheAlerts(data.items || []);
     } catch (error) {
-      console.error(error);
+      // Intentar cache
+      const cached = await OfflineStorage.getCachedAlerts();
+      if (cached) {
+        setAlerts(cached);
+        Alert.alert('Sin conexión', 'Mostrando alertas guardadas localmente.');
+      } else {
+        Alert.alert('Error', 'No se pudieron cargar las alertas.');
+      }
     } finally {
       setLoading(false);
     }

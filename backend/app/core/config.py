@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     TCE_API_URL: Optional[str] = None
     FACTALIZA_API_KEY: Optional[str] = None
     
+    # Culqi Webhook
+    CULQI_WEBHOOK_SECRET: Optional[str] = None
+    
     # Email
     SENDGRID_API_KEY: Optional[str] = None
     EMAIL_FROM: str = "noreply@conflictzero.com"
