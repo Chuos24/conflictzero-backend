@@ -10,6 +10,7 @@ Uso:
 
 import random
 import string
+import hashlib
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -22,8 +23,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from app.core.database import Base, get_db
 from app.core.config import settings
+from app.models import Company, VerificationRequest
 from app.models_monitoring import SupplierSnapshot, SupplierChange, MonitoringRule
-from app.models import VerificationRequest, Company
 
 
 def generate_ruc():
@@ -34,6 +35,17 @@ def generate_ruc():
     # Checksum simple (no real, solo para formato)
     check = random.randint(0, 9)
     return f"{prefix}{body}{check}"
+
+
+def encrypt_ruc_simple(ruc: str) -> bytes:
+    """Encriptación simple para datos sintéticos (no usar en producción)."""
+    # XOR básico con clave fija para testing
+    key = b'conflictzero2026'
+    ruc_bytes = ruc.encode('utf-8')
+    encrypted = bytearray()
+    for i, b in enumerate(ruc_bytes):
+        encrypted.append(b ^ key[i % len(key)])
+    return bytes(encrypted)
 
 
 def generate_company_name():
@@ -122,11 +134,16 @@ def generate_dataset(db: Session, companies_count=5, suppliers_per_company=10,
     # Crear empresas
     companies = []
     for i in range(companies_count):
+        ruc = generate_ruc()
         company = Company(
-            ruc=generate_ruc(),
-            company_name=generate_company_name(),
+            ruc=ruc,
+            razon_social=generate_company_name(),
             plan_tier=random.choice(['bronze', 'silver', 'gold', 'founder']),
-            is_active=True,
+            status='active',
+            contact_email=f"admin{i}@example.com",
+            contact_name=f"Admin {i}",
+            contact_phone=f"+519{random.randint(10000000, 99999999)}",
+            max_monthly_queries=random.choice([100, 500, 1000, 5000]),
             created_at=datetime.utcnow() - timedelta(days=random.randint(30, 365))
         )
         db.add(company)
@@ -180,7 +197,6 @@ def generate_dataset(db: Session, companies_count=5, suppliers_per_company=10,
                 snapshot = SupplierSnapshot(
                     company_id=company.id,
                     ruc=ruc,
-                    razon_social=raw_data['razon_social'],
                     risk_score=score,
                     raw_data=raw_data,
                     snapshot_date=snapshot_date
@@ -196,7 +212,6 @@ def generate_dataset(db: Session, companies_count=5, suppliers_per_company=10,
                     
                     change = SupplierChange(
                         company_id=company.id,
-                        ruc=ruc,
                         change_type=random.choice(change_types),
                         description=f"Cambio detectado en {snapshot_date.strftime('%Y-%m-%d')}",
                         severity=random.choice(['critical', 'high', 'medium', 'low']),
@@ -212,16 +227,14 @@ def generate_dataset(db: Session, companies_count=5, suppliers_per_company=10,
             # Crear verificaciones
             for _ in range(random.randint(1, 10)):
                 verification = VerificationRequest(
-                    company_id=company.id,
+                    consultant_ruc=company.ruc,
                     target_ruc=ruc,
-                    status='completed',
-                    result={
-                        'ruc': ruc,
-                        'razon_social': raw_data['razon_social'],
-                        'score': score,
-                        'risk_level': 'low' if score >= 70 else 'medium' if score >= 50 else 'high' if score >= 30 else 'critical',
-                        'sanctions_count': profile['sanctions']
-                    },
+                    target_company_name=raw_data['razon_social'],
+                    score=score,
+                    risk_level='low' if score >= 70 else 'medium' if score >= 50 else 'high' if score >= 30 else 'critical',
+                    sunat_debt=debt_series[idx],
+                    osce_sanctions_count=profile['sanctions'],
+                    tce_sanctions_count=random.randint(0, profile['sanctions']),
                     created_at=datetime.utcnow() - timedelta(days=random.randint(0, days_history))
                 )
                 db.add(verification)
