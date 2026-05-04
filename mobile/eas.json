@@ -1,0 +1,61 @@
+{
+  "cli": {
+    "version": ">= 7.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "API_URL": "https://api.conflictzero.com/v1",
+        "APP_ENV": "development"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "API_URL": "https://api.conflictzero.com/v1",
+        "APP_ENV": "staging"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "enterpriseProvisioning": "adhoc"
+      }
+    },
+    "production": {
+      "env": {
+        "API_URL": "https://api.conflictzero.com/v1",
+        "APP_ENV": "production"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "enterpriseProvisioning": "adhoc"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
+      },
+      "ios": {
+        "ascAppId": "1234567890",
+        "ascApiKeyPath": "./AuthKey.p8",
+        "ascApiKeyIssuerId": "12345678-1234-1234-1234-123456789012",
+        "ascApiKeyId": "ABCD123456"
+      }
+    }
+  }
+}

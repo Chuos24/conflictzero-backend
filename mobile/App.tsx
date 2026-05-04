@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { NotificationService } from './src/services/notifications';
+import { deepLinkingService } from './src/services/deepLinking';
 import { VerifyScreen } from './src/screens/VerifyScreen';
 import { NetworkScreen } from './src/screens/NetworkScreen';
 import { AlertsScreen } from './src/screens/AlertsScreen';
@@ -22,6 +23,7 @@ const Stack = createStackNavigator();
 
 function NotificationHandler() {
   const { token, isAuthenticated } = useAuth();
+  const navigationRef = useRef(null);
 
   useEffect(() => {
     if (!isAuthenticated || !token) return;
@@ -44,7 +46,10 @@ function NotificationHandler() {
     const subTapped = NotificationService.onNotificationTapped((response) => {
       const data = response.notification.request.content.data;
       console.log('Notificación tocada:', data);
-      // Navegar a pantalla relevante según data.type
+      // Deep linking desde notificación
+      if (data && data.screen) {
+        deepLinkingService.handleNotificationData(data);
+      }
     });
 
     return () => {
@@ -98,11 +103,20 @@ function MainTabs() {
 }
 
 export default function App() {
+  const navigationRef = useRef<any>(null);
+
+  useEffect(() => {
+    // Inicializar deep linking cuando la navegación esté lista
+    if (navigationRef.current) {
+      deepLinkingService.initialize(navigationRef.current);
+    }
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <NotificationHandler />
             <Stack.Navigator screenOptions={{ headerShown: false }}>
               <Stack.Screen name="Login" component={LoginScreen} />

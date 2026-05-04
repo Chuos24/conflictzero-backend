@@ -57,6 +57,7 @@
       "backgroundColor": "#1a1a2e"
     },
     "assetBundlePatterns": ["**/*"],
+    "scheme": "conflictzero",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.conflictzero.app",
