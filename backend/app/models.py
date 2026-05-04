@@ -47,6 +47,10 @@ class Company(Base):
     invited_by_code = Column(String(50))
     invite_depth = Column(Integer, default=0)
     
+    # Push Notifications
+    push_tokens = Column(JSONB, default=list)
+    push_enabled = Column(Boolean, default=True)
+    
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

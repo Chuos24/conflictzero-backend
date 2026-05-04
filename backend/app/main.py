@@ -29,7 +29,8 @@ from app.routers import (
     payments,
     monitoring,
     ml_scoring,
-    notifications
+    notifications,
+    push
 )
 from app.services.digital_signature_v2 import signature_service
 
@@ -153,7 +154,8 @@ app.include_router(network.router, prefix="/api/v2")  # Mi Red - Supplier Networ
 app.include_router(payments.router, prefix="/api/v2")  # Pagos - Culqi integration
 app.include_router(monitoring.router, prefix="/api/v2")  # Monitoreo Continuo - Fase 2
 app.include_router(ml_scoring.router, prefix="/api/v2")  # ML Scoring - Fase 2
-app.include_router(notifications.router)  # Push Notifications - Fase 2
+app.include_router(notifications.router)  # Notifications - Fase 2
+app.include_router(push.router, prefix="/api/v2")  # Push Notifications - Fase 2
 
 
 # Error handlers

@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: Optional[str] = None
     EMAIL_FROM: str = "noreply@conflictzero.com"
     
+    # Push Notifications
+    EXPO_ACCESS_TOKEN: Optional[str] = None
+    
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]

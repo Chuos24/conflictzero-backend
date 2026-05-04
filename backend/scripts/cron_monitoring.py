@@ -18,6 +18,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from app.core.database import SessionLocal
 from app.services.monitoring_service import MonitoringService
+from app.services.push_notifications import push_service
+from app.models import Company
 
 
 def run_daily_monitoring():
@@ -37,6 +39,11 @@ def run_daily_monitoring():
         print(f"  - Cambios detectados: {result.get('changes_detected', 0)}")
         print(f"  - Alertas generadas: {result.get('alerts_generated', 0)}")
         
+        # Enviar push notifications para alertas críticas y altas
+        if result.get('alerts_generated', 0) > 0:
+            print(f"[{datetime.utcnow().isoformat()}] Enviando push notifications...")
+            send_alert_push_notifications(db, result)
+        
         if result['status'] == 'error':
             print(f"  - ERROR: {result.get('error')}")
             sys.exit(1)
@@ -46,6 +53,33 @@ def run_daily_monitoring():
         sys.exit(1)
     finally:
         db.close()
+
+
+async def send_alert_push_notifications(db, result):
+    """Envía push notifications para alertas detectadas."""
+    # Obtener empresas con alertas
+    # Nota: Esto es un ejemplo, la implementación real dependería de cómo
+    # se almacenan las alertas en la base de datos
+    
+    companies_with_alerts = db.query(Company).filter(
+        Company.push_enabled == True,
+        Company.push_tokens != []
+    ).all()
+    
+    sent_count = 0
+    for company in companies_with_alerts:
+        if company.push_tokens:
+            try:
+                await push_service.send_daily_summary(
+                    push_tokens=company.push_tokens,
+                    alerts_count=result.get('changes_detected', 0),
+                    changes_count=result.get('alerts_generated', 0)
+                )
+                sent_count += 1
+            except Exception as e:
+                print(f"  - Error enviando push a {company.ruc}: {e}")
+    
+    print(f"  - Push notifications enviadas: {sent_count}")
 
 
 if __name__ == "__main__":
