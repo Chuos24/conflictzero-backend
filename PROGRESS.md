@@ -1,20 +1,53 @@
 # Conflict Zero - Fase 2 Progress Report
 
-**Fecha:** 2026-05-04 10:19 AM (Asia/Shanghai)  
-**Cron Job:** conflict-zero-dev-progress  
-**Estado:** 🚀 Fase 2 AVANZADA - ~87% completado
+**Fecha:** 2026-05-05 02:24 AM (Asia/Shanghai)
+**Cron Job:** conflict-zero-dev-progress
+**Estado:** 🚀 Fase 2 AVANZADA - ~88% completado
 
 ---
 
 ## Resumen Ejecutivo
 
-Sesión de desarrollo backend/integrations/mobile. Se implementó **OAuth real para 3 ERPs (SAP, NetSuite, Dynamics)**, **deep linking mobile**, **EAS build config** y **backend push notification router**.
+Sesión de mantenimiento de configuración y dependencias. Se corrigió **`.env.example` desactualizado** y se agregaron **3 dependencias faltantes** a `requirements.txt` (`alembic`, `requests`, `PyPDF2`).
 
-Tests: **95 backend passed/1 skipped**, **29 ERP OAuth passed**, **121 frontend ✅**.
+Tests: **95 backend passed/1 skipped**, **121 frontend ✅**. Build frontend: **7.43s**.
 
 ---
 
-## ✅ Trabajo Realizado Hoy (Sesión 10:19)
+## ✅ Trabajo Realizado Hoy (Sesión 02:24)
+
+### 1. Fix `.env.example` — Alineación con `config.py`
+**Archivo modificado:** `.env.example`
+
+**Problemas corregidos:**
+- Variables obsoletas eliminadas: `APP_NAME` → `PROJECT_NAME`, `ENV` → `ENVIRONMENT`, `ADMIN_TOKEN`, `INDECOPI_CERT_PATH`, `CERT_MODE`, `FOUNDER_*`, `FRONTEND_URL`, `FOUNDERS_URL`, `LOG_FORMAT`
+- Variables nuevas agregadas: `ENCRYPTION_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `REFRESH_TOKEN_EXPIRE_MINUTES`, `CORS_ORIGINS`, `API_V1_STR`, `EMAIL_FROM`, `CULQI_WEBHOOK_SECRET`, `FACTALIZA_API_KEY`
+- Estructura reorganizada por categorías lógicas
+
+**Resultado:** `.env.example` ahora refleja fielmente las variables que `Settings` de Pydantic v2 espera.
+
+### 2. Fix `requirements.txt` — Dependencias faltantes
+**Archivo modificado:** `backend/requirements.txt`
+
+| Dependencia | Versión | Usada en |
+|-------------|---------|----------|
+| `alembic` | 1.13.1 | Migraciones SQL (`alembic/versions/`) |
+| `requests` | 2.31.0 | `data_collection.py` (scraping) |
+| `PyPDF2` | 3.0.1 | `digital_signature_v2.py` (PDF signing) |
+
+**Resultado:** 100% de imports resueltos. Eliminado `httpx` duplicado.
+
+### 3. Verificación de tests y build
+| Métrica | Resultado |
+|---------|-----------|
+| Backend tests | 95/95 PASSED, 1 skipped ✅ |
+| Frontend tests | 121/121 PASSED ✅ |
+| Frontend build | 7.43s ✅ (32 entries precache) |
+| Git push | 1 commit pushed ✅ (`62f1043`) |
+
+---
+
+## ✅ Trabajo Realizado Hoy (Sesión 10:19) — ANTERIOR
 
 ### 1. OAuth Real para 3 ERPs — Integraciones Enterprise
 **Archivos nuevos:** `integrations/sap/sap_oauth.py`, `integrations/netsuite/netsuite_oauth.py`, `integrations/dynamics/dynamics_oauth.py`
@@ -118,7 +151,7 @@ Tests: **95 backend passed/1 skipped**, **29 ERP OAuth passed**, **121 frontend 
 **Archivo:** `backend/tests/test_ml_scoring.py`
 
 | Test | Antes | Después |
-|------|-------|---------|
+|------|-------|--------|
 | `test_ml_score_endpoint_*` | 404 (URLs POST incorrectas) | ✅ PASSED (GET /score/{ruc}) |
 | `test_ml_model_info` | 404 | ✅ PASSED |
 | `test_ml_health` | 404 / 503 | ✅ PASSED |
@@ -207,7 +240,7 @@ Tests: **95 backend passed/1 skipped**, **29 ERP OAuth passed**, **121 frontend 
 - [x] Tests E2E Playwright
 - [x] PWA implementada
 
-### Fase 2 — 🚀 EN PROGRESO (~87%)
+### Fase 2 — 🚀 EN PROGRESO (~88%)
 - [x] **Monitoreo Automático de Proveedores** — ✅ COMPLETADO
 - [x] **API Pública Documentada** — ✅ SDKs + API Keys CRUD
 - [x] **Webhooks HMAC** — ✅ COMPLETADO
@@ -218,7 +251,7 @@ Tests: **95 backend passed/1 skipped**, **29 ERP OAuth passed**, **121 frontend 
   - [x] Benchmarking sectorial con datos reales de BD
   - [ ] Dataset histórico real ejecutado + entrenamiento v1.5
 - [x] **Mobile App** — 🟡 MVP estructurado + offline + push + deep linking + EAS (85%)
-  - [x] Estructura base Expo con 6 screens
+  - [x] Estructura base Expo con 7 screens
   - [x] Auth context + theme system
   - [x] Offline storage con TTL y pending sync
   - [x] Push notifications (Expo)
@@ -238,17 +271,17 @@ Tests: **95 backend passed/1 skipped**, **29 ERP OAuth passed**, **121 frontend 
 
 | Métrica | Valor |
 |---------|-------|
-| Backend archivos Python | 45 (+2) |
+| Backend archivos Python | 45 |
 | Dashboard archivos TSX/TS | 54 |
 | Tests backend | 95 passed |
 | Tests frontend | 121 passed |
 | Tests E2E Playwright | 6 escenarios |
 | Tests ERP OAuth | 29 passed |
 | Storybook stories | 25 |
-| Endpoints API | 66+ (+6 notificaciones) |
+| Endpoints API | 66+ |
 | SDKs | 2 (Python + JS) |
 | Integraciones ERP | 3 conectores OAuth + sync bidireccional |
-| Mobile screens | 6 |
+| Mobile screens | 7 |
 | Mobile services | 5 (auth, theme, offline, notifications, deep linking) |
 
 ---
@@ -268,6 +301,11 @@ Tests: **95 backend passed/1 skipped**, **29 ERP OAuth passed**, **121 frontend 
 ---
 
 ## 📝 Notas Técnicas
+
+**Configuración (2026-05-05 02:24):**
+- `.env.example` sincronizado con `Settings` de Pydantic v2
+- `requirements.txt` incluye `alembic`, `requests`, `PyPDF2`
+- Commit: `62f1043`
 
 **OAuth ERP (2026-05-04 10:19):**
 - SAP OAuth 2.0: Client Credentials flow con HMAC-SHA256 + CSRF tokens
@@ -309,6 +347,6 @@ Tests: **95 backend passed/1 skipped**, **29 ERP OAuth passed**, **121 frontend 
 
 ---
 
-*Reporte generado automáticamente por cron job conflict-zero-dev-progress*  
-*Fecha: 2026-05-04 10:19 CST*  
-*Estado: Fase 2 Avanzada — 245 tests verdes (95 backend + 121 frontend + 29 ERP)* 🚀
+*Reporte generado automáticamente por cron job conflict-zero-dev-progress*
+*Fecha: 2026-05-05 02:24 CST*
+*Estado: Fase 2 Avanzada — 216 tests verdes (95 backend + 121 frontend), build limpio* 🚀
