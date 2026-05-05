@@ -1,131 +1,66 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
+import { useInvites, useInviteStats, useCreateInvite } from '../hooks/useQueries'
+import { inviteAPI } from '../services/api'
+import { inviteSchema } from '../lib/validations'
+import Skeleton from '../components/Skeleton'
+import type { z } from 'zod'
+import type { Invite } from '../types'
 import './Invites.css'
 
-interface InviteItem {
-  id: string
-  email: string
-  company_name: string
-  status: string
-  created_at: string
-}
-
-interface InviteStatsData {
-  total_sent: number
-  accepted: number
-  pending: number
-  conversion_rate: number
-}
-
-interface InviteFormData {
-  email: string
-  company_name: string
-  message: string
-}
+type InviteFormData = z.infer<typeof inviteSchema>
 
 function Invites(): JSX.Element {
   const { user } = useAuth()
-  const [invites, setInvites] = useState<InviteItem[]>([])
-  const [stats, setStats] = useState<InviteStatsData>({
-    total_sent: 0,
-    accepted: 0,
-    pending: 0,
-    conversion_rate: 0
-  })
-  const [loading, setLoading] = useState<boolean>(true)
   const [showForm, setShowForm] = useState<boolean>(false)
-  const [formData, setFormData] = useState<InviteFormData>({
-    email: '',
-    company_name: '',
-    message: ''
+  const [actionError, setActionError] = useState<string>('')
+  const [actionSuccess, setActionSuccess] = useState<string>('')
+
+  const { data: invitesData, isLoading: loadingInvites } = useInvites()
+  const { data: stats, isLoading: loadingStats } = useInviteStats()
+  const createInvite = useCreateInvite()
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<InviteFormData>({
+    resolver: zodResolver(inviteSchema),
+    defaultValues: {
+      email: '',
+      company_name: '',
+      message: '',
+    },
   })
-  const [error, setError] = useState<string>('')
-  const [success, setSuccess] = useState<string>('')
 
-  useEffect(() => {
-    fetchInvites()
-    fetchStats()
-  }, [])
-
-  const fetchInvites = async (): Promise<void> => {
-    try {
-      const response = await fetch('/api/v2/invites', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('cz_token')}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setInvites(data.invites || [])
-      }
-    } catch (err) {
-      console.error('Error fetching invites:', err)
-    }
-  }
-
-  const fetchStats = async (): Promise<void> => {
-    try {
-      const response = await fetch('/api/v2/invites/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('cz_token')}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-      }
-    } catch (err) {
-      console.error('Error fetching stats:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSubmit = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
+  const onSubmit = async (data: InviteFormData): Promise<void> => {
+    setActionError('')
+    setActionSuccess('')
 
     try {
-      const response = await fetch('/api/v2/invites', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('cz_token')}`
-        },
-        body: JSON.stringify(formData)
-      })
-
-      if (response.ok) {
-        setSuccess('Invitación enviada exitosamente')
-        setFormData({ email: '', company_name: '', message: '' })
-        setShowForm(false)
-        fetchInvites()
-        fetchStats()
-      } else {
-        const data = await response.json()
-        setError(data.detail || 'Error al enviar invitación')
-      }
-    } catch (err) {
-      setError('Error de conexión')
+      await createInvite.mutateAsync(data)
+      setActionSuccess('Invitación enviada exitosamente')
+      reset()
+      setShowForm(false)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al enviar invitación'
+      setError('root', { message: msg })
+      setActionError(msg)
     }
   }
 
   const handleResend = async (inviteId: string): Promise<void> => {
+    setActionError('')
+    setActionSuccess('')
     try {
-      const response = await fetch(`/api/v2/invites/${inviteId}/resend`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('cz_token')}`
-        }
-      })
-
-      if (response.ok) {
-        setSuccess('Invitación reenviada')
-        fetchInvites()
-      }
-    } catch (err) {
-      setError('Error al reenviar')
+      await inviteAPI.resend(inviteId)
+      setActionSuccess('Invitación reenviada')
+    } catch {
+      setActionError('Error al reenviar')
     }
   }
 
@@ -139,8 +74,38 @@ function Invites(): JSX.Element {
     return <span className={`status-badge ${config.class}`}>{config.label}</span>
   }
 
+  const loading = loadingInvites || loadingStats
+  const invites: Invite[] = invitesData?.items || []
+  const stats = {
+    total_sent: invites.length,
+    accepted: invites.filter(i => i.status === 'accepted').length,
+    pending: invites.filter(i => i.status === 'pending').length,
+    conversion_rate: invites.length > 0
+      ? Math.round((invites.filter(i => i.status === 'accepted').length / invites.length) * 100)
+      : 0
+  }
+
   if (loading) {
-    return <div className="loading">Cargando...</div>
+    return (
+      <div className="invites-page">
+        <div className="page-header">
+          <h1>Sistema de Invitaciones</h1>
+          <p>Invita a otras constructoras y expande tu red de confianza</p>
+        </div>
+        <div className="stats-cards">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="stat-card">
+              <Skeleton variant="circle" width={40} height={40} />
+              <div className="stat-info">
+                <Skeleton variant="text" width={60} height={24} />
+                <Skeleton variant="text" width={100} height={16} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <Skeleton variant="rect" height={400} />
+      </div>
+    )
   }
 
   return (
@@ -181,8 +146,9 @@ function Invites(): JSX.Element {
         </div>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {errors.root && <div className="alert alert-error">{errors.root.message}</div>}
+      {actionError && <div className="alert alert-error">{actionError}</div>}
+      {actionSuccess && <div className="alert alert-success">{actionSuccess}</div>}
 
       <div className="invites-actions">
         <button
@@ -196,40 +162,53 @@ function Invites(): JSX.Element {
       {showForm && (
         <div className="invite-form-card">
           <h3>Nueva Invitación</h3>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="form-row">
               <div className="form-group">
-                <label>Email</label>
+                <label htmlFor="email">Email</label>
                 <input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  id="email"
                   placeholder="contacto@empresa.com"
-                  required
+                  {...register('email')}
+                  aria-invalid={errors.email ? 'true' : 'false'}
                 />
+                {errors.email && (
+                  <span className="field-error" role="alert">{errors.email.message}</span>
+                )}
               </div>
               <div className="form-group">
-                <label>Nombre de la Empresa</label>
+                <label htmlFor="company_name">Nombre de la Empresa</label>
                 <input
                   type="text"
-                  value={formData.company_name}
-                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                  id="company_name"
                   placeholder="Constructora Ejemplo S.A.C."
-                  required
+                  {...register('company_name')}
+                  aria-invalid={errors.company_name ? 'true' : 'false'}
                 />
+                {errors.company_name && (
+                  <span className="field-error" role="alert">{errors.company_name.message}</span>
+                )}
               </div>
             </div>
             <div className="form-group">
-              <label>Mensaje Personalizado (opcional)</label>
+              <label htmlFor="message">Mensaje Personalizado (opcional)</label>
               <textarea
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                id="message"
                 placeholder="Hola, te invito a unirte a Conflict Zero..."
                 rows={3}
+                {...register('message')}
               />
+              {errors.message && (
+                <span className="field-error" role="alert">{errors.message.message}</span>
+              )}
             </div>
-            <button type="submit" className="btn btn-primary">
-              Enviar Invitación
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting || createInvite.isPending}
+            >
+              {createInvite.isPending ? 'Enviando...' : 'Enviar Invitación'}
             </button>
           </form>
         </div>

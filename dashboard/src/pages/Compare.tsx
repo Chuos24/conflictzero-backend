@@ -1,84 +1,51 @@
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useCompare, useCompareHistory } from '../hooks/useQueries'
+import { compareSchema } from '../lib/validations'
+import Skeleton from '../components/Skeleton'
+import type { z } from 'zod'
+import type { Comparison } from '../types'
 import './Compare.css'
 
-interface CompareResult {
-  companies?: Array<{
-    ruc: string
-    name: string
-    score: number
-    risk_level: string
-    sunat_status: string
-    osce_sanctions: number
-    tce_sanctions: number
-  }>
-  analysis?: {
-    best?: { name: string; score: number }
-    worst?: { name: string; score: number }
-    average_score: number
-  }
-  recommendation?: string
-}
+type CompareFormData = z.infer<typeof compareSchema>
 
 function Compare(): JSX.Element {
-  const [rucs, setRucs] = useState<string[]>(['', ''])
-  const [results, setResults] = useState<CompareResult | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
+  const [results, setResults] = useState<Comparison | null>(null)
   const [error, setError] = useState<string>('')
 
-  const addRucField = (): void => {
-    if (rucs.length < 10) {
-      setRucs([...rucs, ''])
-    }
-  }
+  const compareMutation = useCompare()
+  const { data: historyData, isLoading: historyLoading } = useCompareHistory()
 
-  const removeRucField = (index: number): void => {
-    if (rucs.length > 2) {
-      const newRucs = rucs.filter((_, i) => i !== index)
-      setRucs(newRucs)
-    }
-  }
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError: setFormError,
+  } = useForm<CompareFormData>({
+    resolver: zodResolver(compareSchema),
+    defaultValues: {
+      rucs: ['', ''],
+    },
+  })
 
-  const updateRuc = (index: number, value: string): void => {
-    const newRucs = [...rucs]
-    newRucs[index] = value.replace(/\D/g, '').slice(0, 11)
-    setRucs(newRucs)
-  }
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'rucs',
+  })
 
-  const handleCompare = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
-
-    const validRucs = rucs.filter(r => r.length === 11)
-    if (validRucs.length < 2) {
-      setError('Se necesitan al menos 2 RUCs válidos de 11 dígitos')
-      return
-    }
-
-    setLoading(true)
+  const onSubmit = async (data: CompareFormData): Promise<void> => {
     setError('')
     setResults(null)
 
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/v1/compare/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ rucs: validRucs })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setResults(data)
-      } else {
-        setError(data.detail || 'Error al comparar empresas')
-      }
-    } catch (err) {
-      setError('Error de conexión')
-    } finally {
-      setLoading(false)
+      const result = await compareMutation.mutateAsync(data.rucs)
+      setResults(result)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al comparar empresas'
+      setFormError('root', { message: msg })
+      setError(msg)
     }
   }
 
@@ -111,22 +78,22 @@ function Compare(): JSX.Element {
       <div className="compare-container">
         <div className="input-card">
           <h2>Ingresar RUCs</h2>
-          <form onSubmit={handleCompare}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="ruc-inputs">
-              {rucs.map((ruc, index) => (
-                <div key={index} className="ruc-field">
+              {fields.map((field, index) => (
+                <div key={field.id} className="ruc-field">
                   <input
                     type="text"
-                    value={ruc}
-                    onChange={(e) => updateRuc(index, e.target.value)}
                     placeholder={`RUC ${index + 1}`}
-                    className={ruc.length === 11 ? 'valid' : ruc.length > 0 ? 'invalid' : ''}
+                    maxLength={11}
+                    {...register(`rucs.${index}`)}
+                    className={errors.rucs?.[index] ? 'invalid' : ''}
                   />
-                  {rucs.length > 2 && (
+                  {fields.length > 2 && (
                     <button
                       type="button"
                       className="remove-btn"
-                      onClick={() => removeRucField(index)}
+                      onClick={() => remove(index)}
                     >
                       ×
                     </button>
@@ -135,24 +102,29 @@ function Compare(): JSX.Element {
               ))}
             </div>
 
-            {rucs.length < 10 && (
+            {errors.rucs && !Array.isArray(errors.rucs) && (
+              <div className="error-message">{errors.rucs.message}</div>
+            )}
+
+            {fields.length < 10 && (
               <button
                 type="button"
                 className="add-ruc-btn"
-                onClick={addRucField}
+                onClick={() => append('')}
               >
                 + Agregar RUC
               </button>
             )}
 
+            {errors.root && <div className="error-message">{errors.root.message}</div>}
             {error && <div className="error-message">{error}</div>}
 
             <button
               type="submit"
               className="compare-btn"
-              disabled={loading || rucs.filter(r => r.length === 11).length < 2}
+              disabled={compareMutation.isPending}
             >
-              {loading ? 'Comparando...' : 'Comparar Empresas'}
+              {compareMutation.isPending ? 'Comparando...' : 'Comparar Empresas'}
             </button>
           </form>
         </div>
@@ -254,6 +226,31 @@ function Compare(): JSX.Element {
             </div>
           </div>
         )}
+
+        {/* Historial de comparaciones */}
+        <div className="history-card">
+          <h2>Historial de Comparaciones</h2>
+          {historyLoading ? (
+            <Skeleton variant="rect" height={200} />
+          ) : historyData?.items && historyData.items.length > 0 ? (
+            <div className="history-list">
+              {historyData.items.map((item) => (
+                <div key={item.id} className="history-item">
+                  <span className="history-rucs">
+                    {item.rucs?.join(', ') || 'N/A'}
+                  </span>
+                  <span className="history-date">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>No hay comparaciones recientes</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

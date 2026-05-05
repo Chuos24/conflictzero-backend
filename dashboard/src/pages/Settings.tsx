@@ -1,15 +1,16 @@
 import { useState, FormEvent, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
-import { webhookAPI } from '../services/api'
+import { useToast } from '../context/ToastContext'
+import { webhookAPI, companyAPI } from '../services/api'
+import { passwordChangeSchema } from '../lib/validations'
 import api from '../services/api'
+import type { z } from 'zod'
 import type { Webhook, WebhookDelivery, ApiKey } from '../types'
 import './Settings.css'
 
-interface PasswordData {
-  current_password: string
-  new_password: string
-  confirm_password: string
-}
+type PasswordFormData = z.infer<typeof passwordChangeSchema>
 
 const WEBHOOK_EVENTS = [
   { value: 'verification.completed', label: 'Verificación completada' },

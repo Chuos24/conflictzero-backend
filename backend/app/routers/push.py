@@ -11,7 +11,7 @@ from pydantic import BaseModel
 import logging
 
 from app.core.database import get_db
-from app.core.auth import get_current_company
+from app.core.security import get_current_company
 from app.models import Company
 from app.services.push_notifications import push_service
 

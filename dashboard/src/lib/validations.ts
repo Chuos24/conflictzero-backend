@@ -98,9 +98,28 @@ export const inviteSchema = z.object({
     .optional(),
 })
 
+// Esquema de cambio de contraseña
+export const passwordChangeSchema = z.object({
+  current_password: z
+    .string()
+    .min(1, 'La contraseña actual es requerida'),
+  new_password: z
+    .string()
+    .min(1, 'La nueva contraseña es requerida')
+    .min(8, 'La nueva contraseña debe tener al menos 8 caracteres')
+    .regex(/[A-Z]/, 'Debe contener al menos una mayúscula')
+    .regex(/[a-z]/, 'Debe contener al menos una minúscula')
+    .regex(/\d/, 'Debe contener al menos un número'),
+  confirm_password: z.string().min(1, 'Confirme su nueva contraseña'),
+}).refine((data) => data.new_password === data.confirm_password, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirm_password'],
+})
+
 export type LoginFormData = z.infer<typeof loginSchema>
 export type RegisterFormData = z.infer<typeof registerSchema>
 export type ProfileFormData = z.infer<typeof profileSchema>
 export type VerifyRucFormData = z.infer<typeof verifyRucSchema>
 export type CompareFormData = z.infer<typeof compareSchema>
 export type InviteFormData = z.infer<typeof inviteSchema>
+export type PasswordFormData = z.infer<typeof passwordChangeSchema>
