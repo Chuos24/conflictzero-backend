@@ -98,6 +98,24 @@ export const inviteSchema = z.object({
     .optional(),
 })
 
+// Esquema de agregar proveedor a red
+export const addSupplierSchema = z.object({
+  ruc: z
+    .string()
+    .min(1, 'El RUC es requerido')
+    .length(11, 'El RUC debe tener exactamente 11 dígitos')
+    .regex(/^\d+$/, 'El RUC solo debe contener números'),
+  name: z
+    .string()
+    .max(100, 'El nombre no puede exceder 100 caracteres')
+    .optional(),
+  alert_threshold: z
+    .number()
+    .min(1, 'El umbral mínimo es 1%')
+    .max(50, 'El umbral máximo es 50%')
+    .default(10),
+})
+
 // Esquema de cambio de contraseña
 export const passwordChangeSchema = z.object({
   current_password: z
@@ -122,4 +140,5 @@ export type ProfileFormData = z.infer<typeof profileSchema>
 export type VerifyRucFormData = z.infer<typeof verifyRucSchema>
 export type CompareFormData = z.infer<typeof compareSchema>
 export type InviteFormData = z.infer<typeof inviteSchema>
+export type AddSupplierFormData = z.infer<typeof addSupplierSchema>
 export type PasswordFormData = z.infer<typeof passwordChangeSchema>

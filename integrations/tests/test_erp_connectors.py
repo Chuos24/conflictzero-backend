@@ -53,7 +53,8 @@ class TestSAPConnector:
     @patch('integrations.sap.sap_connector.requests.post')
     def test_verify_vendor_failure(self, mock_post):
         """Test verificación de proveedor con error de red"""
-        mock_post.side_effect = Exception("Connection timeout")
+        import requests
+        mock_post.side_effect = requests.exceptions.ConnectTimeout("Connection timeout")
         
         result = self.connector.verify_vendor("V001", "20100012345")
         

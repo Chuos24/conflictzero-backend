@@ -1,14 +1,53 @@
 # Conflict Zero - Fase 2 Progress Report (Actualización)
 
-**Fecha:** 2026-05-05 06:21 PM (Asia/Shanghai)
+**Fecha:** 2026-05-06 02:21 AM (Asia/Shanghai)
 **Cron Job:** conflict-zero-dev-progress
-**Estado:** 🚀 Fase 2 AVANZADA - ~95% completado
+**Estado:** 🚀 Fase 2 AVANZADA - ~96% completado
 
 ---
 
 ## Resumen Ejecutivo
 
 Sesión de desarrollo enfocada en completar los items finales pendientes de Fase 2: **ML Pipeline con datos reales**, **Script de build mobile** y **documentación de arquitectura**. Se crearon 2 archivos nuevos y se actualizó el reporte de progreso.
+
+---
+
+## ✅ Trabajo Realizado Hoy (Sesión 02:21 AM)
+
+### 1. Storybook Deploy Pipeline - GitHub Actions
+**Archivo nuevo:** `.github/workflows/storybook-deploy.yml`
+
+**Features:**
+- Workflow automático para deploy de Storybook a GitHub Pages
+- Se ejecuta en push a `main`/`master` cuando cambian stories o config de Storybook
+- También disponible via `workflow_dispatch` (manual)
+- Build con Node.js 20, usa `actions/upload-pages-artifact` y `actions/deploy-pages`
+- Requiere configurar GitHub Pages en Settings del repo (Source: GitHub Actions)
+
+**Uso manual:**
+```bash
+# Deploy local para testing
+./scripts/deploy-storybook.sh local
+
+# Deploy a GitHub Pages (requiere gh CLI autenticado)
+./scripts/deploy-storybook.sh gh-pages
+
+# Deploy a Netlify (requiere netlify-cli y NETLIFY_SITE_ID)
+./scripts/deploy-storybook.sh netlify
+```
+
+**Resultado:** Storybook deploy automatizado listo.
+
+### 2. Storybook Deploy Script - Local
+**Archivo nuevo:** `scripts/deploy-storybook.sh`
+
+**Features:**
+- Verifica Node.js 18+ y dependencias instaladas
+- Ejecuta `npm run build-storybook`
+- Tres targets: `local` (serve en :6006), `gh-pages` (GitHub Pages via gh CLI), `netlify` (Netlify CLI)
+- Manejo de errores y validación de prerequisitos
+
+**Resultado:** Script de deploy local/CI para Storybook.
 
 ---
 
@@ -122,7 +161,7 @@ python scripts/run_ml_pipeline_real.py
 | Mobile screens | 7 |
 | Mobile services | 5 (auth, theme, offline, notifications, deep linking) |
 | ML Pipeline | v1.5 (dataset + training + validation + deploy + real data) |
-| Build scripts | 1 (mobile EAS) |
+| Build scripts | 2 (mobile EAS + storybook deploy) |
 
 ---
 
@@ -155,8 +194,15 @@ python scripts/run_ml_pipeline_real.py
 - Perfil EAS: `preview` para testing
 - Requiere: Node.js 18+, EAS CLI, cuenta Expo
 
+**Storybook Deploy Pipeline (2026-05-06 02:21):**
+- Workflow: `.github/workflows/storybook-deploy.yml`
+- Script: `scripts/deploy-storybook.sh`
+- Deploy automático a GitHub Pages en push a main
+- Targets: local (serve :6006), gh-pages, netlify
+- Requiere activar GitHub Pages en repo settings (Source: GitHub Actions)
+
 ---
 
 *Reporte generado automáticamente por cron job conflict-zero-dev-progress*
-*Fecha: 2026-05-05 18:21 CST*
+*Fecha: 2026-05-06 02:21 CST*
 *Estado: Fase 2 Avanzada — 216 tests verdes, build limpio, 2 archivos nuevos creados* 🚀

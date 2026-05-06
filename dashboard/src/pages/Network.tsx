@@ -1,4 +1,6 @@
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import './Network.css'
 import {
   useNetworkSuppliers,
@@ -10,18 +12,15 @@ import {
 } from '../hooks/useQueries'
 import { useToast } from '../context/ToastContext'
 import Modal from '../components/Modal'
+import { addSupplierSchema } from '../lib/validations'
+import type { z } from 'zod'
 import type { NetworkSupplier, NetworkAlert } from '../types'
 
-interface NewSupplierForm {
-  ruc: string
-  name: string
-  alert_threshold: number
-}
+type AddSupplierFormData = z.infer<typeof addSupplierSchema>
 
 function Network(): JSX.Element {
   const { success, error } = useToast()
   const [showAddModal, setShowAddModal] = useState<boolean>(false)
-  const [newSupplier, setNewSupplier] = useState<NewSupplierForm>({ ruc: '', name: '', alert_threshold: 10 })
   const [activeTab, setActiveTab] = useState<string>('suppliers')
 
   const { data: suppliersData } = useNetworkSuppliers()
@@ -34,19 +33,34 @@ function Network(): JSX.Element {
   const suppliers: NetworkSupplier[] = suppliersData?.items || []
   const alerts: NetworkAlert[] = alertsData?.items || []
 
-  const handleAddSupplier = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<AddSupplierFormData>({
+    resolver: zodResolver(addSupplierSchema),
+    defaultValues: {
+      ruc: '',
+      name: '',
+      alert_threshold: 10,
+    },
+  })
+
+  const onSubmit = async (data: AddSupplierFormData): Promise<void> => {
     try {
       await addSupplier.mutateAsync({
-        ruc: newSupplier.ruc,
-        notes: newSupplier.name,
+        ruc: data.ruc,
+        notes: data.name || undefined,
         tags: []
       })
       success('Proveedor agregado exitosamente')
       setShowAddModal(false)
-      setNewSupplier({ ruc: '', name: '', alert_threshold: 10 })
+      reset()
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Error agregando proveedor'
+      setError('root', { message: errMsg })
       error(errMsg)
     }
   }
@@ -214,43 +228,56 @@ function Network(): JSX.Element {
         title="Agregar Proveedor"
         size="medium"
       >
-        <form onSubmit={handleAddSupplier}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          {errors.root && (
+            <div className="error-message" role="alert">{errors.root.message}</div>
+          )}
           <div className="form-group">
-            <label>RUC del proveedor</label>
+            <label htmlFor="ruc">RUC del proveedor</label>
             <input
               type="text"
+              id="ruc"
               maxLength={11}
-              value={newSupplier.ruc}
-              onChange={e => setNewSupplier({ ...newSupplier, ruc: e.target.value })}
               placeholder="20100190797"
-              required
+              {...register('ruc')}
+              aria-invalid={errors.ruc ? 'true' : 'false'}
             />
+            {errors.ruc && (
+              <span className="field-error" role="alert">{errors.ruc.message}</span>
+            )}
           </div>
           <div className="form-group">
-            <label>Nombre (opcional)</label>
+            <label htmlFor="name">Nombre (opcional)</label>
             <input
               type="text"
-              value={newSupplier.name}
-              onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })}
+              id="name"
               placeholder="Nombre del proveedor"
+              {...register('name')}
             />
+            {errors.name && (
+              <span className="field-error" role="alert">{errors.name.message}</span>
+            )}
           </div>
           <div className="form-group">
-            <label>Umbral de alerta (% de cambio)</label>
+            <label htmlFor="alert_threshold">Umbral de alerta (% de cambio)</label>
             <input
               type="number"
+              id="alert_threshold"
               min={1}
               max={50}
-              value={newSupplier.alert_threshold}
-              onChange={e => setNewSupplier({ ...newSupplier, alert_threshold: parseInt(e.target.value) })}
+              {...register('alert_threshold', { valueAsNumber: true })}
+              aria-invalid={errors.alert_threshold ? 'true' : 'false'}
             />
+            {errors.alert_threshold && (
+              <span className="field-error" role="alert">{errors.alert_threshold.message}</span>
+            )}
             <small>Notificar cuando el score cambie más de este porcentaje</small>
           </div>
           <div className="modal-actions">
             <button type="button" className="btn" onClick={() => setShowAddModal(false)}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary" disabled={addSupplier.isPending}>
+            <button type="submit" className="btn btn-primary" disabled={isSubmitting || addSupplier.isPending}>
               {addSupplier.isPending ? 'Agregando...' : 'Agregar'}
             </button>
           </div>

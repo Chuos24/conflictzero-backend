@@ -136,28 +136,34 @@ export default function Settings(): JSX.Element {
     }
   }
 
-  const handlePasswordChange = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
-    if (passwordData.new_password !== passwordData.confirm_password) {
-      setMessage('Las contraseñas no coinciden')
-      return
-    }
+  const {
+    register,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPassword,
+    formState: { errors: passwordErrors, isSubmitting: isPasswordSubmitting },
+    setError: setPasswordError,
+  } = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordChangeSchema),
+    defaultValues: {
+      current_password: '',
+      new_password: '',
+      confirm_password: '',
+    },
+  })
 
-    setLoading(true)
+  const onPasswordSubmit = async (data: PasswordFormData): Promise<void> => {
     setMessage('')
-
     try {
       await api.post('/api/v1/auth/change-password', {
-        current_password: passwordData.current_password,
-        new_password: passwordData.new_password
+        current_password: data.current_password,
+        new_password: data.new_password
       })
       setMessage('Contraseña actualizada correctamente')
-      setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
+      resetPassword()
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al cambiar contraseña'
+      setPasswordError('root', { message: msg })
       setMessage(msg)
-    } finally {
-      setLoading(false)
     }
   }
 
