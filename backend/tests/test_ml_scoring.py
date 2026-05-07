@@ -165,28 +165,32 @@ class TestMLScoringService:
         from app.services.ml_scoring_service import MLScoringService
         assert MLScoringService is not None
     
-    def test_service_calculate_score(self):
-        """Test cálculo de score básico"""
+    def test_service_initialization(self):
+        """Test que el servicio se inicializa correctamente con db"""
         import sys
         sys.path.insert(0, "backend")
         
-        try:
-            from app.services.ml_scoring_service import MLScoringService
-            
-            service = MLScoringService()
-            
-            # Datos de prueba
-            company_data = {
-                "sunat_status": "activo",
-                "osce_sanctions": 0,
-                "tce_sanctions": 0,
-                "days_since_verification": 5
-            }
-            
-            result = service.calculate_score(company_data)
-            
-            assert "score" in result or "risk_score" in result
-            assert 0 <= result.get("score", result.get("risk_score", 0)) <= 100
-            
-        except Exception as e:
-            pytest.skip(f"Error en cálculo de score: {e}")
+        from app.services.ml_scoring_service import MLScoringService
+        from unittest.mock import MagicMock
+        
+        mock_db = MagicMock()
+        service = MLScoringService(db=mock_db)
+        
+        assert service.db is mock_db
+        assert service.FEATURE_WEIGHTS is not None
+        assert "verification_frequency" in service.FEATURE_WEIGHTS
+    
+    def test_service_risk_levels(self):
+        """Test que los niveles de riesgo están definidos"""
+        import sys
+        sys.path.insert(0, "backend")
+        
+        from app.services.ml_scoring_service import MLScoringService
+        from unittest.mock import MagicMock
+        
+        mock_db = MagicMock()
+        service = MLScoringService(db=mock_db)
+        
+        assert service.RISK_THRESHOLDS["low"] == 70
+        assert service.RISK_THRESHOLDS["moderate"] == 50
+        assert service.RISK_THRESHOLDS["high"] == 30

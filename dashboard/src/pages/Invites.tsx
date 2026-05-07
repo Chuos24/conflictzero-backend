@@ -76,7 +76,7 @@ function Invites(): JSX.Element {
 
   const loading = loadingInvites || loadingStats
   const invites: Invite[] = invitesData?.items || []
-  const stats = {
+  const computedStats = {
     total_sent: invites.length,
     accepted: invites.filter(i => i.status === 'accepted').length,
     pending: invites.filter(i => i.status === 'pending').length,
@@ -126,7 +126,7 @@ function Invites(): JSX.Element {
         <div className="stat-card">
           <div className="stat-icon">✅</div>
           <div className="stat-info">
-            <span className="stat-value">{stats.accepted}</span>
+            <span className="stat-value">{computedStats.accepted}</span>
             <span className="stat-label">Aceptadas</span>
           </div>
         </div>
