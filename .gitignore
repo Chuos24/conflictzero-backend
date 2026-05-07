@@ -29,5 +29,6 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 node_modules/
+CRON_REPORT_*.md
 *.local
 *.lock
