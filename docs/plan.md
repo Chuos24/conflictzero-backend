@@ -71,13 +71,13 @@ Escalar a mercados internacionales y capas enterprise.
 
 ## Tareas Técnicas Pendientes
 
-### Corto plazo (1-2 semanas)
+### Corto plazo (1-2 semanas) ✅ COMPLETADO
 - [x] Tests para componentes React (Badge, Card, Modal, DataTable, Skeleton)
 - [x] Tests para hooks personalizados (useLocalStorage, useDebounce, useWindowSize, useToggle)
 - [x] Skeleton screens para loading states
-- [ ] Storybook para documentación visual de componentes
-- [ ] Validaciones de formularios con react-hook-form + zod
-- [ ] React Query para cacheo de datos server-side
+- [x] Storybook para documentación visual de componentes (25 stories, deploy pipeline GH Actions)
+- [x] Validaciones de formularios con react-hook-form + zod (todos los formularios)
+- [x] React Query para cacheo de datos server-side (20+ hooks, devtools integrados)
 
 ### Mediano plazo (1-2 meses)
 - [ ] Implementar tests E2E con Playwright
