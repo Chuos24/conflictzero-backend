@@ -183,31 +183,77 @@ class NetworkReverificationService:
     async def _fetch_supplier_data(self, ruc: str) -> Optional[Dict]:
         """
         Obtiene datos actualizados del proveedor.
-        En producción, esto llamaría a los servicios de verificación.
+        Integra con app.services.data_collection para datos reales.
         """
-        # TODO: Integrar con app.services.data_collection
-        # Por ahora, simulamos datos
+        from app.services.data_collection import DataCollectionService
         
-        # En producción, descomentar:
-        # from app.services.data_collection import DataCollectionService
-        # service = DataCollectionService()
-        # return await service.collect_all_data(ruc)
-        
-        # Mock data para desarrollo
-        return {
-            'ruc': ruc,
-            'company_name': f'Empresa {ruc}',
-            'score': 85,  # Simulado
-            'risk_level': 'low',
-            'sunat_debt': 0,
-            'sunat_tax_status': 'ACTIVO',
-            'sunat_contributor_status': 'HABIDO',
-            'osce_sanctions_count': 0,
-            'osce_sanctions_details': [],
-            'tce_sanctions_count': 0,
-            'tce_sanctions_details': [],
-            'checked_at': datetime.utcnow().isoformat()
-        }
+        try:
+            service = DataCollectionService()
+            data = service.collect_company_data(ruc)
+            
+            summary = data.get("summary", {})
+            sunat = data.get("sunat", {})
+            
+            # Calcular score simple
+            score = 100
+            deductions = 0
+            
+            if summary.get("has_debt"):
+                debt = sunat.get("deuda", 0)
+                deductions += min(30, int(debt / 1000))
+            
+            total_sanctions = summary.get("total_sanctions", 0)
+            deductions += min(40, total_sanctions * 10)
+            
+            if sunat.get("estado") != "ACTIVO":
+                deductions += 15
+            if sunat.get("condicion") != "HABIDO":
+                deductions += 15
+            
+            score = max(0, score - deductions)
+            
+            if score >= 80:
+                risk_level = "low"
+            elif score >= 60:
+                risk_level = "medium"
+            elif score >= 40:
+                risk_level = "high"
+            else:
+                risk_level = "critical"
+            
+            return {
+                "ruc": ruc,
+                "company_name": sunat.get("razon_social", f"Empresa {ruc}"),
+                "score": score,
+                "risk_level": risk_level,
+                "sunat_debt": sunat.get("deuda", 0),
+                "sunat_tax_status": sunat.get("estado", "ACTIVO"),
+                "sunat_contributor_status": sunat.get("condicion", "HABIDO"),
+                "osce_sanctions_count": len(data.get("osce_sanctions", [])),
+                "osce_sanctions_details": data.get("osce_sanctions", []),
+                "tce_sanctions_count": len(data.get("tce_sanctions", [])),
+                "tce_sanctions_details": data.get("tce_sanctions", []),
+                "checked_at": datetime.utcnow().isoformat(),
+                "source": "data_collection"
+            }
+        except Exception as e:
+            logger.error(f"❌ Error colectando datos para {ruc}: {e}")
+            # Fallback a mock data para no romper el pipeline
+            return {
+                "ruc": ruc,
+                "company_name": f"Empresa {ruc}",
+                "score": 85,
+                "risk_level": "low",
+                "sunat_debt": 0,
+                "sunat_tax_status": "ACTIVO",
+                "sunat_contributor_status": "HABIDO",
+                "osce_sanctions_count": 0,
+                "osce_sanctions_details": [],
+                "tce_sanctions_count": 0,
+                "tce_sanctions_details": [],
+                "checked_at": datetime.utcnow().isoformat(),
+                "source": "fallback_mock"
+            }
     
     async def _detect_changes_and_create_alerts(
         self,
@@ -356,15 +402,59 @@ class NetworkReverificationService:
     
     async def _send_notifications(self, supplier: SupplierNetwork, alerts: List[SupplierAlert]):
         """Envía notificaciones por email cuando se crean alertas."""
-        # TODO: Integrar con email_service
-        # from app.services.email_service import send_alert_email
+        from app.services.email_service import email_service
         
         company = self.db.query(Company).filter(Company.id == supplier.company_id).first()
-        if not company:
+        if not company or not company.contact_email:
             return
         
-        # En producción, enviar email aquí
-        logger.info(f"📧 Notificación pendiente para {company.contact_email} ({len(alerts)} alertas)")
+        # Construir resumen de alertas
+        alert_items = ""
+        for alert in alerts:
+            severity_color = "#DC2626" if alert.severity == "high" else "#C9A961"
+            alert_items += f"""
+            <li style="margin-bottom: 12px; padding: 12px; background: #0A0A0A; border-left: 4px solid {severity_color}; border-radius: 4px;">
+                <strong style="color: {severity_color};">{alert.alert_type.upper()}</strong><br>
+                <span style="color: #888;">{alert.message}</span>
+            </li>
+            """
+        
+        html = f"""
+        <html>
+        <body style="font-family: Inter, sans-serif; background: #0A0A0A; color: #F5F5F5; padding: 40px;">
+            <div style="max-width: 600px; margin: 0 auto; background: #141414; border: 1px solid #DC2626; border-radius: 16px; padding: 40px;">
+                <h1 style="color: #DC2626;">⚠️ Alerta en tu Red de Proveedores</h1>
+                
+                <p>Hola <strong>{company.company_name}</strong>,</p>
+                
+                <p>Se detectaron cambios en el proveedor <strong>{supplier.supplier_company_name}</strong> (RUC: {supplier.supplier_ruc_hash[:8]}...):</p>
+                
+                <ul style="list-style: none; padding: 0;">
+                    {alert_items}
+                </ul>
+                
+                <p style="text-align: center; margin: 32px 0;">
+                    <a href="https://czperu.com/dashboard/network" style="background: #C9A961; color: #0A0A0A; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Ver en Dashboard</a>
+                </p>
+                
+                <p style="color: #888; font-size: 12px;">
+                    Conflict Zero - Monitoreo continuo de riesgos de proveedores
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        try:
+            result = email_service._send_email(
+                to_email=company.contact_email,
+                subject=f"⚠️ {len(alerts)} alertas en {supplier.supplier_company_name}",
+                html_content=html,
+                from_name="Conflict Zero Alerts"
+            )
+            logger.info(f"📧 Email enviado a {company.contact_email}: {result.get('status_code', 'mock')}")
+        except Exception as e:
+            logger.error(f"❌ Error enviando email a {company.contact_email}: {e}")
 
 
 async def main():

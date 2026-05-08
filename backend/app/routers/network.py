@@ -9,11 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 import uuid
+import logging
 
 from app.core.database import get_db
 from app.core.security import get_current_company
 from app.models_v2 import Company
 from app.models_network import SupplierNetwork, SupplierAlert, CompanySnapshot
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/network", tags=["Mi Red - Supplier Network"])
 
@@ -526,5 +529,23 @@ async def verify_supplier_initial(supplier_id: uuid.UUID, ruc: str):
     Realiza verificación inicial de un proveedor agregado.
     Esta función se ejecuta en background.
     """
-    # TODO: Implementar integración con servicios de verificación
-    pass
+    from app.services.data_collection import DataCollectionService
+    from app.core.database import SessionLocal
+    
+    db = SessionLocal()
+    try:
+        service = DataCollectionService()
+        data = service.collect_company_data(ruc)
+        
+        # Actualizar snapshot del proveedor si existe
+        supplier = db.query(SupplierNetwork).filter(SupplierNetwork.id == supplier_id).first()
+        if supplier:
+            supplier.last_score = data.get("summary", {}).get("score", 85)
+            supplier.last_verified_at = datetime.utcnow()
+            db.commit()
+            
+        logger.info(f"✅ Verificación inicial completada para proveedor {ruc}")
+    except Exception as e:
+        logger.error(f"❌ Error en verificación inicial de {ruc}: {e}")
+    finally:
+        db.close()

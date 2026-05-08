@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from app.models import Company, Invite, CompanyHierarchy
 from app.core.database import get_db
 from app.core.security import get_current_company
+from app.services.email_service import email_service
 
 router = APIRouter(prefix="/api/v2/founder", tags=["Founder Compliance"])
 
@@ -267,7 +268,13 @@ async def send_enforcement_emails(
         ).first()
         
         if invite:
-            # TODO: Enviar email real aquí
+            # Enviar email real de presión
+            email_service.send_invite_to_subcontractor(
+                to_email=invite.invitee_email,
+                inviter_company=current_company.company_name,
+                invite_code=invite.invite_code,
+                registration_link="https://czperu.com/register"
+            )
             invite.send_enforcement_email()
             enviados += 1
     
