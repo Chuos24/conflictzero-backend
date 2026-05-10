@@ -1,6 +1,6 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import useWindowSize from '../hooks/useWindowSize';
+import { useWindowSize } from '../hooks/useWindowSize';
 
 describe('useWindowSize', () => {
   it('should return current window dimensions', () => {

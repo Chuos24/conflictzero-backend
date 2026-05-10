@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[type="email"]', 'test@conflictzero.com');
-    await page.fill('input[type="password"]', 'testpassword');
+    await page.fill('input#ruc', '20100154387');
+    await page.fill('input#password', 'testpassword');
     await page.click('button[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -27,8 +27,8 @@ test.describe('Dashboard', () => {
 test.describe('Verifications', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[type="email"]', 'test@conflictzero.com');
-    await page.fill('input[type="password"]', 'testpassword');
+    await page.fill('input#ruc', '20100154387');
+    await page.fill('input#password', 'testpassword');
     await page.click('button[type="submit"]');
     await page.waitForURL('/dashboard');
     await page.click('text=Verificaciones');
