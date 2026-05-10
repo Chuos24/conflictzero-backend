@@ -44,14 +44,32 @@ async def get_dashboard_stats(
         )
     ).count()
     
-    # Calculate compliance score (mock logic - can be enhanced)
-    base_score = 85
-    if current_company.plan_tier == "founder":
-        base_score = 95
-    elif current_company.plan_tier == "gold":
-        base_score = 90
-    elif current_company.plan_tier == "silver":
-        base_score = 88
+    # Calculate compliance score based on real data
+    # Score = weighted average of verification health + invite activity
+    verifications_all = db.query(VerificationRequest).filter(
+        VerificationRequest.company_id == company_id
+    ).all()
+    
+    total_verifications = len(verifications_all)
+    if total_verifications > 0:
+        avg_risk_score = sum(v.risk_score or 50 for v in verifications_all) / total_verifications
+        # Lower avg risk score = higher compliance (invert)
+        verification_health = max(0, min(100, 100 - avg_risk_score))
+    else:
+        verification_health = 50  # neutral if no verifications
+    
+    # Founder bonus based on invite conversion
+    founder_bonus = 0
+    if current_company.is_founder and invites_sent > 0:
+        conversion_rate = (invites_accepted / invites_sent) * 100
+        founder_bonus = min(15, conversion_rate * 0.3)  # up to 15 points
+    
+    # Plan base bonus
+    plan_bonus = {"bronze": 0, "silver": 3, "gold": 5, "founder": 10}.get(
+        current_company.plan_tier, 0
+    )
+    
+    compliance_score = min(100, int(verification_health + founder_bonus + plan_bonus))
     
     return {
         "verifications_count": verifications_count,
@@ -106,27 +124,62 @@ async def get_chart_data(
                     vm["count"] = v[1]
                     break
     
-    # Compliance distribution (mock data based on plan)
+    # Compliance distribution - based on real verification data
+    verifications_all = db.query(VerificationRequest).filter(
+        VerificationRequest.company_id == company_id,
+        VerificationRequest.created_at >= six_months_ago
+    ).all()
+    
+    risk_counts = {"low": 0, "medium": 0, "high": 0, "critical": 0}
+    for v in verifications_all:
+        score = v.risk_score or 50
+        if score <= 30:
+            risk_counts["low"] += 1
+        elif score <= 60:
+            risk_counts["medium"] += 1
+        elif score <= 80:
+            risk_counts["high"] += 1
+        else:
+            risk_counts["critical"] += 1
+    
+    total_verifications = sum(risk_counts.values()) or 1  # avoid division by zero
     compliance_distribution = [
-        {"name": "Compliant", "value": 75, "color": "#4caf50"},
-        {"name": "Warning", "value": 15, "color": "#ff9800"},
-        {"name": "Critical", "value": 10, "color": "#f44336"}
+        {"name": "Compliant", "value": round(risk_counts["low"] / total_verifications * 100), "color": "#4caf50"},
+        {"name": "Warning", "value": round(risk_counts["medium"] / total_verifications * 100), "color": "#ff9800"},
+        {"name": "High Risk", "value": round((risk_counts["high"] + risk_counts["critical"]) / total_verifications * 100), "color": "#f44336"}
     ]
     
-    if current_company.plan_tier == "founder":
-        compliance_distribution = [
-            {"name": "Compliant", "value": 90, "color": "#4caf50"},
-            {"name": "Warning", "value": 8, "color": "#ff9800"},
-            {"name": "Critical", "value": 2, "color": "#f44336"}
-        ]
+    # Top risk factors - based on real data from verification results
+    # Count issues from verification requests that have result data
+    osce_count = 0
+    tce_count = 0
+    debt_count = 0
+    indecopi_count = 0
     
-    # Top risk factors (mock data)
+    for v in verifications_all:
+        result = v.result_data or {}
+        osce_data = result.get("osce", {})
+        tce_data = result.get("tce", {})
+        sunat_data = result.get("sunat", {})
+        
+        if osce_data.get("total_sanciones", 0) > 0:
+            osce_count += 1
+        if tce_data.get("total_sanciones", 0) > 0:
+            tce_count += 1
+        if sunat_data.get("deuda", 0) > 0:
+            debt_count += 1
+        if result.get("indecopi_sanciones", 0) > 0:
+            indecopi_count += 1
+    
     top_risk_factors = [
-        {"factor": "OSCE Sanciones", "count": 5},
-        {"factor": "TCE Sanciones", "count": 3},
-        {"factor": "Deuda Tributaria", "count": 2},
-        {"factor": "Indecopi", "count": 1}
+        {"factor": "OSCE Sanciones", "count": osce_count},
+        {"factor": "TCE Sanciones", "count": tce_count},
+        {"factor": "Deuda Tributaria", "count": debt_count},
+        {"factor": "Indecopi", "count": indecopi_count}
     ]
+    
+    # Sort by count descending
+    top_risk_factors.sort(key=lambda x: x["count"], reverse=True)
     
     return {
         "verificationsByMonth": verifications_by_month,
