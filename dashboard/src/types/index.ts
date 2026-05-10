@@ -12,7 +12,7 @@ export type CompanyStatus = 'pending' | 'active' | 'suspended' | 'cancelled';
 export type ApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected' | 'waitlisted';
 export type SelloStatus = 'bronze' | 'silver' | 'gold' | 'expired';
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
-export type InviteStatus = 'sent' | 'opened' | 'clicked' | 'registered' | 'paid' | 'expired' | 'cancelled';
+export type InviteStatus = 'sent' | 'opened' | 'clicked' | 'registered' | 'paid' | 'expired' | 'cancelled' | 'pending' | 'accepted';
 export type AlertSeverity = 'info' | 'warning' | 'critical';
 export type AlertStatus = 'unread' | 'read' | 'resolved';
 
@@ -191,6 +191,21 @@ export interface Comparison {
   rucs: string[];
   results: VerificationResult[];
   created_at: string;
+  companies?: Array<{
+    ruc: string;
+    name: string;
+    score: number;
+    risk_level: RiskLevel;
+    sunat_status: string;
+    osce_sanctions: number;
+    tce_sanctions: number;
+  }>;
+  analysis?: {
+    best?: { name: string; score: number };
+    worst?: { name: string; score: number };
+    average_score?: number;
+  };
+  recommendation?: string;
 }
 
 // ============================================================
@@ -219,6 +234,8 @@ export interface InviteStats {
   total_registered: number;
   total_paid: number;
   conversion_rate: number;
+  pending?: number;
+  accepted?: number;
 }
 
 // ============================================================

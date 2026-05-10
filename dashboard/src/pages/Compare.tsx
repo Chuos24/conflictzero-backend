@@ -32,7 +32,7 @@ function Compare(): JSX.Element {
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: 'rucs',
+    name: 'rucs' as 'rucs',
   })
 
   const onSubmit = async (data: CompareFormData): Promise<void> => {

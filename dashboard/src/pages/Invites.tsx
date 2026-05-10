@@ -119,7 +119,7 @@ function Invites(): JSX.Element {
         <div className="stat-card">
           <div className="stat-icon">📧</div>
           <div className="stat-info">
-            <span className="stat-value">{stats.total_sent}</span>
+            <span className="stat-value">{stats?.total_sent ?? 0}</span>
             <span className="stat-label">Invitaciones Enviadas</span>
           </div>
         </div>
@@ -133,14 +133,14 @@ function Invites(): JSX.Element {
         <div className="stat-card">
           <div className="stat-icon">⏳</div>
           <div className="stat-info">
-            <span className="stat-value">{stats.pending}</span>
+            <span className="stat-value">{stats?.pending ?? 0}</span>
             <span className="stat-label">Pendientes</span>
           </div>
         </div>
         <div className="stat-card highlight">
           <div className="stat-icon">📈</div>
           <div className="stat-info">
-            <span className="stat-value">{stats.conversion_rate}%</span>
+            <span className="stat-value">{stats?.conversion_rate ?? 0}%</span>
             <span className="stat-label">Tasa de Conversión</span>
           </div>
         </div>

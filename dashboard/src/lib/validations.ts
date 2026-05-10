@@ -112,8 +112,7 @@ export const addSupplierSchema = z.object({
   alert_threshold: z
     .number()
     .min(1, 'El umbral mínimo es 1%')
-    .max(50, 'El umbral máximo es 50%')
-    .default(10),
+    .max(50, 'El umbral máximo es 50%'),
 })
 
 // Esquema de cambio de contraseña
