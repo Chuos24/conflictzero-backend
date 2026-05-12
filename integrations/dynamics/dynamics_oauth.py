@@ -4,7 +4,7 @@ Implementación real de OAuth 2.0 para Microsoft Dynamics 365
 """
 
 from typing import Dict, Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 import urllib.parse
 
@@ -130,7 +130,7 @@ class DynamicsOAuth2Client:
                 self._refresh_token = token_data["refresh_token"]
             
             expires_in = token_data.get("expires_in", 3600)
-            self._token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+            self._token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
             
             return {
                 "success": True,
@@ -150,7 +150,7 @@ class DynamicsOAuth2Client:
         """Verifica si el token actual es válido"""
         if not self._access_token or not self._token_expires_at:
             return False
-        return datetime.utcnow() < self._token_expires_at - timedelta(minutes=5)
+        return datetime.now(timezone.utc) < self._token_expires_at - timedelta(minutes=5)
     
     def get_auth_headers(self) -> Dict[str, str]:
         """Retorna headers de autenticación"""
@@ -243,7 +243,7 @@ class Dynamics365Client:
         return self._make_request("PATCH", f"accounts({vendor_id})", data={
             "cz_risk_score": risk_score,
             "cz_risk_level": risk_level,
-            "cz_last_verified": datetime.utcnow().isoformat()
+            "cz_last_verified": datetime.now(timezone.utc).isoformat()
         })
     
     def create_vendor(self, vendor_data: Dict) -> Dict:

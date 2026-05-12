@@ -4,7 +4,7 @@ Power Automate + Custom Connector
 """
 
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 
 
@@ -79,7 +79,7 @@ class DynamicsConnector:
                 json={
                     "cz_riskscore": cz_data.get("risk_score", 0),
                     "cz_status": cz_data.get("status", "unknown"),
-                    "cz_lastverified": datetime.utcnow().isoformat()
+                    "cz_lastverified": datetime.now(timezone.utc).isoformat()
                 },
                 timeout=30
             )
@@ -89,7 +89,7 @@ class DynamicsConnector:
                 "vendor_account": vendor_account,
                 "ruc": ruc,
                 "risk_score": cz_data.get("risk_score", 0),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
         except Exception as e:
@@ -98,7 +98,7 @@ class DynamicsConnector:
                 "vendor_account": vendor_account,
                 "ruc": ruc,
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
     
     def get_vendor_list(

@@ -6,7 +6,7 @@ Generación de certificados PDF de verificación
 import os
 import hashlib
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Optional
 
@@ -94,7 +94,7 @@ class CertificateService:
         # Fecha
         c.setFillColor(self.COLOR_TEXT_DIM)
         c.setFont("Helvetica", 10)
-        fecha_str = datetime.utcnow().strftime("%d de %B de %Y")
+        fecha_str = datetime.now(timezone.utc).strftime("%d de %B de %Y")
         c.drawRightString(width - 50, height - 60, f"Fecha: {fecha_str}")
 
     def _draw_score_circle(self, c: canvas.Canvas, x: float, y: float, score: int, risk_level: str):

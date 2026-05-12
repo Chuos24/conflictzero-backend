@@ -4,7 +4,7 @@ Conector real con autenticación OAuth 2.0 y SOAP API para SAP S/4HANA
 """
 
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 import xml.etree.ElementTree as ET
 from urllib.parse import urljoin
@@ -39,7 +39,7 @@ class SAPOAuth2Client:
         """Verifica si el token actual es válido"""
         if not self._access_token or not self._token_expires_at:
             return False
-        return datetime.utcnow() < self._token_expires_at - timedelta(minutes=5)
+        return datetime.now(timezone.utc) < self._token_expires_at - timedelta(minutes=5)
     
     def authenticate_client_credentials(self) -> bool:
         """
@@ -64,7 +64,7 @@ class SAPOAuth2Client:
             token_data = response.json()
             self._access_token = token_data["access_token"]
             expires_in = token_data.get("expires_in", 3600)
-            self._token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+            self._token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
             
             return True
             
@@ -189,7 +189,7 @@ class SAPSOAPClient:
             <VENDOR_DATA>
                 <RISK_SCORE>{risk_score}</RISK_SCORE>
                 <RISK_LEVEL>{risk_level}</RISK_LEVEL>
-                <LAST_VERIFIED>{datetime.utcnow().isoformat()}</LAST_VERIFIED>
+                <LAST_VERIFIED>{datetime.now(timezone.utc).isoformat()}</LAST_VERIFIED>
             </VENDOR_DATA>
         </urn:BAPI_VENDOR_CHANGE>
         """

@@ -4,7 +4,7 @@ Conector via REST API para SAP S/4HANA
 """
 
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 from pydantic import BaseModel
 
@@ -86,7 +86,7 @@ class SAPConnector:
                 "risk_level": data.get("risk_level", "unknown"),
                 "status": data.get("status", "unknown"),
                 "alerts": data.get("alerts", []),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
         except requests.exceptions.RequestException as e:
@@ -95,7 +95,7 @@ class SAPConnector:
                 "vendor_code": vendor_code,
                 "ruc": ruc,
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
     
     def batch_verify_vendors(
@@ -139,7 +139,7 @@ class SAPConnector:
             "success": True,
             "vendor_code": vendor_code,
             "action": "sync",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
 

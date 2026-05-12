@@ -1,6 +1,6 @@
 import logging
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import httpx
 from sqlalchemy.orm import Session
 
@@ -134,9 +134,9 @@ class PushNotificationService:
             "ruc": ruc,
             "company_id": company_id,
             "severity": severity,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "screen": "AlertDetail",
-            "params": {"ruc": ruc, "alert_id": f"{company_id}_{ruc}_{datetime.utcnow().strftime('%Y%m%d')}"}
+            "params": {"ruc": ruc, "alert_id": f"{company_id}_{ruc}_{datetime.now(timezone.utc).strftime('%Y%m%d')}"}
         }
         
         priority = "high" if severity in ["critical", "high"] else "default"

@@ -4,7 +4,7 @@ Fase 2 - Machine Learning para scoring predictivo de riesgo
 """
 
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -65,7 +65,7 @@ class MLScoringService:
         Returns:
             Dict con score, features usadas y explicación
         """
-        since = datetime.utcnow() - timedelta(days=lookback_days)
+        since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
         
         # Features
         features = {
@@ -98,7 +98,7 @@ class MLScoringService:
             "features": features,
             "explanation": explanation,
             "lookback_days": lookback_days,
-            "calculated_at": datetime.utcnow().isoformat(),
+            "calculated_at": datetime.now(timezone.utc).isoformat(),
             "model_version": "1.0.0"
         }
     
@@ -358,7 +358,7 @@ class MLScoringService:
         Detecta anomalías en el comportamiento del proveedor.
         """
         if since is None:
-            since = datetime.utcnow() - timedelta(days=30)
+            since = datetime.now(timezone.utc) - timedelta(days=30)
         
         anomalies = []
         

@@ -3,7 +3,7 @@ Servicio de monitoreo continuo de proveedores.
 Fase 2 - Conflict Zero
 """
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -42,7 +42,7 @@ class MonitoringService:
             risk_score=risk_score,
             compliance_score=compliance_score,
             status=status,
-            snapshot_date=datetime.utcnow()
+            snapshot_date=datetime.now(timezone.utc)
         )
         
         self.db.add(snapshot)
@@ -204,7 +204,7 @@ class MonitoringService:
             schedule = MonitoringSchedule(
                 status="running",
                 schedule_type="daily",
-                started_at=datetime.utcnow()
+                started_at=datetime.now(timezone.utc)
             )
             self.db.add(schedule)
             self.db.commit()
@@ -246,7 +246,7 @@ class MonitoringService:
             schedule.status = "completed"
             schedule.changes_detected = total_changes
             schedule.alerts_generated = total_alerts
-            schedule.completed_at = datetime.utcnow()
+            schedule.completed_at = datetime.now(timezone.utc)
             self.db.commit()
             
             return {
@@ -261,7 +261,7 @@ class MonitoringService:
         except Exception as e:
             schedule.status = "failed"
             schedule.error_message = str(e)
-            schedule.completed_at = datetime.utcnow()
+            schedule.completed_at = datetime.now(timezone.utc)
             self.db.commit()
             
             return {
@@ -272,7 +272,7 @@ class MonitoringService:
     
     def get_supplier_history(self, company_id: int, days: int = 30) -> List[Dict[str, Any]]:
         """Obtiene historial de snapshots de un proveedor."""
-        since = datetime.utcnow() - timedelta(days=days)
+        since = datetime.now(timezone.utc) - timedelta(days=days)
         
         snapshots = (
             self.db.query(SupplierSnapshot)
@@ -315,7 +315,7 @@ class MonitoringService:
             return False
         
         alert.status = "read"
-        alert.read_at = datetime.utcnow()
+        alert.read_at = datetime.now(timezone.utc)
         self.db.commit()
         return True
     
@@ -326,7 +326,7 @@ class MonitoringService:
             return False
         
         alert.status = "dismissed"
-        alert.dismissed_at = datetime.utcnow()
+        alert.dismissed_at = datetime.now(timezone.utc)
         self.db.commit()
         return True
     

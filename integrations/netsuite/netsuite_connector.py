@@ -4,7 +4,7 @@ SuiteScript para verificación de proveedores
 """
 
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 
 
@@ -53,7 +53,7 @@ class NetSuiteConnector:
                 "success": True,
                 "vendor_id": vendor_id,
                 "ruc": ruc,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
         except Exception as e:
@@ -62,7 +62,7 @@ class NetSuiteConnector:
                 "vendor_id": vendor_id,
                 "ruc": ruc,
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
     
     def _get_auth_headers(self) -> Dict:
@@ -83,7 +83,7 @@ class NetSuiteConnector:
         return {
             "success": True,
             "action": "create_vendor",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
 

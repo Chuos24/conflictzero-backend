@@ -4,7 +4,7 @@ Implementación real de OAuth 1.0a para SuiteTalk REST API
 """
 
 from typing import Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 import urllib.parse
 import hmac
@@ -204,7 +204,7 @@ class NetSuiteOAuth1Client:
         return self.make_request("PATCH", f"vendor/{vendor_id}", data={
             "custentity_cz_risk_score": risk_score,
             "custentity_cz_risk_level": risk_level,
-            "custentity_cz_last_verified": datetime.utcnow().isoformat()
+            "custentity_cz_last_verified": datetime.now(timezone.utc).isoformat()
         })
     
     def search_vendors(self, ruc: Optional[str] = None, limit: int = 100) -> Dict:

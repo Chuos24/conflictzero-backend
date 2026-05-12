@@ -6,7 +6,7 @@ Colecta datos de múltiples fuentes para verificaciones
 import os
 import json
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Any
 import requests
 from sqlalchemy.orm import Session
@@ -123,16 +123,16 @@ def set_cached_response(query_type: str, identifier: str, data: Dict, db: Sessio
     
     if cache:
         cache.response_json = data
-        cache.expires_at = datetime.utcnow() + timedelta(minutes=ttl_minutes)
+        cache.expires_at = datetime.now(timezone.utc) + timedelta(minutes=ttl_minutes)
         cache.hit_count = 1
-        cache.last_hit_at = datetime.utcnow()
+        cache.last_hit_at = datetime.now(timezone.utc)
     else:
         cache = ApiCache(
             query_hash=cache_key,
             query_type=query_type,
             query_identifier=identifier,
             response_json=data,
-            expires_at=datetime.utcnow() + timedelta(minutes=ttl_minutes)
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=ttl_minutes)
         )
         db.add(cache)
     
@@ -380,7 +380,7 @@ def collect_all_data(ruc: str, db: Session) -> Dict[str, Any]:
         "rnp_sanctions": rnp_sanctions,
         "tce_sanctions": tce_sanctions,
         "summary": summary,
-        "collected_at": datetime.utcnow().isoformat()
+        "collected_at": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -405,7 +405,7 @@ def collect_multiple_rucs(rucs: List[str], db: Session) -> Dict[str, Any]:
                 "rnp_sanctions": [],
                 "tce_sanctions": [],
                 "summary": {"ruc": ruc, "found": False, "error": str(e)},
-                "collected_at": datetime.utcnow().isoformat()
+                "collected_at": datetime.now(timezone.utc).isoformat()
             })
     
     # Generar comparativa

@@ -4,7 +4,7 @@ Servicio para comparar múltiples empresas simultáneamente
 """
 
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from sqlalchemy.orm import Session
 
@@ -24,7 +24,7 @@ class CompareResult:
     def __init__(self, companies_data: List[Dict], comparison: Dict[str, Any]):
         self.companies = companies_data
         self.comparison = comparison
-        self.generated_at = datetime.utcnow()
+        self.generated_at = datetime.now(timezone.utc)
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -110,7 +110,7 @@ def compare_companies(rucs: List[str], db: Session) -> Dict[str, Any]:
         "rucs_requested": len(rucs),
         "validation_errors": errors if errors else None,
         "data": data,
-        "generated_at": datetime.utcnow().isoformat()
+        "generated_at": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -221,7 +221,7 @@ def _generate_compare_pdf(data: Dict[str, Any]) -> Dict[str, Any]:
     companies = data.get("data", {}).get("results", [])
     rucs = data.get("rucs", [])
     comparison = data.get("data", {}).get("comparison", {})
-    generated_at = datetime.utcnow()
+    generated_at = datetime.now(timezone.utc)
 
     buffer = BytesIO()
     width, height = letter
