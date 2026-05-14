@@ -87,7 +87,7 @@ describe('useQueries hooks', () => {
     })
 
     await result.current.mutateAsync('20123456789')
-    expect(result.current.isSuccess).toBe(true)
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
   })
 
   it('useCompare should compare multiple RUCs', async () => {
@@ -101,7 +101,7 @@ describe('useQueries hooks', () => {
     })
 
     await result.current.mutateAsync(['20123456789', '20987654321'])
-    expect(result.current.isSuccess).toBe(true)
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
   })
 
   it('useCompareHistory should fetch comparison history', async () => {
