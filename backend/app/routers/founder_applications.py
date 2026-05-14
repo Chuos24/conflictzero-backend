@@ -14,6 +14,7 @@ import os
 
 from app.core.database import get_db
 from app.models_v2 import FounderApplication, Company
+from app.core.security import encrypt_ruc
 
 router = APIRouter(prefix="/founder-applications", tags=["Founder Applications"])
 
@@ -282,7 +283,7 @@ async def review_application(
             founder_expires = datetime.utcnow() + timedelta(days=365)
             
             new_company = Company(
-                ruc_encrypted=b"encrypted_placeholder",  # En producción: encriptar RUC real
+                ruc_encrypted=encrypt_ruc(application.ruc),
                 ruc_hash=application.ruc_hash,
                 razon_social=application.company_name,
                 contact_email=application.contact_email,

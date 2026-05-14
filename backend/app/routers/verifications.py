@@ -20,6 +20,8 @@ from app.models_v2 import Company, VerificationRequest, PublicProfile
 from app.services.scoring_service import scoring_service
 from app.services.data_collection import DataCollectionService
 from app.services.certificate_service import certificate_service
+from app.services.ml_scoring_service import MLScoringService
+from app.core.security import encrypt_ruc
 
 router = APIRouter(prefix="/verify", tags=["Verificaciones"])
 
@@ -180,12 +182,18 @@ async def verify_ruc(
     
     score_result = scoring_service.calculate_score(sunat_score_data, osce_sanctions, tce_sanctions)
     
+    # Calcular ML anomaly score
+    ml_service = MLScoringService(db)
+    ml_result = ml_service.calculate_ml_score(request.ruc, company_id=str(current_company.id))
+    ml_anomaly_score = round(100 - ml_result["ml_score"], 2)  # Invertir: mayor riesgo = mayor anomalía
+    ml_risk_factors = ml_result.get("explanation", [])[:5]
+    
     # Crear registro de verificación
     verification = VerificationRequest(
         id=uuid.uuid4(),
         consultant_id=current_company.id,
         target_ruc_hash=ruc_hash,
-        target_ruc_encrypted=request.ruc.encode(),  # En producción: encriptar con AES
+        target_ruc_encrypted=encrypt_ruc(request.ruc),
         target_company_name=sunat_data.get('razon_social'),
         score=score_result.score,
         risk_level=score_result.risk_level,
@@ -196,12 +204,13 @@ async def verify_ruc(
         osce_sanctions_details=osce_data.get('sanctions', []),
         tce_sanctions_count=len([s for s in tce_data.get('sanctions', []) if s.get('is_active')]),
         tce_sanctions_details=tce_data.get('sanctions', []),
-        ml_anomaly_score=0.0,  # Placeholder para ML
-        ml_risk_factors=[],
+        ml_anomaly_score=ml_anomaly_score,
+        ml_risk_factors=ml_risk_factors,
         raw_data={
             'sunat': sunat_data,
             'osce': osce_data,
-            'tce': tce_data
+            'tce': tce_data,
+            'ml_analysis': ml_result
         },
         is_cached=False
     )
