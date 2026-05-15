@@ -1,25 +1,26 @@
 // @ts-nocheck
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { ProtectedRoute } from '../components/ProtectedRoute'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+import { ProtectedRoute } from '../components/ProtectedRoute';
 
 // Componentes de ejemplo
 function PublicPage() {
-  return <div style={{ padding: '40px' }}>🌐 Página Pública - Accesible sin login</div>
+  return <div style={{ padding: '40px' }}>🌐 Página Pública - Accesible sin login</div>;
 }
 
 function PrivatePage() {
-  return <div style={{ padding: '40px' }}>🔒 Página Privada - Requiere autenticación</div>
+  return <div style={{ padding: '40px' }}>🔒 Página Privada - Requiere autenticación</div>;
 }
 
 function LoginPage() {
-  return <div style={{ padding: '40px' }}>🔑 Página de Login</div>
+  return <div style={{ padding: '40px' }}>🔑 Página de Login</div>;
 }
 
 export default {
   title: 'Components/ProtectedRoute',
   component: ProtectedRoute,
   decorators: [
-    (Story) => (
+    Story => (
       <BrowserRouter>
         <Story />
       </BrowserRouter>
@@ -29,11 +30,12 @@ export default {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'ProtectedRoute protege rutas privadas redirigiendo a login cuando no hay sesión activa.',
+        component:
+          'ProtectedRoute protege rutas privadas redirigiendo a login cuando no hay sesión activa.',
       },
     },
   },
-}
+};
 
 export const Authenticated = {
   render: () => (
@@ -58,7 +60,7 @@ export const Authenticated = {
       },
     },
   },
-}
+};
 
 export const Unauthenticated = {
   render: () => {
@@ -77,7 +79,7 @@ export const Unauthenticated = {
         />
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
-    )
+    );
   },
   name: 'Usuario No Autenticado',
   parameters: {
@@ -87,4 +89,4 @@ export const Unauthenticated = {
       },
     },
   },
-}
+};

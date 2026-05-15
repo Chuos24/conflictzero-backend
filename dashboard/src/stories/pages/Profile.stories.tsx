@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Profile from '../src/pages/Profile'
+import { PageWrapper } from '../PageWrapper';
+import Profile from '../src/pages/Profile';
 
 /**
  * Profile Page - Perfil de empresa
@@ -16,7 +16,7 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -24,4 +24,4 @@ export const Default = {
       <Profile />
     </PageWrapper>
   ),
-}
+};

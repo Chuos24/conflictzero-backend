@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
 import string
 
@@ -117,7 +117,7 @@ async def create_invite(
         monthly_value=invite_data.monthly_value,
         depth_level=depth_level,
         status="sent",
-        expires_at=datetime.utcnow() + timedelta(days=30)
+        expires_at=datetime.now(timezone.utc) + timedelta(days=30)
     )
     
     db.add(invite)
@@ -196,7 +196,7 @@ async def create_invites_bulk(
                 monthly_value=invite_data.monthly_value,
                 depth_level=depth_level,  # Mismo nivel para todas las bulk invites
                 status="sent",
-                expires_at=datetime.utcnow() + timedelta(days=30)
+                expires_at=datetime.now(timezone.utc) + timedelta(days=30)
             )
             
             db.add(invite)
@@ -349,7 +349,7 @@ async def validate_invite_code(
             detail="Esta invitación ha expirado o sido cancelada"
         )
     
-    if invite.expires_at and invite.expires_at < datetime.utcnow():
+    if invite.expires_at and invite.expires_at < datetime.now(timezone.utc):
         invite.status = 'expired'
         db.commit()
         raise HTTPException(
@@ -360,7 +360,7 @@ async def validate_invite_code(
     # Marcar como abierta si no lo está
     if invite.status == 'sent':
         invite.status = 'opened'
-        invite.opened_at = datetime.utcnow()
+        invite.opened_at = datetime.now(timezone.utc)
         db.commit()
     
     return {

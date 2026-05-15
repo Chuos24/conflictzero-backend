@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Verifications from '../src/pages/Verifications'
+import { PageWrapper } from '../PageWrapper';
+import Verifications from '../src/pages/Verifications';
 
 /**
  * Verifications Page - Historial de verificaciones
@@ -16,7 +16,7 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -24,4 +24,4 @@ export const Default = {
       <Verifications />
     </PageWrapper>
   ),
-}
+};

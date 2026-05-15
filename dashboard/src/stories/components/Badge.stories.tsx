@@ -1,9 +1,9 @@
 // @ts-nocheck
-import Badge from '../src/components/Badge'
+import Badge from '../src/components/Badge';
 
 /**
  * Badge - Componente de etiqueta reutilizable
- * 
+ *
  * Referencia: Atlassian Design System badges
  * https://atlassian.design/components/badge/
  */
@@ -35,7 +35,7 @@ export default {
       description: 'Clases CSS adicionales',
     },
   },
-}
+};
 
 export const Default = {
   args: {
@@ -43,7 +43,7 @@ export const Default = {
     variant: 'default',
     size: 'medium',
   },
-}
+};
 
 export const Success = {
   args: {
@@ -51,7 +51,7 @@ export const Success = {
     variant: 'success',
     size: 'medium',
   },
-}
+};
 
 export const Warning = {
   args: {
@@ -59,7 +59,7 @@ export const Warning = {
     variant: 'warning',
     size: 'medium',
   },
-}
+};
 
 export const Error = {
   args: {
@@ -67,7 +67,7 @@ export const Error = {
     variant: 'error',
     size: 'medium',
   },
-}
+};
 
 export const Info = {
   args: {
@@ -75,7 +75,7 @@ export const Info = {
     variant: 'info',
     size: 'medium',
   },
-}
+};
 
 export const Small = {
   args: {
@@ -83,7 +83,7 @@ export const Small = {
     variant: 'default',
     size: 'small',
   },
-}
+};
 
 export const Large = {
   args: {
@@ -91,7 +91,7 @@ export const Large = {
     variant: 'default',
     size: 'large',
   },
-}
+};
 
 export const WithPulse = {
   args: {
@@ -100,7 +100,7 @@ export const WithPulse = {
     size: 'medium',
     pulse: true,
   },
-}
+};
 
 export const AllVariants = {
   render: () => (
@@ -112,7 +112,7 @@ export const AllVariants = {
       <Badge variant="info">Info</Badge>
     </div>
   ),
-}
+};
 
 export const AllSizes = {
   render: () => (
@@ -122,4 +122,4 @@ export const AllSizes = {
       <Badge size="large">Large</Badge>
     </div>
   ),
-}
+};

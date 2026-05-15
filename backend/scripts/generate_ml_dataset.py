@@ -11,7 +11,7 @@ Uso:
 import random
 import string
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 import json
@@ -145,7 +145,7 @@ def generate_dataset(db: Session, companies_count=5, suppliers_per_company=10,
             contact_name=f"Admin {i}",
             contact_phone=f"+519{random.randint(10000000, 99999999)}",
             max_monthly_queries=random.choice([100, 500, 1000, 5000]),
-            created_at=datetime.utcnow() - timedelta(days=random.randint(30, 365))
+            created_at=datetime.now(timezone.utc) - timedelta(days=random.randint(30, 365))
         )
         db.add(company)
         db.flush()
@@ -164,7 +164,7 @@ def generate_dataset(db: Session, companies_count=5, suppliers_per_company=10,
             profile = generate_supplier_profile(random.choice(risk_profiles))
             
             # Generar snapshots a lo largo del tiempo
-            start_date = datetime.utcnow() - timedelta(days=days_history)
+            start_date = datetime.now(timezone.utc) - timedelta(days=days_history)
             snapshot_dates = []
             
             for day in range(0, days_history, snapshot_frequency_days):
@@ -236,7 +236,7 @@ def generate_dataset(db: Session, companies_count=5, suppliers_per_company=10,
                     sunat_debt=debt_series[idx],
                     osce_sanctions_count=profile['sanctions'],
                     tce_sanctions_count=random.randint(0, profile['sanctions']),
-                    created_at=datetime.utcnow() - timedelta(days=random.randint(0, days_history))
+                    created_at=datetime.now(timezone.utc) - timedelta(days=random.randint(0, days_history))
                 )
                 db.add(verification)
                 total_verifications += 1

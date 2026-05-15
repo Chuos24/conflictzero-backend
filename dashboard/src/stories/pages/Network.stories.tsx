@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Network from '../src/pages/Network'
+import { PageWrapper } from '../PageWrapper';
+import Network from '../src/pages/Network';
 
 /**
  * Network Page - Red de proveedores
@@ -16,7 +16,7 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -24,4 +24,4 @@ export const Default = {
       <Network />
     </PageWrapper>
   ),
-}
+};

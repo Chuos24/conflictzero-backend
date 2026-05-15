@@ -3,7 +3,7 @@ Tests para el módulo Mi Red (Supplier Network)
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.models_v2 import Company, hash_ruc
@@ -126,18 +126,18 @@ def test_company_snapshot_creation():
 
 def test_company_snapshot_is_expired():
     """Test detección de snapshot expirado."""
-    from datetime import timedelta
+    from datetime import timedelta, timezone
     
     # Snapshot expirado
     expired = CompanySnapshot(
         ruc_hash=hash_ruc("20529400790"),
-        expires_at=datetime.utcnow() - timedelta(hours=1)
+        expires_at=datetime.now(timezone.utc) - timedelta(hours=1)
     )
     assert expired.is_expired() is True
     
     # Snapshot válido
     valid = CompanySnapshot(
         ruc_hash=hash_ruc("20529400790"),
-        expires_at=datetime.utcnow() + timedelta(hours=1)
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
     )
     assert valid.is_expired() is False

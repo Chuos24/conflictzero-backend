@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 import secrets
 
@@ -135,7 +135,7 @@ async def register(
     # Generar API key inicial
     api_key, api_key_hash = generate_api_key()
     company.api_key = api_key_hash
-    company.api_key_created_at = datetime.utcnow()
+    company.api_key_created_at = datetime.now(timezone.utc)
     
     # Log de auditoría
     audit = AuditLog(
@@ -210,7 +210,7 @@ async def login(
         )
     
     # Actualizar último login
-    company.last_login_at = datetime.utcnow()
+    company.last_login_at = datetime.now(timezone.utc)
     db.commit()
     
     # Generar token
@@ -283,7 +283,7 @@ async def update_profile(
     
     # Guardar cambios
     if new_values:
-        current_company.updated_at = datetime.utcnow()
+        current_company.updated_at = datetime.now(timezone.utc)
         
         # Log de auditoría
         audit = AuditLog(
@@ -324,7 +324,7 @@ async def change_password(
     
     # Actualizar contraseña
     current_company.password_hash = get_password_hash(request.new_password)
-    current_company.updated_at = datetime.utcnow()
+    current_company.updated_at = datetime.now(timezone.utc)
     
     # Log de auditoría
     audit = AuditLog(
@@ -364,7 +364,7 @@ async def regenerate_api_key(
     
     # Actualizar
     current_company.api_key = new_api_key_hash
-    current_company.api_key_created_at = datetime.utcnow()
+    current_company.api_key_created_at = datetime.now(timezone.utc)
     
     # Log de auditoría
     audit = AuditLog(
@@ -383,6 +383,6 @@ async def regenerate_api_key(
     return ApiKeyResponse(
         api_key=new_api_key,
         prefix=new_api_key[:8],
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         message="API key regenerada. Guarda esta clave, no se mostrará de nuevo."
     )

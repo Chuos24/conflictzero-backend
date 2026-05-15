@@ -314,7 +314,7 @@ async def get_compliance_summary(
     
     dias = None
     if current_company.founder_expires_at:
-        dias = (current_company.founder_expires_at - datetime.utcnow()).days
+        dias = (current_company.founder_expires_at - datetime.now(timezone.utc)).days
     
     # Mensaje de una línea
     if not current_company.contractual_obligation:

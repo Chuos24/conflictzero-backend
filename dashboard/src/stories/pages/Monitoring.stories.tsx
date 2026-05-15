@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Monitoring from '../src/pages/Monitoring'
+import { PageWrapper } from '../PageWrapper';
+import Monitoring from '../src/pages/Monitoring';
 
 /**
  * Monitoring Page - Monitoreo continuo de proveedores
@@ -16,7 +16,7 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -24,4 +24,4 @@ export const Default = {
       <Monitoring />
     </PageWrapper>
   ),
-}
+};

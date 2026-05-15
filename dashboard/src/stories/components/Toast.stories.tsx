@@ -1,9 +1,9 @@
 // @ts-nocheck
-import Toast from '../src/components/Toast'
+import Toast from '../src/components/Toast';
 
 /**
  * Toast - Notificación flotante
- * 
+ *
  * Referencia: Atlassian Design System banner/flag
  * https://atlassian.design/components/banner/
  */
@@ -26,7 +26,7 @@ export default {
       description: 'Callback al cerrar',
     },
   },
-}
+};
 
 export const Success = {
   args: {
@@ -34,7 +34,7 @@ export const Success = {
     message: 'Verificación completada exitosamente',
     onClose: () => {},
   },
-}
+};
 
 export const Error = {
   args: {
@@ -42,7 +42,7 @@ export const Error = {
     message: 'Error al conectar con el servidor',
     onClose: () => {},
   },
-}
+};
 
 export const Warning = {
   args: {
@@ -50,7 +50,7 @@ export const Warning = {
     message: 'Su plan está por expirar en 3 días',
     onClose: () => {},
   },
-}
+};
 
 export const Info = {
   args: {
@@ -58,7 +58,7 @@ export const Info = {
     message: 'Nueva versión disponible',
     onClose: () => {},
   },
-}
+};
 
 export const AllTypes = {
   render: () => (
@@ -69,4 +69,4 @@ export const AllTypes = {
       <Toast type="info" message="Información relevante" onClose={() => {}} />
     </div>
   ),
-}
+};

@@ -5,7 +5,7 @@ Firma digital INDECOPI con certificado PFX
 
 import hashlib
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -109,7 +109,7 @@ class DigitalSignatureService:
         return {
             "signature_id": signature_id,
             "document_hash": document_hash,
-            "signed_at": datetime.utcnow().isoformat(),
+            "signed_at": datetime.now(timezone.utc).isoformat(),
             "certificate_issuer": str(self._certificate.issuer) if self._certificate else None,
             "certificate_subject": str(self._certificate.subject) if self._certificate else None,
             "certificate_serial": str(self._certificate.serial_number) if self._certificate else None,

@@ -15,7 +15,7 @@ import sys
 import json
 import subprocess
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -79,7 +79,7 @@ def extract_real_dataset() -> bool:
         
         # Obtener verificaciones históricas
         verifications = db.query(VerificationRequest).filter(
-            VerificationRequest.created_at >= datetime.utcnow() - timedelta(days=180)
+            VerificationRequest.created_at >= datetime.now(timezone.utc) - timedelta(days=180)
         ).all()
         
         if len(verifications) < 10:

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, Field, EmailStr
 import hashlib
 import secrets
@@ -144,7 +144,7 @@ async def get_company_profile(
         founder_expires_at=current_company.founder_expires_at,
         max_monthly_queries=current_company.max_monthly_queries,
         used_queries_this_month=current_company.used_queries_this_month,
-        queries_reset_at=current_company.queries_reset_at or datetime.utcnow(),
+        queries_reset_at=current_company.queries_reset_at or datetime.now(timezone.utc),
         contact_email=current_company.contact_email,
         contact_name=current_company.contact_name,
         contact_phone=current_company.contact_phone,
@@ -207,7 +207,7 @@ async def update_company_profile(
     
     # Guardar cambios
     if new_values:
-        current_company.updated_at = datetime.utcnow()
+        current_company.updated_at = datetime.now(timezone.utc)
         
         # Log de auditoría
         audit = AuditLog(
@@ -220,7 +220,7 @@ async def update_company_profile(
             resource_id=str(current_company.id),
             old_values=old_values,
             new_values=new_values,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         db.add(audit)
         db.commit()
@@ -240,7 +240,7 @@ async def update_company_profile(
         founder_expires_at=current_company.founder_expires_at,
         max_monthly_queries=current_company.max_monthly_queries,
         used_queries_this_month=current_company.used_queries_this_month,
-        queries_reset_at=current_company.queries_reset_at or datetime.utcnow(),
+        queries_reset_at=current_company.queries_reset_at or datetime.now(timezone.utc),
         contact_email=current_company.contact_email,
         contact_name=current_company.contact_name,
         contact_phone=current_company.contact_phone,
@@ -362,7 +362,7 @@ async def create_api_key(
     # Calcular expiración si se especifica
     expires_at = None
     if request.expires_days:
-        expires_at = datetime.utcnow() + timedelta(days=request.expires_days)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=request.expires_days)
     
     # Crear registro
     new_key = ApiKey(
@@ -374,7 +374,7 @@ async def create_api_key(
         description=request.description,
         is_active=True,
         usage_count=0,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         expires_at=expires_at,
         created_by=str(current_company.id)
     )
@@ -393,7 +393,7 @@ async def create_api_key(
             "prefix": api_key[:8],
             "expires_at": expires_at.isoformat() if expires_at else None
         },
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     
     db.add(new_key)
@@ -459,7 +459,7 @@ async def update_api_key(
         new_values["description"] = request.description
     
     if new_values:
-        api_key.updated_at = datetime.utcnow()
+        api_key.updated_at = datetime.now(timezone.utc)
         
         # Log de auditoría
         audit = AuditLog(
@@ -472,7 +472,7 @@ async def update_api_key(
             resource_id=str(api_key.id),
             old_values=old_values,
             new_values=new_values,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         db.add(audit)
         db.commit()
@@ -527,7 +527,7 @@ async def revoke_api_key(
     
     # Revocar key
     api_key.is_active = False
-    api_key.revoked_at = datetime.utcnow()
+    api_key.revoked_at = datetime.now(timezone.utc)
     api_key.revoked_reason = reason or "Revocada por usuario"
     
     # Log de auditoría
@@ -544,7 +544,7 @@ async def revoke_api_key(
             "is_active": False,
             "revoked_reason": api_key.revoked_reason
         },
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     
     db.add(audit)

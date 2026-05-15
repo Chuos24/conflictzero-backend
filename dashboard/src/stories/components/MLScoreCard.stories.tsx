@@ -1,5 +1,5 @@
 // @ts-nocheck
-import MLScoreCard from '../components/MLScoreCard'
+import MLScoreCard from '../components/MLScoreCard';
 
 /**
  * MLScoreCard - Componente de score de riesgo con Machine Learning
@@ -14,11 +14,12 @@ export default {
     layout: 'padded',
     docs: {
       description: {
-        component: 'Tarjeta de score de riesgo basado en ML con gauge visual, anomalías detectadas y features del modelo.',
+        component:
+          'Tarjeta de score de riesgo basado en ML con gauge visual, anomalías detectadas y features del modelo.',
       },
     },
   },
-}
+};
 
 const mockScoreLow = {
   ml_score: 15,
@@ -40,7 +41,7 @@ const mockScoreLow = {
   ],
   calculated_at: new Date().toISOString(),
   ruc: '20100100123',
-}
+};
 
 const mockScoreModerate = {
   ml_score: 45,
@@ -62,7 +63,7 @@ const mockScoreModerate = {
   ],
   calculated_at: new Date().toISOString(),
   ruc: '20100100456',
-}
+};
 
 const mockScoreHigh = {
   ml_score: 78,
@@ -84,7 +85,7 @@ const mockScoreHigh = {
   ],
   calculated_at: new Date().toISOString(),
   ruc: '20100100789',
-}
+};
 
 const mockScoreCritical = {
   ml_score: 95,
@@ -107,7 +108,7 @@ const mockScoreCritical = {
   ],
   calculated_at: new Date().toISOString(),
   ruc: '20100100999',
-}
+};
 
 export const LowRisk = {
   args: {
@@ -116,7 +117,7 @@ export const LowRisk = {
   parameters: {
     mockData: mockScoreLow,
   },
-}
+};
 
 export const ModerateRisk = {
   args: {
@@ -125,7 +126,7 @@ export const ModerateRisk = {
   parameters: {
     mockData: mockScoreModerate,
   },
-}
+};
 
 export const HighRisk = {
   args: {
@@ -134,7 +135,7 @@ export const HighRisk = {
   parameters: {
     mockData: mockScoreHigh,
   },
-}
+};
 
 export const CriticalRisk = {
   args: {
@@ -143,10 +144,10 @@ export const CriticalRisk = {
   parameters: {
     mockData: mockScoreCritical,
   },
-}
+};
 
 export const Loading = {
   args: {
     ruc: null,
   },
-}
+};

@@ -2,7 +2,7 @@
 Tests unitarios para Conflict Zero
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import uuid
 
@@ -163,14 +163,14 @@ def test_public_slug_generation():
 # Test de soft delete
 def test_soft_delete_logic():
     """El soft delete debe marcar deleted_at sin eliminar el registro"""
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     class MockRecord:
         def __init__(self):
             self.deleted_at = None
         
         def soft_delete(self):
-            self.deleted_at = datetime.utcnow()
+            self.deleted_at = datetime.now(timezone.utc)
         
         def is_active(self):
             return self.deleted_at is None
@@ -185,9 +185,9 @@ def test_soft_delete_logic():
 # Test de fechas de retención
 def test_retention_period():
     """Los registros deben tener período de retención de 5 años"""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     
-    created_at = datetime.utcnow()
+    created_at = datetime.now(timezone.utc)
     retained_until = created_at + timedelta(days=365*5)
     
     # 5 años de diferencia

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import os
 
@@ -84,7 +84,7 @@ async def create_founder_application(
             existing.contact_phone = application.contact_phone
             existing.annual_volume = application.annual_volume
             existing.subcontractor_count = application.subcontractor_count
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(timezone.utc)
             db.commit()
             db.refresh(existing)
             return existing
@@ -252,7 +252,7 @@ async def review_application(
     application.status = status
     application.notes = notes
     application.reviewed_by = reviewed_by
-    application.reviewed_at = datetime.utcnow()
+    application.reviewed_at = datetime.now(timezone.utc)
     
     db.commit()
     db.refresh(application)
@@ -270,7 +270,7 @@ async def review_application(
             # Actualizar a Founder
             existing_company.is_founder = True
             existing_company.plan_tier = "founder"
-            existing_company.founder_expires_at = datetime.utcnow() + timedelta(days=365)
+            existing_company.founder_expires_at = datetime.now(timezone.utc) + timedelta(days=365)
             existing_company.contact_email = application.contact_email
             existing_company.contact_name = application.contact_name
             existing_company.contact_phone = application.contact_phone
@@ -280,7 +280,7 @@ async def review_application(
         else:
             # Crear nueva Company como Founder
             # Calcular expiración (12 meses desde ahora)
-            founder_expires = datetime.utcnow() + timedelta(days=365)
+            founder_expires = datetime.now(timezone.utc) + timedelta(days=365)
             
             new_company = Company(
                 ruc_encrypted=encrypt_ruc(application.ruc),
@@ -295,8 +295,8 @@ async def review_application(
                 founder_expires_at=founder_expires,
                 max_monthly_queries=10000,  # Founder: 10k queries
                 contractual_obligation=True,  # Founder tiene obligación contractual
-                contractual_signed_at=datetime.utcnow(),
-                retained_until=datetime.utcnow() + timedelta(days=365*5)  # 5 años retención legal
+                contractual_signed_at=datetime.now(timezone.utc),
+                retained_until=datetime.now(timezone.utc) + timedelta(days=365*5)  # 5 años retención legal
             )
             
             db.add(new_company)

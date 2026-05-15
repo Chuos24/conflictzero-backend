@@ -10,7 +10,7 @@ Para producción: configurar CULQI_PUBLIC_KEY y CULQI_SECRET_KEY en env vars.
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import hashlib
 import hmac
@@ -286,7 +286,7 @@ async def create_charge(
     # Actualizar empresa: activar plan
     current_company.plan_tier = request.plan_type
     current_company.plan_type = request.plan_type
-    current_company.plan_activated_at = datetime.utcnow()
+    current_company.plan_activated_at = datetime.now(timezone.utc)
     current_company.max_monthly_queries = _get_plan_limit(request.plan_type)
     current_company.used_queries_this_month = 0
     current_company.is_active = True
@@ -319,7 +319,7 @@ async def create_charge(
         plan_type=request.plan_type,
         plan_name=PLAN_NAMES.get(request.plan_type, request.plan_type),
         status=culqi_response.get("status", "unknown"),
-        created_at=datetime.utcnow().isoformat(),
+        created_at=datetime.now(timezone.utc).isoformat(),
         receipt_url=culqi_response.get("receipt_url")
     )
 
@@ -363,7 +363,7 @@ async def create_subscription(
     # Activar suscripción
     current_company.plan_tier = request.plan_type
     current_company.plan_type = request.plan_type
-    current_company.plan_activated_at = datetime.utcnow()
+    current_company.plan_activated_at = datetime.now(timezone.utc)
     current_company.max_monthly_queries = _get_plan_limit(request.plan_type)
     current_company.used_queries_this_month = 0
     current_company.is_active = True
@@ -377,7 +377,7 @@ async def create_subscription(
         subscription_id=culqi_response.get("id"),
         plan_type=request.plan_type,
         status="active",
-        next_billing_date=(datetime.utcnow().replace(day=1) + __import__('datetime').timedelta(days=32)).replace(day=1).isoformat(),
+        next_billing_date=(datetime.now(timezone.utc).replace(day=1) + __import__('datetime').timedelta(days=32)).replace(day=1).isoformat(),
         message=f"Suscripción {PLAN_NAMES.get(request.plan_type)} activada exitosamente"
     )
 

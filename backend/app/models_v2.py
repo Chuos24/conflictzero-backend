@@ -6,7 +6,7 @@ UUID PK, RUC encriptado, soft delete, contractual obligation
 import uuid
 import hashlib
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from sqlalchemy import Column, String, Boolean, DateTime, Integer, Float, Text, ForeignKey, CheckConstraint, UniqueConstraint, event, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID
@@ -128,8 +128,8 @@ class Company(Base):
     
     def soft_delete(self):
         """Soft delete con retención de 5 años"""
-        self.deleted_at = datetime.utcnow()
-        self.retained_until = datetime.utcnow() + timedelta(days=365*5)
+        self.deleted_at = datetime.now(timezone.utc)
+        self.retained_until = datetime.now(timezone.utc) + timedelta(days=365*5)
         self.status = 'cancelled'
     
     def is_active_record(self):
@@ -150,7 +150,7 @@ class Company(Base):
         
         if paid >= total * 0.5:
             return 'cumpliendo'
-        elif self.founder_expires_at and self.founder_expires_at - datetime.utcnow() <= timedelta(days=7):
+        elif self.founder_expires_at and self.founder_expires_at - datetime.now(timezone.utc) <= timedelta(days=7):
             return 'riesgo_inminente'
         else:
             return 'en_riesgo'
@@ -273,7 +273,7 @@ class PublicProfile(Base):
         
         # Si está por expirar (3 días), mostrar grace period
         if self.sello_expires_at and self.sello_status != 'expired':
-            days_until = (self.sello_expires_at - datetime.utcnow()).days
+            days_until = (self.sello_expires_at - datetime.now(timezone.utc)).days
             if days_until <= 3 and days_until > 0:
                 self.visual_state = 'expired_grace'
 
@@ -319,7 +319,7 @@ class Invite(Base):
     email_template_used = Column(String(50))
     
     created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(days=30))
+    expires_at = Column(DateTime, default=lambda: datetime.now(timezone.utc) + timedelta(days=30))
     
     deleted_at = Column(DateTime)
     
@@ -335,7 +335,7 @@ class Invite(Base):
     
     def check_expiration(self):
         """Verifica y actualiza estado si expiró"""
-        if self.expires_at and self.expires_at < datetime.utcnow() and self.status in ['sent', 'opened', 'clicked']:
+        if self.expires_at and self.expires_at < datetime.now(timezone.utc) and self.status in ['sent', 'opened', 'clicked']:
             self.status = 'expired'
             return True
         return False
@@ -343,7 +343,7 @@ class Invite(Base):
     def send_enforcement_email(self):
         """Registra envío de email de presión"""
         self.enforcement_emails_sent += 1
-        self.last_enforcement_email_at = datetime.utcnow()
+        self.last_enforcement_email_at = datetime.now(timezone.utc)
 
 
 # ============================================================
@@ -403,8 +403,8 @@ class VerificationRequest(Base):
     
     def soft_delete(self):
         """Soft delete con retención legal"""
-        self.deleted_at = datetime.utcnow()
-        self.retained_until = datetime.utcnow() + timedelta(days=365*5)
+        self.deleted_at = datetime.now(timezone.utc)
+        self.retained_until = datetime.now(timezone.utc) + timedelta(days=365*5)
 
 
 # ============================================================
@@ -556,12 +556,12 @@ class ApiCache(Base):
     last_hit_at = Column(DateTime, default=datetime.utcnow)
     
     def is_expired(self):
-        return self.expires_at < datetime.utcnow()
+        return self.expires_at < datetime.now(timezone.utc)
     
     def hit(self):
         """Registra un hit en el caché"""
         self.hit_count += 1
-        self.last_hit_at = datetime.utcnow()
+        self.last_hit_at = datetime.now(timezone.utc)
 
 
 # ============================================================
@@ -673,14 +673,14 @@ class SystemConfig(Base):
 def set_retention_date(mapper, connection, target):
     """Setea fecha de retención al crear empresa"""
     if not target.retained_until:
-        target.retained_until = datetime.utcnow() + timedelta(days=365*5)
+        target.retained_until = datetime.now(timezone.utc) + timedelta(days=365*5)
 
 
 @event.listens_for(VerificationRequest, 'before_insert')
 def set_verification_retention(mapper, connection, target):
     """Setea fecha de retención al crear verificación"""
     if not target.retained_until:
-        target.retained_until = datetime.utcnow() + timedelta(days=365*5)
+        target.retained_until = datetime.now(timezone.utc) + timedelta(days=365*5)
 
 
 @event.listens_for(Invite, 'before_update')

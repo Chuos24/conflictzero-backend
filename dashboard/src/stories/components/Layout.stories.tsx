@@ -1,24 +1,21 @@
 // @ts-nocheck
-import { BrowserRouter } from 'react-router-dom'
-import { Layout } from '../components/Layout'
-import { ThemeProvider } from '../context/ThemeContext'
-import { AuthProvider } from '../context/AuthContext'
-import { ToastProvider } from '../context/ToastContext'
+import { BrowserRouter } from 'react-router-dom';
+
+import { Layout } from '../components/Layout';
+import { ThemeProvider } from '../context/ThemeContext';
+import { AuthProvider } from '../context/AuthContext';
+import { ToastProvider } from '../context/ToastContext';
 
 // Mock de AuthProvider con usuario logueado
 function MockAuthProvider({ children }) {
-  return (
-    <AuthProvider>
-      {children}
-    </AuthProvider>
-  )
+  return <AuthProvider>{children}</AuthProvider>;
 }
 
 export default {
   title: 'Components/Layout',
   component: Layout,
   decorators: [
-    (Story) => (
+    Story => (
       <BrowserRouter>
         <MockAuthProvider>
           <ThemeProvider>
@@ -34,11 +31,12 @@ export default {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Layout principal de la aplicación con sidebar, header y área de contenido. Incluye navegación y controles de usuario.',
+        component:
+          'Layout principal de la aplicación con sidebar, header y área de contenido. Incluye navegación y controles de usuario.',
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -50,7 +48,7 @@ export const Default = {
     </Layout>
   ),
   name: 'Layout Completo',
-}
+};
 
 export const WithLongContent = {
   render: () => (
@@ -59,15 +57,15 @@ export const WithLongContent = {
         <h1>Página con Scroll</h1>
         {Array.from({ length: 20 }).map((_, i) => (
           <p key={i}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-            Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
+            incididunt ut labore et dolore magna aliqua.
           </p>
         ))}
       </div>
     </Layout>
   ),
   name: 'Con Contenido Largo',
-}
+};
 
 export const MobileViewport = {
   ...Default,
@@ -77,4 +75,4 @@ export const MobileViewport = {
       defaultViewport: 'mobile1',
     },
   },
-}
+};

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Compare from '../src/pages/Compare'
+import { PageWrapper } from '../PageWrapper';
+import Compare from '../src/pages/Compare';
 
 /**
  * Compare Page - Comparación de hasta 10 RUCs
@@ -14,11 +14,12 @@ export default {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Página de comparación de proveedores. Permite comparar hasta 10 RUCs simultáneamente.',
+        component:
+          'Página de comparación de proveedores. Permite comparar hasta 10 RUCs simultáneamente.',
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -26,4 +27,4 @@ export const Default = {
       <Compare />
     </PageWrapper>
   ),
-}
+};

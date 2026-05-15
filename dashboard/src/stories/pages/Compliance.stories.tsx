@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Compliance from '../src/pages/Compliance'
+import { PageWrapper } from '../PageWrapper';
+import Compliance from '../src/pages/Compliance';
 
 /**
  * Compliance Page - Cumplimiento normativo
@@ -16,7 +16,7 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -24,4 +24,4 @@ export const Default = {
       <Compliance />
     </PageWrapper>
   ),
-}
+};

@@ -7,7 +7,7 @@ Fase 2
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.security import get_current_company
@@ -78,8 +78,8 @@ async def get_ml_anomalies(
         )
     
     try:
-        from datetime import timedelta
-        since = datetime.utcnow() - timedelta(days=days)
+        from datetime import timedelta, timezone
+        since = datetime.now(timezone.utc) - timedelta(days=days)
         anomalies = service.detect_anomalies(ruc=ruc, since=since)
         return {
             "ruc": ruc,
@@ -87,7 +87,7 @@ async def get_ml_anomalies(
             "anomaly_count": len(anomalies),
             "has_anomalies": len(anomalies) > 0,
             "days_analyzed": days,
-            "analyzed_at": datetime.utcnow().isoformat()
+            "analyzed_at": datetime.now(timezone.utc).isoformat()
         }
     except Exception as e:
         raise HTTPException(

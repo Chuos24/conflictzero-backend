@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Invites from '../src/pages/Invites'
+import { PageWrapper } from '../PageWrapper';
+import Invites from '../src/pages/Invites';
 
 /**
  * Invites Page - Gestión de invitaciones
@@ -16,7 +16,7 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -24,4 +24,4 @@ export const Default = {
       <Invites />
     </PageWrapper>
   ),
-}
+};

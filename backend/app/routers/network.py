@@ -3,7 +3,7 @@ Conflict Zero - Mi Red (Supplier Network) Router
 Endpoints para monitoreo continuo de proveedores
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from pydantic import BaseModel, Field
@@ -301,7 +301,7 @@ async def update_supplier(
     if request.is_active is not None:
         supplier.is_active = request.is_active
     
-    supplier.updated_at = datetime.utcnow()
+    supplier.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(supplier)
     
@@ -453,7 +453,7 @@ async def mark_all_alerts_as_read(
     """
     Marca todas las alertas como leídas.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     db.query(SupplierAlert).filter(
         SupplierAlert.company_id == current_company.id,
@@ -477,7 +477,7 @@ async def get_network_stats(
     """
     Obtiene estadísticas de la red de proveedores.
     """
-    from datetime import timedelta
+    from datetime import timedelta, timezone
     
     total_suppliers = db.query(SupplierNetwork).filter(
         SupplierNetwork.company_id == current_company.id,
@@ -491,7 +491,7 @@ async def get_network_stats(
     ).count()
     
     # Proveedores con alertas no leídas en los últimos 30 días
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     
     suppliers_with_alerts = db.query(SupplierAlert.supplier_ruc_hash).filter(
         SupplierAlert.company_id == current_company.id,
@@ -541,7 +541,7 @@ async def verify_supplier_initial(supplier_id: uuid.UUID, ruc: str):
         supplier = db.query(SupplierNetwork).filter(SupplierNetwork.id == supplier_id).first()
         if supplier:
             supplier.last_score = data.get("summary", {}).get("score", 85)
-            supplier.last_verified_at = datetime.utcnow()
+            supplier.last_verified_at = datetime.now(timezone.utc)
             db.commit()
             
         logger.info(f"✅ Verificación inicial completada para proveedor {ruc}")

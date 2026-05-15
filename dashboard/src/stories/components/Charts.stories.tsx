@@ -1,5 +1,11 @@
 // @ts-nocheck
-import { VerificationTrends, RiskDistribution, SanctionsByEntity, ComplianceHistory, StatsDashboard } from '../components/Charts'
+import {
+  VerificationTrends,
+  RiskDistribution,
+  SanctionsByEntity,
+  ComplianceHistory,
+  StatsDashboard,
+} from '../components/Charts';
 
 export default {
   title: 'Components/Charts',
@@ -8,11 +14,12 @@ export default {
     layout: 'padded',
     docs: {
       description: {
-        component: 'Componentes de visualización de datos usando Recharts. Incluyen gráficos de líneas, barras, pie y dashboards completos.',
+        component:
+          'Componentes de visualización de datos usando Recharts. Incluyen gráficos de líneas, barras, pie y dashboards completos.',
       },
     },
   },
-}
+};
 
 export const VerificationTrendsDefault = {
   render: () => <VerificationTrends />,
@@ -24,7 +31,7 @@ export const VerificationTrendsDefault = {
       },
     },
   },
-}
+};
 
 export const VerificationTrendsCustom = {
   render: () => (
@@ -38,7 +45,7 @@ export const VerificationTrendsCustom = {
     />
   ),
   name: 'Tendencia - Datos Custom',
-}
+};
 
 export const RiskDistributionDefault = {
   render: () => <RiskDistribution />,
@@ -50,7 +57,7 @@ export const RiskDistributionDefault = {
       },
     },
   },
-}
+};
 
 export const RiskDistributionCustom = {
   render: () => (
@@ -63,12 +70,12 @@ export const RiskDistributionCustom = {
     />
   ),
   name: 'Riesgo - Datos Custom',
-}
+};
 
 export const SanctionsByEntityDefault = {
   render: () => <SanctionsByEntity />,
   name: 'Sanciones por Entidad',
-}
+};
 
 export const SanctionsByEntityCustom = {
   render: () => (
@@ -83,12 +90,12 @@ export const SanctionsByEntityCustom = {
     />
   ),
   name: 'Sanciones - Datos Custom',
-}
+};
 
 export const ComplianceHistoryDefault = {
   render: () => <ComplianceHistory />,
   name: 'Historial de Compliance',
-}
+};
 
 export const StatsDashboardDefault = {
   render: () => <StatsDashboard />,
@@ -96,7 +103,7 @@ export const StatsDashboardDefault = {
   parameters: {
     layout: 'fullscreen',
   },
-}
+};
 
 export const StatsDashboardCustom = {
   render: () => (
@@ -126,4 +133,4 @@ export const StatsDashboardCustom = {
   parameters: {
     layout: 'fullscreen',
   },
-}
+};

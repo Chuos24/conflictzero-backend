@@ -3,7 +3,7 @@ Tests para el módulo de monitoreo continuo.
 Fase 2 - Conflict Zero
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 
@@ -69,7 +69,7 @@ def test_snapshot(db: Session, test_company):
         raw_data={"name": test_company.razon_social, "status": "active"},
         risk_score=75.0,
         status="active",
-        snapshot_date=datetime.utcnow()
+        snapshot_date=datetime.now(timezone.utc)
     )
     db.add(snapshot)
     db.commit()
@@ -181,7 +181,7 @@ class TestMonitoringModels:
     def test_mark_alert_read(self, db: Session, test_alert):
         """Test marcar alerta como leída."""
         test_alert.status = "read"
-        test_alert.read_at = datetime.utcnow()
+        test_alert.read_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(test_alert)
 

@@ -1,9 +1,9 @@
 // @ts-nocheck
-import Skeleton, { SkeletonCard, SkeletonTable, SkeletonProfile } from '../src/components/Skeleton'
+import Skeleton, { SkeletonCard, SkeletonTable, SkeletonProfile } from '../src/components/Skeleton';
 
 /**
  * Skeleton - Componentes de placeholder para estados de carga
- * 
+ *
  * Referencia: Material Design Skeleton Screens
  * https://material.io/design/communication/launch-screen.html#skeleton-screen
  */
@@ -34,14 +34,14 @@ export default {
       description: 'Forma circular',
     },
   },
-}
+};
 
 export const Text = {
   args: {
     variant: 'text',
     width: '200px',
   },
-}
+};
 
 export const Rectangle = {
   args: {
@@ -49,7 +49,7 @@ export const Rectangle = {
     width: '200px',
     height: '120px',
   },
-}
+};
 
 export const Circle = {
   args: {
@@ -57,7 +57,7 @@ export const Circle = {
     width: '60px',
     height: '60px',
   },
-}
+};
 
 export const Multiple = {
   args: {
@@ -65,7 +65,7 @@ export const Multiple = {
     count: 3,
     width: '80%',
   },
-}
+};
 
 export const Card = {
   render: () => (
@@ -73,16 +73,12 @@ export const Card = {
       <SkeletonCard lines={3} hasImage={true} />
     </div>
   ),
-}
+};
 
 export const Table = {
-  render: () => (
-    <SkeletonTable rows={5} columns={4} />
-  ),
-}
+  render: () => <SkeletonTable rows={5} columns={4} />,
+};
 
 export const Profile = {
-  render: () => (
-    <SkeletonProfile />
-  ),
-}
+  render: () => <SkeletonProfile />,
+};

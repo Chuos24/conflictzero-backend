@@ -1,10 +1,11 @@
 // @ts-nocheck
-import Modal from '../src/components/Modal'
-import { useState } from 'react'
+import { useState } from 'react';
+
+import Modal from '../src/components/Modal';
 
 /**
  * Modal - Componente de modal reutilizable
- * 
+ *
  * Referencia: Atlassian Design System modal dialog
  * https://atlassian.design/components/modal-dialog/
  */
@@ -39,10 +40,10 @@ export default {
       description: 'Cerrar con tecla Escape',
     },
   },
-}
+};
 
-const ModalWrapper = (args) => {
-  const [isOpen, setIsOpen] = useState(false)
+const ModalWrapper = args => {
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
       <button onClick={() => setIsOpen(true)}>Abrir modal</button>
@@ -50,8 +51,8 @@ const ModalWrapper = (args) => {
         {args.children}
       </Modal>
     </div>
-  )
-}
+  );
+};
 
 export const Default = {
   render: ModalWrapper,
@@ -68,7 +69,7 @@ export const Default = {
     closeOnOverlay: true,
     closeOnEscape: true,
   },
-}
+};
 
 export const Small = {
   render: ModalWrapper,
@@ -77,7 +78,7 @@ export const Small = {
     size: 'small',
     children: <p>¿Estás seguro de que deseas continuar?</p>,
   },
-}
+};
 
 export const Large = {
   render: ModalWrapper,
@@ -91,7 +92,7 @@ export const Large = {
       </div>
     ),
   },
-}
+};
 
 export const NoCloseButton = {
   render: ModalWrapper,
@@ -102,4 +103,4 @@ export const NoCloseButton = {
     closeOnOverlay: false,
     children: <p>Este modal no se puede cerrar manualmente.</p>,
   },
-}
+};

@@ -1,10 +1,10 @@
 // @ts-nocheck
-import Card from '../src/components/Card'
-import Badge from '../src/components/Badge'
+import Card from '../src/components/Card';
+import Badge from '../src/components/Badge';
 
 /**
  * Card - Componente de tarjeta reutilizable
- * 
+ *
  * Referencia: Material Design Cards
  * https://material.io/components/cards
  */
@@ -30,14 +30,14 @@ export default {
       description: 'Handler de click',
     },
   },
-}
+};
 
 export const Default = {
   args: {
     title: 'Título de tarjeta',
     children: <p>Contenido de la tarjeta con información relevante.</p>,
   },
-}
+};
 
 export const WithIcon = {
   args: {
@@ -45,7 +45,7 @@ export const WithIcon = {
     icon: '📊',
     children: <p>Total de verificaciones: 1,234</p>,
   },
-}
+};
 
 export const WithAction = {
   args: {
@@ -54,7 +54,7 @@ export const WithAction = {
     action: <button className="btn-sm">Ver todas</button>,
     children: <p>12 verificaciones este mes</p>,
   },
-}
+};
 
 export const Hoverable = {
   args: {
@@ -62,7 +62,7 @@ export const Hoverable = {
     hoverable: true,
     children: <p>Esta tarjeta tiene efecto hover.</p>,
   },
-}
+};
 
 export const Clickable = {
   args: {
@@ -71,7 +71,7 @@ export const Clickable = {
     onClick: () => alert('Card clicked!'),
     children: <p>Haz click en esta tarjeta.</p>,
   },
-}
+};
 
 export const ComplexContent = {
   args: {
@@ -80,10 +80,16 @@ export const ComplexContent = {
     action: <Badge variant="success">Activo</Badge>,
     children: (
       <div>
-        <p><strong>RUC:</strong> 20123456789</p>
-        <p><strong>Razón social:</strong> Constructora ABC S.A.C.</p>
-        <p><strong>Última verificación:</strong> Hoy</p>
+        <p>
+          <strong>RUC:</strong> 20123456789
+        </p>
+        <p>
+          <strong>Razón social:</strong> Constructora ABC S.A.C.
+        </p>
+        <p>
+          <strong>Última verificación:</strong> Hoy
+        </p>
       </div>
     ),
   },
-}
+};

@@ -5,7 +5,7 @@ Conflict Zero - Digital Signature Module v2 (Demo/Production modes)
 import hashlib
 import uuid
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -82,9 +82,9 @@ class DigitalSignatureService:
         ).serial_number(
             x509.random_serial_number()
         ).not_valid_before(
-            datetime.utcnow()
+            datetime.now(timezone.utc)
         ).not_valid_after(
-            datetime.utcnow() + timedelta(days=10)
+            datetime.now(timezone.utc) + timedelta(days=10)
         ).add_extension(
             x509.SubjectAlternativeName([x509.DNSName("demo.conflictzero.com")]),
             critical=False,
@@ -369,7 +369,7 @@ class DigitalSignatureService:
             "signature_id": signature_id,
             "mode": "demo",
             "document_hash": document_hash,
-            "signed_at": datetime.utcnow().isoformat()
+            "signed_at": datetime.now(timezone.utc).isoformat()
         }
     
     def _sign_production(self, pdf_bytes: bytes, signature_id: str):

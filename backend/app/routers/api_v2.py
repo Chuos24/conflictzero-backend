@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.core.database import get_db
 from app.core.security import get_current_company
@@ -262,7 +262,7 @@ async def get_dashboard_notifications(
 
     # Notificación de expiración del plan Founder
     if current_company.is_founder and current_company.founder_expires_at:
-        dias_restantes = (current_company.founder_expires_at - datetime.utcnow()).days
+        dias_restantes = (current_company.founder_expires_at - datetime.now(timezone.utc)).days
         if dias_restantes <= 7:
             notifications.append({
                 "id": "founder_expiry",
@@ -271,7 +271,7 @@ async def get_dashboard_notifications(
                 "message": f"Te quedan {dias_restantes} días de acceso Founder gratuito.",
                 "action_url": "/compliance",
                 "action_text": "Ver compliance",
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
                 "is_read": False
             })
 
@@ -285,7 +285,7 @@ async def get_dashboard_notifications(
             "message": f"Has usado {usage_percent:.0f}% de tus consultas mensuales.",
             "action_url": "/settings",
             "action_text": "Actualizar plan",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "is_read": False
         })
 

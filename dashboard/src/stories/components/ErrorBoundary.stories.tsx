@@ -1,12 +1,12 @@
 // @ts-nocheck
-import { ErrorBoundary } from '../components/ErrorBoundary'
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Componente que lanza error para demostración
 function BuggyComponent({ shouldThrow = false }) {
   if (shouldThrow) {
-    throw new Error('Este es un error de demostración para Storybook')
+    throw new Error('Este es un error de demostración para Storybook');
   }
-  return <div>Componente funcionando correctamente</div>
+  return <div>Componente funcionando correctamente</div>;
 }
 
 export default {
@@ -16,11 +16,12 @@ export default {
     layout: 'padded',
     docs: {
       description: {
-        component: 'ErrorBoundary captura errores de React y muestra UI alternativa en lugar de crashear la app.',
+        component:
+          'ErrorBoundary captura errores de React y muestra UI alternativa en lugar de crashear la app.',
       },
     },
   },
-}
+};
 
 export const Working = {
   render: () => (
@@ -29,7 +30,7 @@ export const Working = {
     </ErrorBoundary>
   ),
   name: 'Funcionando Normalmente',
-}
+};
 
 export const WithError = {
   render: () => (
@@ -38,7 +39,7 @@ export const WithError = {
     </ErrorBoundary>
   ),
   name: 'Capturando Error',
-}
+};
 
 export const CustomFallback = {
   render: () => (
@@ -54,4 +55,4 @@ export const CustomFallback = {
     </ErrorBoundary>
   ),
   name: 'Fallback Personalizado',
-}
+};

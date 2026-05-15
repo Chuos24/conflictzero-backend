@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Settings from '../src/pages/Settings'
+import { PageWrapper } from '../PageWrapper';
+import Settings from '../src/pages/Settings';
 
 /**
  * Settings Page - Configuración de cuenta
@@ -16,7 +16,7 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -24,4 +24,4 @@ export const Default = {
       <Settings />
     </PageWrapper>
   ),
-}
+};

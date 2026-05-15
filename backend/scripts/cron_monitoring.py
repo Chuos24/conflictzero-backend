@@ -11,7 +11,7 @@ Configuración en cron:
 """
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Añadir el directorio padre al path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -24,14 +24,14 @@ from app.models import Company
 
 def run_daily_monitoring():
     """Ejecuta el monitoreo diario de todos los proveedores."""
-    print(f"[{datetime.utcnow().isoformat()}] Iniciando monitoreo diario...")
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Iniciando monitoreo diario...")
     
     db = SessionLocal()
     try:
         service = MonitoringService(db)
         result = service.run_daily_check()
         
-        print(f"[{datetime.utcnow().isoformat()}] Monitoreo completado:")
+        print(f"[{datetime.now(timezone.utc).isoformat()}] Monitoreo completado:")
         print(f"  - Status: {result['status']}")
         print(f"  - Schedule ID: {result.get('schedule_id')}")
         print(f"  - Total proveedores: {result.get('total_suppliers', 0)}")
@@ -41,7 +41,7 @@ def run_daily_monitoring():
         
         # Enviar push notifications para alertas críticas y altas
         if result.get('alerts_generated', 0) > 0:
-            print(f"[{datetime.utcnow().isoformat()}] Enviando push notifications...")
+            print(f"[{datetime.now(timezone.utc).isoformat()}] Enviando push notifications...")
             send_alert_push_notifications(db, result)
         
         if result['status'] == 'error':
@@ -49,7 +49,7 @@ def run_daily_monitoring():
             sys.exit(1)
             
     except Exception as e:
-        print(f"[{datetime.utcnow().isoformat()}] ERROR en monitoreo: {str(e)}")
+        print(f"[{datetime.now(timezone.utc).isoformat()}] ERROR en monitoreo: {str(e)}")
         sys.exit(1)
     finally:
         db.close()

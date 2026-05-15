@@ -1,14 +1,15 @@
 // @ts-nocheck
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider } from '../src/context/AuthContext'
-import { ToastProvider } from '../src/context/ToastContext'
-import { ThemeProvider } from '../src/context/ThemeContext'
-import Dashboard from '../src/pages/Dashboard'
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+import { AuthProvider } from '../src/context/AuthContext';
+import { ToastProvider } from '../src/context/ToastContext';
+import { ThemeProvider } from '../src/context/ThemeContext';
+import Dashboard from '../src/pages/Dashboard';
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } }
-})
+  defaultOptions: { queries: { retry: false } },
+});
 
 function DashboardWrapper() {
   return (
@@ -25,7 +26,7 @@ function DashboardWrapper() {
         </AuthProvider>
       </MemoryRouter>
     </QueryClientProvider>
-  )
+  );
 }
 
 /**
@@ -45,8 +46,8 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => <DashboardWrapper />,
-}
+};

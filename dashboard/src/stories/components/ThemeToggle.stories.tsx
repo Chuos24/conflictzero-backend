@@ -1,6 +1,6 @@
 // @ts-nocheck
-import ThemeToggle from '../src/components/ThemeToggle'
-import { ThemeProvider } from '../src/context/ThemeContext'
+import ThemeToggle from '../src/components/ThemeToggle';
+import { ThemeProvider } from '../src/context/ThemeContext';
 
 /**
  * ThemeToggle - Botón para cambiar entre modo claro y oscuro
@@ -10,14 +10,14 @@ export default {
   component: ThemeToggle,
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    Story => (
       <ThemeProvider>
         <Story />
       </ThemeProvider>
     ),
   ],
-}
+};
 
 export const Default = {
   args: {},
-}
+};

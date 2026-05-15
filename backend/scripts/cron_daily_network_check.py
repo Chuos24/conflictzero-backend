@@ -16,7 +16,7 @@ import os
 import sys
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional
 import uuid
 
@@ -60,7 +60,7 @@ class NetworkReverificationService:
     async def run_daily_check(self):
         """Ejecuta el proceso completo de re-verificación."""
         logger.info("🚀 Iniciando re-verificación diaria de proveedores")
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         
         try:
             # Obtener proveedores activos que necesitan verificación
@@ -81,7 +81,7 @@ class NetworkReverificationService:
             # Commit de todas las transacciones
             self.db.commit()
             
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
             logger.info(f"✅ Re-verificación completada en {duration:.2f}s")
             logger.info(f"   - Proveedores verificados: {self.suppliers_checked}")
             logger.info(f"   - Alertas creadas: {self.alerts_created}")
@@ -112,7 +112,7 @@ class NetworkReverificationService:
         - Activo y no eliminado
         - Nunca verificado O última verificación > 24 horas
         """
-        twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
+        twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
         
         return self.db.query(SupplierNetwork).filter(
             SupplierNetwork.is_active == True,
@@ -159,7 +159,7 @@ class NetworkReverificationService:
             tce_sanctions_details=current_data.get('tce_sanctions_details', []),
             full_data=current_data,
             monitoring_company_id=supplier.company_id,
-            expires_at=datetime.utcnow() + timedelta(hours=24)
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
         )
         
         self.db.add(new_snapshot)
@@ -167,7 +167,7 @@ class NetworkReverificationService:
         
         # Actualizar referencia al snapshot en el supplier
         supplier.last_snapshot_id = new_snapshot.id
-        supplier.last_verified_at = datetime.utcnow()
+        supplier.last_verified_at = datetime.now(timezone.utc)
         
         # Comparar con snapshot anterior si existe
         if supplier.last_snapshot_id:
@@ -233,7 +233,7 @@ class NetworkReverificationService:
                 "osce_sanctions_details": data.get("osce_sanctions", []),
                 "tce_sanctions_count": len(data.get("tce_sanctions", [])),
                 "tce_sanctions_details": data.get("tce_sanctions", []),
-                "checked_at": datetime.utcnow().isoformat(),
+                "checked_at": datetime.now(timezone.utc).isoformat(),
                 "source": "data_collection"
             }
         except Exception as e:
@@ -251,7 +251,7 @@ class NetworkReverificationService:
                 "osce_sanctions_details": [],
                 "tce_sanctions_count": 0,
                 "tce_sanctions_details": [],
-                "checked_at": datetime.utcnow().isoformat(),
+                "checked_at": datetime.now(timezone.utc).isoformat(),
                 "source": "fallback_mock"
             }
     

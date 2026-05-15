@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { PageWrapper } from '../PageWrapper'
-import Login from '../src/pages/Login'
+import { PageWrapper } from '../PageWrapper';
+import Login from '../src/pages/Login';
 
 /**
  * Login Page - Autenticación de usuarios
@@ -18,7 +18,7 @@ export default {
       },
     },
   },
-}
+};
 
 export const Default = {
   render: () => (
@@ -26,4 +26,4 @@ export const Default = {
       <Login />
     </PageWrapper>
   ),
-}
+};

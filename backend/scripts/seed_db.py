@@ -4,7 +4,7 @@ Uso: python seed_db.py
 """
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 
 # Add parent directory to path
@@ -36,9 +36,9 @@ def seed_database(db: Session):
             "contact_name": "Juan Demo",
             "plan_tier": "founder",
             "is_founder": True,
-            "founder_expires_at": datetime.utcnow() + timedelta(days=90),
+            "founder_expires_at": datetime.now(timezone.utc) + timedelta(days=90),
             "contractual_obligation": True,
-            "contractual_signed_at": datetime.utcnow()
+            "contractual_signed_at": datetime.now(timezone.utc)
         },
         {
             "ruc": "20529400790",
@@ -109,11 +109,11 @@ def seed_database(db: Session):
             slug=f"cz{hash_ruc(company.ruc_hash)[:14]}",
             display_name=company.razon_social,
             sello_status="gold" if company.is_founder else "bronze",
-            sello_expires_at=company.founder_expires_at if company.is_founder else datetime.utcnow() + timedelta(days=30),
+            sello_expires_at=company.founder_expires_at if company.is_founder else datetime.now(timezone.utc) + timedelta(days=30),
             current_score=85 if company.is_founder else 65,
             risk_level="low" if company.is_founder else "medium",
             total_verifications=10 if company.is_founder else 2,
-            last_verified_at=datetime.utcnow()
+            last_verified_at=datetime.now(timezone.utc)
         )
         db.add(profile)
         print(f"  ✅ Created public profile for: {company.razon_social}")
@@ -202,7 +202,7 @@ def seed_database(db: Session):
             status=data["status"],
             depth_level=1,
             monthly_value=500.0 if data["status"] == "paid" else None,
-            converted_to_paid_at=datetime.utcnow() if data["status"] == "paid" else None
+            converted_to_paid_at=datetime.now(timezone.utc) if data["status"] == "paid" else None
         )
         db.add(invite)
     
@@ -224,7 +224,7 @@ def seed_database(db: Session):
                 osce_sanctions_count=0,
                 tce_sanctions_count=0,
                 is_cached=True,
-                cache_expires_at=datetime.utcnow() + timedelta(hours=24)
+                cache_expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
             )
             db.add(verification)
     
