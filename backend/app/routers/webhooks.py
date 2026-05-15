@@ -4,7 +4,7 @@ Webhooks Router - Notificaciones en tiempo real
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import hmac
 import hashlib
 import json
@@ -109,7 +109,7 @@ async def test_webhook(
     
     payload = {
         "event": "test",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "data": {
             "message": "Este es un evento de prueba",
             "company": current_company.razon_social
@@ -160,7 +160,7 @@ async def deliver_webhook(webhook: Webhook, payload: dict, db: Session):
         delivery.status = "delivered" if response.status_code < 400 else "failed"
         delivery.http_status = response.status_code
         delivery.response_body = response.text[:1000]  # Limitar tamaño
-        webhook.last_triggered = datetime.utcnow()
+        webhook.last_triggered = datetime.now(timezone.utc)
         
     except Exception as e:
         delivery.status = "failed"
@@ -179,7 +179,7 @@ def notify_webhook_failure(webhook: Webhook, delivery: WebhookDelivery, db: Sess
     recent_failures = db.query(WebhookDelivery).filter(
         WebhookDelivery.webhook_id == webhook.id,
         WebhookDelivery.status == "failed",
-        WebhookDelivery.created_at >= datetime.utcnow() - timedelta(hours=24)
+        WebhookDelivery.created_at >= datetime.now(timezone.utc) - timedelta(hours=24)
     ).count()
     
     # Solo notificar cada 5 fallos para no spamear

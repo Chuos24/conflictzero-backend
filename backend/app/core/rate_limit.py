@@ -6,7 +6,7 @@ Rate limiting por plan mensual y por minuto
 from fastapi import Request, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import hashlib
 
@@ -54,7 +54,7 @@ class MonthlyRateLimiter:
                 "remaining": "unlimited"
             }
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Inicializar o resetear contador si es necesario
         if company_id not in cls._counters:
@@ -92,7 +92,7 @@ class MonthlyRateLimiter:
     @classmethod
     def increment(cls, company_id: str) -> dict:
         """Incrementa el contador y retorna info actualizada"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         if company_id not in cls._counters:
             cls._counters[company_id] = {
@@ -231,7 +231,7 @@ class PlanRateLimitMiddleware:
             ).first()
             
             if api_key:
-                if api_key.expires_at and api_key.expires_at < datetime.utcnow():
+                if api_key.expires_at and api_key.expires_at < datetime.now(timezone.utc):
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="API key expired"
@@ -301,7 +301,7 @@ class PublicRateLimiter:
         """
         ip = cls._get_client_ip(request)
         ip_hash = cls._hash_ip(ip)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if ip_hash not in cls._counters:
             cls._counters[ip_hash] = {
@@ -370,8 +370,8 @@ class PublicRateLimiter:
         counter = cls._counters.get(ip_hash, {
             "hourly": 0,
             "daily": 0,
-            "hour_reset": datetime.utcnow() + timedelta(hours=1),
-            "day_reset": datetime.utcnow() + timedelta(days=1)
+            "hour_reset": datetime.now(timezone.utc) + timedelta(hours=1),
+            "day_reset": datetime.now(timezone.utc) + timedelta(days=1)
         })
         return {
             "hourly_limit": cls.DEFAULT_HOURLY_LIMIT,

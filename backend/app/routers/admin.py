@@ -6,7 +6,7 @@ Endpoints para administración del sistema
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from app.core.database import get_db
@@ -106,7 +106,7 @@ async def approve_user(
         )
     
     company.status = "active"
-    company.updated_at = datetime.utcnow()
+    company.updated_at = datetime.now(timezone.utc)
     db.commit()
     
     # Send approval email
@@ -201,7 +201,7 @@ async def get_admin_stats(
     
     # Recent registrations (last 7 days)
     from datetime import timedelta
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     recent_users = db.query(Company).filter(Company.created_at >= week_ago).count()
     
     return {
@@ -219,5 +219,5 @@ async def get_admin_stats(
             "total": total_applications,
             "pending": pending_applications
         },
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }

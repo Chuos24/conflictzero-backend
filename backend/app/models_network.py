@@ -4,7 +4,7 @@ Alertas y snapshots para monitoreo continuo de proveedores
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from sqlalchemy import Column, String, Boolean, DateTime, Integer, Float, Text, ForeignKey, CheckConstraint, Index, UniqueConstraint, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID
@@ -78,7 +78,7 @@ class SupplierAlert(Base):
     def mark_as_read(self):
         """Marca la alerta como leída"""
         self.is_read = True
-        self.read_at = datetime.utcnow()
+        self.read_at = datetime.now(timezone.utc)
     
     def get_score_delta(self) -> Optional[int]:
         """Retorna el cambio en score (positivo = mejoró, negativo = empeoró)"""
@@ -137,7 +137,11 @@ class CompanySnapshot(Base):
         """Verifica si el snapshot ha expirado."""
         if self.expires_at is None:
             return False
-        return self.expires_at < datetime.utcnow()
+        now = datetime.now(timezone.utc)
+        # Handle both naive and timezone-aware expires_at
+        if self.expires_at.tzinfo is None:
+            return self.expires_at.replace(tzinfo=timezone.utc) < now
+        return self.expires_at < now
 
 
 # ============================================================
@@ -192,5 +196,5 @@ class SupplierNetwork(Base):
     
     def soft_delete(self):
         """Soft delete del proveedor de la red"""
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now(timezone.utc)
         self.is_active = False

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from app.models import Company, Invite, CompanyHierarchy
 from app.core.database import get_db
@@ -71,7 +71,7 @@ async def get_founder_compliance(
     # Determinar estado de cumplimiento
     dias_restantes = None
     if current_company.founder_expires_at:
-        dias_restantes = (current_company.founder_expires_at - datetime.utcnow()).days
+        dias_restantes = (current_company.founder_expires_at - datetime.now(timezone.utc)).days
     
     if not current_company.contractual_obligation:
         estado_cumplimiento = "sin_obligacion"
@@ -130,7 +130,7 @@ async def get_founder_compliance(
             pendientes, 
             current_company.contractual_obligation
         ),
-        "ultima_actualizacion": datetime.utcnow().isoformat()
+        "ultima_actualizacion": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -226,7 +226,7 @@ async def get_founder_invites_detail(
                 "converted_to_paid_at": inv.converted_to_paid_at.isoformat() if inv.converted_to_paid_at else None,
                 "enforcement_emails_sent": inv.enforcement_emails_sent,
                 "conversion_deadline": inv.conversion_deadline.isoformat() if inv.conversion_deadline else None,
-                "dias_desde_envio": (datetime.utcnow() - inv.sent_at).days if inv.sent_at else None
+                "dias_desde_envio": (datetime.now(timezone.utc) - inv.sent_at).days if inv.sent_at else None
             }
             for inv in invites
         ]

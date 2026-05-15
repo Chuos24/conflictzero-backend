@@ -4,7 +4,7 @@ Dashboard Router - Endpoints para estadísticas del dashboard
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from app.core.database import get_db
@@ -76,7 +76,7 @@ async def get_dashboard_stats(
         "comparisons_count": comparisons_count,
         "invites_sent": invites_sent,
         "invites_accepted": invites_accepted,
-        "compliance_score": base_score,
+        "compliance_score": compliance_score,
         "plan_tier": current_company.plan_tier,
         "company_name": current_company.razon_social
     }
@@ -91,7 +91,7 @@ async def get_chart_data(
     company_id = current_company.id
     
     # Get verifications by month (last 6 months)
-    six_months_ago = datetime.utcnow() - timedelta(days=180)
+    six_months_ago = datetime.now(timezone.utc) - timedelta(days=180)
     
     verifications = db.query(
         func.date_trunc('month', VerificationRequest.created_at).label('month'),
@@ -106,7 +106,7 @@ async def get_chart_data(
     # Generate month labels
     months = []
     for i in range(5, -1, -1):
-        d = datetime.utcnow() - timedelta(days=i*30)
+        d = datetime.now(timezone.utc) - timedelta(days=i*30)
         months.append(d.strftime('%b'))
     
     # Default data if no verifications

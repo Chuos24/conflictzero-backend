@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.security import get_current_company
@@ -73,7 +73,7 @@ async def register_push_token(
     existing = [t for t in _push_tokens_db[company_id] if t["token"] == request.token]
     if existing:
         # Actualizar timestamp
-        existing[0]["last_used"] = datetime.utcnow().isoformat()
+        existing[0]["last_used"] = datetime.now(timezone.utc).isoformat()
         return PushTokenResponse(
             success=True,
             token_id=f"{company_id}_{request.token[:8]}",
@@ -86,8 +86,8 @@ async def register_push_token(
         "platform": request.platform,
         "device_id": request.device_id,
         "app_version": request.app_version,
-        "created_at": datetime.utcnow().isoformat(),
-        "last_used": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_used": datetime.now(timezone.utc).isoformat()
     }
     _push_tokens_db[company_id].append(token_entry)
     

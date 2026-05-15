@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 import hashlib
 import uuid
@@ -111,7 +111,7 @@ async def verify_ruc(
     # Verificar si existe en cache reciente (últimos 15 minutos)
     cached = db.query(VerificationRequest).filter(
         VerificationRequest.target_ruc_hash == ruc_hash,
-        VerificationRequest.created_at >= datetime.utcnow() - __import__('datetime').timedelta(minutes=15),
+        VerificationRequest.created_at >= datetime.now(timezone.utc) - __import__('datetime').timedelta(minutes=15),
         VerificationRequest.is_cached == True
     ).order_by(desc(VerificationRequest.created_at)).first()
     
@@ -252,7 +252,7 @@ async def verify_ruc(
     
     if public_profile:
         public_profile.total_verifications = (public_profile.total_verifications or 0) + 1
-        public_profile.last_verified_at = datetime.utcnow()
+        public_profile.last_verified_at = datetime.now(timezone.utc)
         db.commit()
     
     return VerificationDetailResponse(
