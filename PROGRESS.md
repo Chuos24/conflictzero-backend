@@ -80,6 +80,25 @@ Sesión de desarrollo enfocada en **migrar todas las ocurrencias restantes de `d
 
 ---
 
+## ✅ Trabajo Realizado Hoy (2026-05-17 17:01 CST) — Cron Job
+
+### 1. Fix E2E Environment — `@playwright/test` Instalado
+**Problema:** `@playwright/test` estaba listado en `package.json` pero no estaba instalado en `node_modules`. El `npm install` inicial falló por peer dependency conflict con `@storybook/addon-vitest`.
+
+**Fix:**
+- Instalado `@playwright/test@1.59.1` con `--legacy-peer-deps`
+- Agregados `playwright-report/` y `test-results/` a `.gitignore`
+- Commit `b354ae3` — fix(e2e): install @playwright/test and add playwright artifacts to .gitignore
+
+**Impacto:** Los 9 escenarios E2E ahora pueden ejecutarse localmente cuando el backend esté corriendo.
+
+### 2. Commit de PROGRESS.md Pendiente
+**Problema:** `PROGRESS.md` tenía cambios desde la sesión del 2026-05-15 que no habían sido commiteados.
+
+**Fix:** Commiteado junto con el fix de E2E.
+
+---
+
 ## 📈 Métricas del Proyecto Actualizadas
 
 | Métrica | Valor | Δ |
@@ -112,7 +131,7 @@ Sesión de desarrollo enfocada en **migrar todas las ocurrencias restantes de `d
 ## 🎯 Siguientes Pasos Recomendados
 
 ### Corto plazo
-1. **Fix E2E environment** → Resolver conflicto de versiones `@playwright/test` (dos versiones instaladas)
+1. **~~Fix E2E environment~~** ✅ → `@playwright/test` instalado correctamente (2026-05-17)
 2. **Configurar Expo Access Token** → Build mobile EAS
 3. **Trámite INDECOPI** → Certificado digital para firma electrónica
 
@@ -151,12 +170,12 @@ Sesión de desarrollo enfocada en **migrar todas las ocurrencias restantes de `d
 
 **Estado del Repositorio:**
 - Branch: master
-- Up to date with origin/master
+- Ahead of origin/master by 7 commits
 - Working tree: clean
-- Último commit: `68da7f6` — chore(datetime): migrate remaining datetime.utcnow() to timezone-aware datetime.now(timezone.utc)
+- Último commit: `b354ae3` — fix(e2e): install @playwright/test and add playwright artifacts to .gitignore
 
 ---
 
 *Reporte generado automáticamente por cron job conflict-zero-dev-progress*
-*Fecha: 2026-05-15 14:14 CST*
-*Estado: Fase 2 Completa — 182 tests verdes — 0 datetime.utcnow() restantes — 0 TODOs de código — awaiting external credentials* 🚀
+*Fecha: 2026-05-17 17:01 CST*
+*Estado: Fase 2 Completa — 182 tests verdes — 0 datetime.utcnow() restantes — E2E fix aplicado — 0 TODOs de código — awaiting external credentials* 🚀
