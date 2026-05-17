@@ -39,5 +39,7 @@ coverage/
 .parcel-cache/
 .eslintcache
 
-*storybook.log
-storybook-static
+# Playwright
+playwright-report/
+test-results/
+

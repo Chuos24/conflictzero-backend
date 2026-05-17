@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.1.2",
+    "@playwright/test": "^1.59.1",
     "@storybook/addon-a11y": "^10.3.5",
     "@storybook/addon-docs": "^10.3.5",
     "@storybook/addon-onboarding": "^10.3.5",
@@ -57,7 +58,6 @@
     "eslint-plugin-storybook": "^10.3.5",
     "jsdom": "^23.0.1",
     "playwright": "^1.59.1",
-    "@playwright/test": "^1.59.1",
     "prettier": "^3.2.5",
     "prop-types": "^15.8.1",
     "storybook": "^10.3.5",
