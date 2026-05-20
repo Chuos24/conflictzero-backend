@@ -1,45 +1,49 @@
 # Conflict Zero - Fase 2 Progress Report (Actualización)
 
-**Fecha:** 2026-05-15 14:14 PM (Asia/Shanghai)
+**Fecha:** 2026-05-20 14:31 PM (Asia/Shanghai)
 **Cron Job:** conflict-zero-dev-progress
-**Estado:** 🚀 Fase 2 COMPLETA — 100% código | 182 tests verdes | 0 datetime.utcnow() restantes ✅
+**Estado:** 🚀 Fase 2 COMPLETA — 100% código | 97 tests backend verdes | 0 archivos faltantes ✅
 
 ---
 
 ## Resumen Ejecutivo
 
-Sesión de desarrollo enfocada en **sincronizar 8 commits locales pendientes con origin/master** y verificar estado del proyecto.
+Sesión de desarrollo enfocada en **corregir un bug de compatibilidad con Pydantic v2** que impedía la ejecución de tests backend.
 
-**Commits de hoy (2026-05-18 05:01 CST):**
-- Push de 8 commits: `5093b5b..6fdc014` → `origin/master`
+**Commits de hoy (2026-05-20 14:25 CST):**
+- Fix de `config.py` + push a origin/master
 
 **Commits previos:**
 - Ver historial completo en CRON_REPORTS anteriores
 
 ---
 
-## ✅ Trabajo Realizado Hoy (2026-05-18 05:01 → 05:04 CST)
+## ✅ Trabajo Realizado Hoy (2026-05-20 14:25 → 14:31 CST)
 
-### 1. Push de Commits Pendientes a origin/master
-**Estado previo:** 8 commits ahead of origin/master
-**Estado actual:** ✅ 0 commits pendientes — repositorio sincronizado
+### 1. Fix Crítico: Compatibilidad Pydantic v2
+**Problema detectado:** 3 archivos de test fallaban en la fase de colección (`test_ml_scoring.py`, `test_payments.py`, `test_webhooks.py`) con el error:
+```
+Extra inputs are not permitted [type=extra_forbidden]
+```
+**Causa raíz:** El archivo `.env` contenía múltiples variables (`ENV`, `APP_NAME`, `APP_VERSION`, `RATE_LIMIT_PER_HOUR`, `FOUNDER_MAX_SLOTS`, etc.) que no estaban declaradas en el modelo `Settings` de Pydantic v2, y el modelo no tenía configurado `extra='ignore'`.
 
-**Commits pusheados:**
-- `6fdc014` — docs(progress): update PROGRESS.md with 2026-05-17 E2E fix report
-- `b354ae3` — fix(e2e): install @playwright/test and add playwright artifacts to .gitignore
-- `68da7f6` — chore(datetime): migrate remaining datetime.utcnow() to timezone-aware datetime
-- `745f4f2` — fix(datetime): migrate remaining utcnow() + fix dashboard.py base_score bug
-- `32e58a8` — fix(tests): add waitFor after mutateAsync in useQueries tests
-- `99a7fc2` — test(dashboard): commit 7 untracked test files + playwright dep
-- `3c1aedd` — fix(backend): resolve ML placeholder and RUC encryption placeholders
-- `c84ae7e` — fix(deprecation): migrate datetime.utcnow() to datetime.now(timezone.utc)
+**Solución implementada en `backend/app/core/config.py`:**
+- Migración de `class Config` a `model_config = SettingsConfigDict(..., extra="ignore")`
+- Adición de todos los campos faltantes del `.env` al modelo `Settings`
+- Verificación: **97/97 tests backend pasan** (14.16s)
 
-### 2. Verificación de Tests Backend
-- 97 tests backend ejecutados: **todos pasan** (3.48s)
+**Commit:** `05433ef` — `fix(config): add missing env fields and extra=ignore for pydantic v2 compat`
+
+### 2. Push a origin/master
+- Estado previo: 0 commits pendientes (ya sincronizado)
+- Commit nuevo pusheado exitosamente a `origin/master`
+
+### 3. Verificación de Tests Backend
+- 97 tests backend ejecutados: **todos pasan** ✅
 - 0 regresiones detectadas
 
-### 3. Revisión de Archivos Faltantes
-- Comparación completa contra docs/plan.md
+### 4. Revisión de Archivos Faltantes
+- Comparación completa contra `docs/plan.md`
 - **Resultado:** 0 archivos faltantes
 - Todos los módulos de Fase 1 y Fase 2 están implementados
 
@@ -68,9 +72,9 @@ Sesión de desarrollo enfocada en **sincronizar 8 commits locales pendientes con
 | TODOs bloqueados (externos) | 3 (firma digital INDECOPI) | = |
 | datetime.utcnow() restantes | **0** | = |
 | Lint issues dashboard | 68 | = |
-| **Commits pendientes** | **0** | **-8** ✅ |
-| **Estado repositorio** | **Sync con origin** | **+8 pushed** ✅ |
+| **Commits pendientes** | **0** | **+1 pushed** ✅ |
+| **Estado repositorio** | **Sync con origin** | ✅ |
 
-**Nota:** Tests frontend no fueron re-ejecutados en esta sesión por tiempo de cron, pero reportes previos (2026-05-15, 2026-05-17) confirman 85 tests unitarios + 9 escenarios E2E pasando.
+**Nota:** Tests frontend no fueron re-ejecutados en esta sesión por tiempo de cron, pero reportes previos confirman 85 tests unitarios + 9 escenarios E2E pasando.
 
 ---
