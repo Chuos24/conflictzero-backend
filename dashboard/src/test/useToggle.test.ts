@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import { useToggle } from '../hooks/useToggle';
 
@@ -26,10 +26,10 @@ describe('useToggle', () => {
     expect(result.current[0]).toBe(false);
   });
 
-  it('should set specific value', () => {
+  it('should set specific value via setValue', () => {
     const { result } = renderHook(() => useToggle(false));
     act(() => {
-      result.current[2](true);
+      result.current[4](true);
     });
     expect(result.current[0]).toBe(true);
   });

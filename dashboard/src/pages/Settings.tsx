@@ -1,12 +1,15 @@
 import { useState, FormEvent, useEffect } from 'react'
 import { webhookAPI } from '../services/api'
-import { passwordChangeSchema } from '../lib/validations'
 import api from '../services/api'
-import type { z } from 'zod'
 import type { Webhook, WebhookDelivery, ApiKey } from '../types'
 import './Settings.css'
 
-type PasswordFormData = z.infer<typeof passwordChangeSchema>
+interface PasswordData {
+  current_password: string
+  new_password: string
+  confirm_password: string
+}
+
 
 const WEBHOOK_EVENTS = [
   { value: 'verification.completed', label: 'Verificación completada' },
@@ -17,7 +20,6 @@ const WEBHOOK_EVENTS = [
 ]
 
 export default function Settings(): JSX.Element {
-  const { } = useAuth()
   const [activeTab, setActiveTab] = useState<string>('password')
   const [loading, setLoading] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
@@ -132,34 +134,26 @@ export default function Settings(): JSX.Element {
     }
   }
 
-  const {
-    register,
-    handleSubmit: handlePasswordSubmit,
-    reset: resetPassword,
-    formState: { errors: passwordErrors, isSubmitting: isPasswordSubmitting },
-    setError: setPasswordError,
-  } = useForm<PasswordFormData>({
-    resolver: zodResolver(passwordChangeSchema),
-    defaultValues: {
-      current_password: '',
-      new_password: '',
-      confirm_password: '',
-    },
-  })
-
-  const onPasswordSubmit = async (data: PasswordFormData): Promise<void> => {
+  const handlePasswordChange = async (e: FormEvent): Promise<void> => {
+    e.preventDefault()
     setMessage('')
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      setMessage('Las contraseñas no coinciden')
+      return
+    }
+    setLoading(true)
     try {
       await api.post('/api/v1/auth/change-password', {
-        current_password: data.current_password,
-        new_password: data.new_password
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password
       })
       setMessage('Contraseña actualizada correctamente')
-      resetPassword()
+      setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al cambiar contraseña'
-      setPasswordError('root', { message: msg })
       setMessage(msg)
+    } finally {
+      setLoading(false)
     }
   }
 
