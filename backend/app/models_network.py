@@ -10,7 +10,7 @@ from sqlalchemy import Column, String, Boolean, DateTime, Integer, Float, Text, 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.models_v2 import Base, hash_ruc
+from app.models_v2 import Base, hash_ruc, utc_now
 
 # Tipos genéricos compatibles con PostgreSQL y SQLite
 JSONB_TYPE = Text
@@ -64,7 +64,7 @@ class SupplierAlert(Base):
     # Soft delete
     deleted_at = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     
     # Relaciones
     company = relationship("Company")
@@ -123,7 +123,7 @@ class CompanySnapshot(Base):
     full_data = Column(JSONB_TYPE)
     
     # Metadatos
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     expires_at = Column(DateTime)  # Cuándo deja de ser válido para comparación
     
     # Quién monitorea (opcional - si es parte de una red específica)
@@ -182,8 +182,8 @@ class SupplierNetwork(Base):
     tags = Column(JSONB_TYPE, default=list)  # Tags personalizados
     
     # Metadatos
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     deleted_at = Column(DateTime)
     
     # Relaciones

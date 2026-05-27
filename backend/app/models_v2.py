@@ -15,6 +15,9 @@ from sqlalchemy.sql import func
 
 Base = declarative_base()
 
+def utc_now():
+    return datetime.now(timezone.utc)
+
 # Usar tipos genéricos compatibles con PostgreSQL y SQLite
 JSONB_TYPE = Text  # Para SQLite; en PostgreSQL se puede usar JSONB
 BYTEA_TYPE = LargeBinary  # Funciona en ambos
@@ -75,7 +78,7 @@ class Company(Base):
     # Límites y uso
     max_monthly_queries = Column(Integer, default=1000)
     used_queries_this_month = Column(Integer, default=0)
-    queries_reset_at = Column(DateTime, default=datetime.utcnow)
+    queries_reset_at = Column(DateTime, default=utc_now)
     
     # API
     api_key = Column(String(255), unique=True)
@@ -96,8 +99,8 @@ class Company(Base):
     retained_until = Column(DateTime)  # 5 años desde created_at
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     last_login_at = Column(DateTime)
     
     # Relaciones
@@ -189,8 +192,8 @@ class FounderApplication(Base):
     # Soft delete
     deleted_at = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     
     __table_args__ = (
         CheckConstraint("annual_volume IN ('10-50M', '50-200M', '200M+')", name="valid_volume"),
@@ -247,8 +250,8 @@ class PublicProfile(Base):
     
     deleted_at = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     
     # Relaciones
     company = relationship("Company", back_populates="public_profile")
@@ -306,7 +309,7 @@ class Invite(Base):
     last_enforcement_email_at = Column(DateTime)
     conversion_deadline = Column(DateTime)
     
-    sent_at = Column(DateTime, default=datetime.utcnow)
+    sent_at = Column(DateTime, default=utc_now)
     opened_at = Column(DateTime)
     clicked_at = Column(DateTime)
     registered_at = Column(DateTime)
@@ -318,7 +321,7 @@ class Invite(Base):
     email_subject = Column(String(500))
     email_template_used = Column(String(50))
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     expires_at = Column(DateTime, default=lambda: datetime.now(timezone.utc) + timedelta(days=30))
     
     deleted_at = Column(DateTime)
@@ -389,7 +392,7 @@ class VerificationRequest(Base):
     deleted_at = Column(DateTime)
     retained_until = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     public_certificate_id = Column(UUID(as_uuid=True))
     
     # Relaciones
@@ -430,8 +433,8 @@ class CompanyHierarchy(Base):
     
     deleted_at = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     
     # Relaciones
     parent = relationship("Company", foreign_keys=[parent_id], back_populates="hierarchies_as_parent")
@@ -476,7 +479,7 @@ class ApiKey(Base):
     
     deleted_at = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     created_by = Column(String(255))
     
     company = relationship("Company", back_populates="api_keys")
@@ -506,8 +509,8 @@ class Webhook(Base):
     
     deleted_at = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 # ============================================================
@@ -528,7 +531,7 @@ class WebhookDelivery(Base):
     http_status = Column(Integer)
     response_body = Column(Text)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime)
     
     __table_args__ = (
@@ -549,11 +552,11 @@ class ApiCache(Base):
     response_json = Column(JSONB_TYPE, nullable=False)
     status_code = Column(Integer, default=200)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     expires_at = Column(DateTime, nullable=False, index=True)
     
     hit_count = Column(Integer, default=1)
-    last_hit_at = Column(DateTime, default=datetime.utcnow)
+    last_hit_at = Column(DateTime, default=utc_now)
     
     def is_expired(self):
         return self.expires_at < datetime.now(timezone.utc)
@@ -590,7 +593,7 @@ class AuditLog(Base):
     request_id = Column(String(100))
     
     retained_until = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     
     __table_args__ = (
         CheckConstraint("actor_type IN ('user', 'system', 'api_key', 'webhook')", name="valid_actor_type"),
@@ -613,7 +616,7 @@ class DigitalSignature(Base):
     certificate_id = Column(String(100), nullable=False)
     certificate_issuer = Column(String(255))
     
-    signed_at = Column(DateTime, default=datetime.utcnow)
+    signed_at = Column(DateTime, default=utc_now)
     expires_at = Column(DateTime)
     is_valid = Column(Boolean, default=True)
     revoked_at = Column(DateTime)
@@ -625,7 +628,7 @@ class DigitalSignature(Base):
     signature_algorithm = Column(String(50), default="SHA256withRSA")
     key_size = Column(Integer, default=2048)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     
     # Relaciones
     verification = relationship("VerificationRequest", back_populates="digital_signature")
@@ -647,8 +650,8 @@ class ComparisonRequest(Base):
     
     status = Column(String(20), default="completed")
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 # ============================================================
@@ -661,7 +664,7 @@ class SystemConfig(Base):
     key = Column(String(100), primary_key=True)
     value = Column(JSONB_TYPE, nullable=False)
     description = Column(Text)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     updated_by = Column(String(255))
 
 

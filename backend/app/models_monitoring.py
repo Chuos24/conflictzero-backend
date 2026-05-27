@@ -10,7 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.models_v2 import Base
+from app.models_v2 import Base, utc_now
 
 
 class SupplierSnapshot(Base):
@@ -32,8 +32,8 @@ class SupplierSnapshot(Base):
     status = Column(String(20), default="active")  # active, warning, critical, sanctioned
     
     # Metadatos
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    snapshot_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    snapshot_date = Column(DateTime, default=utc_now, nullable=False)
     
     # Relaciones
     changes = relationship("SupplierChange", back_populates="snapshot", cascade="all, delete-orphan")
@@ -69,7 +69,7 @@ class SupplierChange(Base):
     alert_sent_at = Column(DateTime, nullable=True)
     
     # Metadatos
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
     
     # Relaciones
     snapshot = relationship("SupplierSnapshot", back_populates="changes")
@@ -106,7 +106,7 @@ class MonitoringAlert(Base):
     dismissed_at = Column(DateTime, nullable=True)
     
     # Metadatos
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
     
     # Relaciones
     change = relationship("SupplierChange", back_populates="alerts")
@@ -143,8 +143,8 @@ class MonitoringRule(Base):
     is_active = Column(Boolean, default=True)
     
     # Metadatos
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class MonitoringSchedule(Base):
@@ -171,7 +171,7 @@ class MonitoringSchedule(Base):
     # Timestamps
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
     
     __table_args__ = (
         Index("idx_schedule_status", "status", "created_at"),

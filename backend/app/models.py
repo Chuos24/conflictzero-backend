@@ -4,11 +4,14 @@ Base de datos para monopolio B2B de verificación
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import Column, String, Boolean, DateTime, Integer, Float, Text, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship, declarative_base
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 Base = declarative_base()
 
@@ -32,7 +35,7 @@ class Company(Base):
     # Límites y uso
     max_monthly_queries = Column(Integer, default=1000)
     used_queries_this_month = Column(Integer, default=0)
-    queries_reset_at = Column(DateTime, default=datetime.utcnow)
+    queries_reset_at = Column(DateTime, default=utc_now)
     
     # API
     api_key = Column(String(255), unique=True)
@@ -52,8 +55,8 @@ class Company(Base):
     push_enabled = Column(Boolean, default=True)
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     last_login_at = Column(DateTime)
     
     # Relaciones
@@ -92,8 +95,8 @@ class FounderApplication(Base):
     ip_address = Column(String(45))
     user_agent = Column(Text)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     
     __table_args__ = (
         CheckConstraint("annual_volume IN ('10-50M', '50-200M', '200M+')", name="valid_volume"),
@@ -125,8 +128,8 @@ class PublicProfile(Base):
     current_certificate_url = Column(String(500))
     certificate_hash = Column(String(64))
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     
     # Relaciones
     company = relationship("Company", back_populates="public_profile")
@@ -156,7 +159,7 @@ class Invite(Base):
     
     status = Column(String(20), default="sent")
     
-    sent_at = Column(DateTime, default=datetime.utcnow)
+    sent_at = Column(DateTime, default=utc_now)
     opened_at = Column(DateTime)
     clicked_at = Column(DateTime)
     registered_at = Column(DateTime)
@@ -168,7 +171,7 @@ class Invite(Base):
     email_subject = Column(String(500))
     email_template_used = Column(String(50))
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     expires_at = Column(DateTime)
     
     # Relaciones
@@ -214,7 +217,7 @@ class VerificationRequest(Base):
     raw_data = Column(JSONB)
     
     is_cached = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     public_certificate_id = Column(UUID(as_uuid=True))
     
     # Relaciones
@@ -244,8 +247,8 @@ class CompanyHierarchy(Base):
     
     notes = Column(Text)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     
     __table_args__ = (
         CheckConstraint("relationship_type IN ('subcontractor', 'supplier', 'client', 'partner')", name="valid_relationship"),
@@ -280,7 +283,7 @@ class ApiKey(Base):
     
     scopes = Column(JSONB, default=list)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     created_by = Column(String(255))
     
     # Relaciones
@@ -306,8 +309,8 @@ class Webhook(Base):
     last_triggered_at = Column(DateTime)
     last_error = Column(Text)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class AuditLog(Base):
@@ -332,7 +335,7 @@ class AuditLog(Base):
     user_agent = Column(Text)
     request_id = Column(String(100))
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     
     __table_args__ = (
         CheckConstraint("actor_type IN ('user', 'system', 'api_key', 'webhook')", name="valid_actor_type"),
@@ -346,5 +349,5 @@ class SystemConfig(Base):
     key = Column(String(100), primary_key=True)
     value = Column(JSONB, nullable=False)
     description = Column(Text)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     updated_by = Column(String(255))
