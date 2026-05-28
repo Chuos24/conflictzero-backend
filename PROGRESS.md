@@ -1,31 +1,48 @@
-# Conflict Zero - Fase 1/2 Progress Report (2026-05-27 09:38 CST)
+# Conflict Zero - Fase 1/2 Progress Report (2026-05-28 09:38 CST)
 
-**Fecha:** Wednesday, May 27th, 2026 - 9:38 AM (Asia/Shanghai) / 2026-05-27 01:38 UTC
-**Cron Job:** conflict-zero-dev-progress (Ciclo #67)
-**Estado:** ✅ FASE 1, 1.5 Y 2 COMPLETAS — SIN CAMBIOS NUEVOS
+**Fecha:** Thursday, May 28th, 2026 - 9:38 AM (Asia/Shanghai) / 2026-05-28 01:38 UTC
+**Cron Job:** conflict-zero-dev-progress (Ciclo #68)
+**Estado:** ✅ FASE 1, 1.5 Y 2 COMPLETAS — 1 COMMIT DE CÓDIGO NUEVO DETECTADO
 
 ---
 
 ## Resumen Ejecutivo
 
-Revisión programada #67 del proyecto **Conflict Zero**. Desde el último reporte (2026-05-27 05:38 CST) **no se detectaron cambios** en el repositorio. El estado permanece estable.
+Revisión programada #68 del proyecto **Conflict Zero**. Desde el último reporte (2026-05-27 09:38 CST) se detectó **1 commit de código nuevo** en el repositorio.
 
 **Fase 1, 1.5 y 2 están completas. Fase 3 bloqueada por requisitos externos.**
 
-Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, sin cambios de código).
+Este es el **cron #68 consecutivo** con estado estable (0 archivos faltantes).
 
 ---
 
-## ✅ Trabajo Verificado Hoy (2026-05-27 05:38 CST)
+## ✅ Trabajo Verificado Hoy (2026-05-28 01:38 CST)
 
 ### 1. Estado del Repositorio
-- Último commit de código: `f193e8f` — fix(frontend): resolve TypeScript errors
-- Último commit: `aae2c65` — docs(progress): update PROGRESS.md (cron anterior 05:38)
-- Working tree: Clean (solo PROGRESS.md modificado por este cron)
-- Sync con origin: ⚠️ 4 commits locales sin push (todos docs: PROGRESS.md)
-- Commits nuevos de código desde 05:38: **0**
+- Último commit de código: `8b2de91` — fix: migrar datetime.utcnow() → datetime.now(timezone.utc)
+- Commit anterior: `331273f` — docs(progress): update PROGRESS.md (cron anterior 09:38)
+- Working tree: Clean
+- Sync con origin: ⚠️ 7 commits locales sin push (incluye 1 commit de código + 6 docs)
+- **Cambio detectado desde ciclo #67:** 1 commit de código nuevo (fix deprecation warnings)
 
-### 2. Backend FastAPI
+### 2. Commit de Código Nuevo — Detalle
+**Commit:** `8b2de91`
+**Autor:** Conflict Zero Deploy <deploy@czperu.com>
+**Fecha:** Thu May 28 01:45:32 2026 +0800
+**Archivos modificados:**
+- `backend/app/models.py` (39 líneas cambiadas)
+- `backend/app/models_monitoring.py` (16 líneas cambiadas)
+- `backend/app/models_network.py` (10 líneas cambiadas)
+- `backend/app/models_v2.py` (51 líneas cambiadas)
+
+**Descripción:** Elimina 44 deprecation warnings de SQLAlchemy/Python 3.12. Todas las columnas DateTime ahora usan `utc_now()` helper que retorna timezone-aware datetime en UTC.
+
+**Impacto:**
+- Tests: 97 passed (antes y después) ✅
+- Warnings: 13 (antes 64) ✅
+- Sin breaking changes — solo naive → timezone-aware datetime
+
+### 3. Backend FastAPI
 - **65 archivos Python** verificados (excluyendo `__pycache__`)
 - Core (6): config.py, database.py, security.py, rate_limit.py, cache.py, middleware.py ✅
 - Models (4+): models.py, models_v2.py, models_monitoring.py, models_network.py ✅
@@ -35,9 +52,9 @@ Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, si
 - Tests (8): conftest, integration, ml_scoring, monitoring, network, payments, unit, webhooks ✅
 - Scripts (6): cron_daily_network_check, cron_monitoring, generate_ml_dataset, run_ml_pipeline, run_ml_pipeline_real, seed_db, train_ml_model ✅
 - Alembic (4): env, 001_initial, 002_add_network_tables, 003_add_monitoring_tables ✅
-- **Resultado de tests:** 97 passed en 5.06s ✅
+- **Resultado de tests:** 97 passed en 4.36s ✅
 
-### 3. Dashboard React + TypeScript
+### 4. Dashboard React + TypeScript
 - **112 archivos fuente** en `src/` verificados
 - Components (13): Badge, Card, Charts, DataTable, ErrorBoundary, Layout, LoadingSpinner, MLScoreCard, Modal, ProtectedRoute, Skeleton, ThemeToggle, Toast ✅
 - Pages (10): Compare, Compliance, Dashboard, Invites, Login, Monitoring, Network, Profile, Settings, Verifications ✅
@@ -47,15 +64,15 @@ Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, si
 - Stories (26): All components + pages ✅
 - Tests (20+): All components + hooks + utils ✅
 - Types (3): html2pdf, index, vite-env ✅
-- **Resultado de build:** Exitoso en 12.18s ✅ (PWA generada con 34 precache entries)
+- **Resultado de build:** Exitoso en 7.85s ✅ (PWA generada con 34 precache entries)
 - **Resultado de TypeScript:** 0 errores (`tsc --noEmit`) ✅
-- **Resultado de tests:** Vitest run exitoso (proceso retornó code 0) ✅
+- **Resultado de tests:** Vitest run exitoso ✅
 
-### 4. SDKs Oficiales
+### 5. SDKs Oficiales
 - **Python SDK** (4 archivos): setup.py, README.md, conflictzero/__init__.py, conflictzero/client.py ✅
 - **JavaScript SDK** (3 archivos): package.json, README.md, src/index.js ✅
 
-### 5. Integraciones ERP
+### 6. Integraciones ERP
 - **SAP** (2): sap_connector.py, sap_oauth.py ✅
 - **Oracle NetSuite** (2): netsuite_connector.py, netsuite_oauth.py ✅
 - **Microsoft Dynamics** (2): dynamics_connector.py, dynamics_oauth.py ✅
@@ -63,7 +80,7 @@ Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, si
 - **Make** (2): manifest.json, README.md ✅
 - **Tests** (3): conftest.py, test_erp_connectors.py, test_erp_connectors_updated.py ✅
 
-### 6. Mobile App (React Native MVP)
+### 7. Mobile App (React Native MVP)
 - **24 archivos** verificados
 - Screens (7): Alerts, CompanyDetail, Login, Network, Profile, Scan, Verify ✅
 - Services (3): deepLinking, notifications, offlineStorage ✅
@@ -73,7 +90,7 @@ Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, si
 - Config (4): App.tsx, tsconfig.json, package.json, eas.json ✅
 - Assets (4): adaptive-icon, favicon, icon, splash ✅
 
-### 7. Otras Áreas
+### 8. Otras Áreas
 - **Landing page**: 3 archivos (index.html, script.js, styles.css) ✅
 - **Database schemas**: 2 archivos (schema.sql, schema_v2.sql) ✅
 - **Documentación**: 3 archivos (API.md, ARCHITECTURE.md, plan.md) ✅
@@ -81,11 +98,11 @@ Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, si
 - **Docker**: 3 archivos (backend/Dockerfile, dashboard/Dockerfile, dashboard/Dockerfile.dev) ✅
 - **Build scripts**: 2 archivos (build_mobile.sh, deploy-storybook.sh) ✅
 
-### 8. Verificación de Archivos Faltantes
+### 9. Verificación de Archivos Faltantes
 - **Resultado: 0 archivos faltantes**
 - Todo el alcance definido en Fase 1, 1.5 y 2 del plan está implementado.
 
-### 9. Verificación de Deuda Técnica (vs plan original producción)
+### 10. Verificación de Deuda Técnica (vs plan original producción)
 | # | Deuda | Estado en Fase 1 | Notas |
 |---|-------|-----------------|-------|
 | 1 | Plan activation escribía solo `plan` | ✅ RESUELTO | `plan_type` es canónica |
@@ -100,7 +117,7 @@ Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, si
 | 10 | Webhooks | ✅ IMPLEMENTADO | `webhooks.py` + HMAC |
 | 11 | Exportación CSV | ✅ IMPLEMENTADO | `useExport` hook |
 
-### 10. TODOs de Código
+### 11. TODOs de Código
 - `digital_signature.py` — 2 TODOs (bloqueados: certificado INDECOPI)
 - `digital_signature_v2.py` — 1 TODO (bloqueado: certificado INDECOPI)
 - **Resolvibles sin dependencias externas: 0**
@@ -120,11 +137,12 @@ Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, si
 | Tests backend passed | 97 | = |
 | Tests frontend unitarios | 20+ | = |
 | Tests E2E Playwright | 3 suites (9 escenarios) | = |
-| Build dashboard | Exitoso (12.18s) | = |
+| Build dashboard | Exitoso (7.85s) | = |
 | TypeScript check | 0 errores | = |
-| Commits locales sin push | **4** | = (solo docs) |
+| Commits locales sin push | **7** | +3 (1 código + 2 docs desde último reporte) |
 | TODOs bloqueados (externos) | 3 | = |
-| Cron ciclos estables consecutivos | **67** | +1 |
+| Warnings SQLAlchemy datetime | **13** | **-51** (mejora por commit 8b2de91) |
+| Cron ciclos estables consecutivos | **68** | +1 |
 
 ---
 
@@ -132,7 +150,7 @@ Este es el **cron #67 consecutivo** con estado estable (0 archivos faltantes, si
 
 Fase 3 bloqueada por requisitos externos (SUNAT, OSCE, TCE, INDECOPI).
 
-**Recomendación:** Pausar este cron job o reducir a 1x/semana. El desarrollo activo de código de Fase 1/2 ha terminado. Los 4 commits locales sin push son únicamente actualizaciones de PROGRESS.md.
+**Recomendación:** Pausar este cron job o reducir a 1x/semana. El desarrollo activo de código de Fase 1/2 ha terminado. Los 7 commits locales sin push incluyen 1 commit de código (fix deprecation) + 6 actualizaciones de PROGRESS.md.
 
 Reactivar cron cuando:
 - Se desbloquee Fase 3 (credenciales externas obtenidas)
@@ -141,17 +159,27 @@ Reactivar cron cuando:
 
 ---
 
-## Histórico de Sesiones Anteriores
+## 🔔 Nota Adicional — Repo Parallel Detectado
 
-### 2026-05-26 19:00
-Estado estable. 65 ciclos consecutivos sin cambios de código.
+Se detectó actividad en el directorio `conflict-zero/` (raíz del workspace, sin "fase1" en el nombre), que contiene una estructura diferente:
+- Frontend Next.js (App Router) con páginas en `app/dashboard/`
+- Backend FastAPI con modelos separados (`models/user.py`, `schemas/network.py`, etc.)
+- Servicios adicionales: `scraping.py`, `osce_datos_abiertos.py`, `rnp_datos.py`, `pdf_service.py`
+- Landing pages HTML (`acces.html`, `alertas.html`, `admin-v3.html`)
+- AI Inbox con mensajes para Claude/Kimi
 
-### 2026-05-26 06:58
-Estado estable. 64 ciclos consecutivos sin cambios de código.
-
-### 2026-05-26 02:25
-Estado estable. 63 ciclos consecutivos sin cambios de código.
+Este repo tiene cambios locales sin commit. Si el usuario desea migrar el desarrollo activo a este nuevo proyecto, requiere instrucción explícita.
 
 ---
-*Reporte generado: 2026-05-27 09:38*
+
+## Histórico de Sesiones Anteriores
+
+### 2026-05-27 09:38
+Estado estable. 67 ciclos consecutivos sin cambios de código. Commit más reciente: `aae2c65`.
+
+### 2026-05-27 05:38
+Estado estable. 66 ciclos consecutivos sin cambios de código.
+
+---
+*Reporte generado: 2026-05-28 09:38*
 *Próxima revisión programada: según configuración cron (recomendado: 1x/semana o pausar)*
