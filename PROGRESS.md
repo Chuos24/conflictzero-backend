@@ -1,16 +1,15 @@
-# Conflict Zero - Reporte de Progreso (2026-06-05 13:38 CST)
-
-**Fecha:** Friday, June 5th, 2026 - 1:38 PM (Asia/Shanghai) / 2026-06-05 05:38 UTC
-**Cron Job:** conflict-zero-dev-progress (Ciclo #90)
-**Estado:** ✅ ESTABLE — Sin cambios desde ciclo #89
+# Conflict Zero - Reporte de Progreso (2026-06-09 01:38 CST)
+**Fecha:** Tuesday, June 9th, 2026 - 1:38 AM (Asia/Shanghai) / 2026-06-08 17:38 UTC
+**Cron Job:** conflict-zero-dev-progress (Ciclo #95)
+**Estado:** ✅ ESTABLE — Sin cambios desde ciclo #94
 
 ---
 
 ## Resumen Ejecutivo
 
-Revisión programada #90 del proyecto **Conflict Zero**. Se ejecutó verificación completa de archivos, tests, build y TODOs. **Sin cambios, archivos faltantes, ni tareas de desarrollo pendientes.** Fase 1, 1.5 y 2 siguen completas.
+Revisión programada #95 del proyecto **Conflict Zero**. Se ejecutó verificación completa de archivos, tests, build y TODOs. **Sin cambios, archivos faltantes, ni tareas de desarrollo pendientes.** Fase 1, 1.5 y 2 siguen completas.
 
-**Recomendación:** Este cron job ha ejecutado 90 ciclos consecutivos sin detectar cambios. Es momento de ajustarlo a un heartbeat semanal o activarlo solo cuando inicie Fase 3.
+**Recomendación:** Este cron job ha ejecutado 95 ciclos consecutivos sin detectar trabajo de desarrollo. Es momento de pausarlo o reconfigurarlo a un heartbeat semanal / activación manual cuando inicie Fase 3.
 
 ---
 
@@ -18,7 +17,7 @@ Revisión programada #90 del proyecto **Conflict Zero**. Se ejecutó verificaci�
 
 | Métrica | Valor | Estado |
 |---------|-------|--------|
-| Archivos backend Python | 74 | ✅ |
+| Archivos backend Python | 78 | ✅ |
 | Archivos dashboard TS/TSX | 112 | ✅ |
 | Archivos SDK | 7 | ✅ |
 | Archivos mobile | 24 | ✅ |
@@ -27,6 +26,7 @@ Revisión programada #90 del proyecto **Conflict Zero**. Se ejecutó verificaci�
 | Tests backend (pytest) | 97/97 pasan | ✅ |
 | Build frontend (Vite) | Exitoso | ✅ |
 | Commits nuevos | 0 | ✅ |
+| Git status | PROGRESS.md modificado (solo cron) | ✅ |
 
 ---
 
@@ -42,7 +42,7 @@ Revisado contra `docs/plan.md` (Fase 1, 1.5, 2):
 | Fase 1 | Core Models (Pydantic) | ✅ | schemas.py completo |
 | Fase 1 | Basic APIs | ✅ | 99 endpoints activos |
 | Fase 1 | Git Setup + CI/CD | ✅ | GitHub Actions, Docker, Render |
-| Fase 1.5 | Backend FastAPI 45+ endpoints | ✅ | 99 endpoints, 74 archivos Python |
+| Fase 1.5 | Backend FastAPI 45+ endpoints | ✅ | 99 endpoints, 78 archivos Python |
 | Fase 1.5 | Dashboard React 12+ componentes | ✅ | 112 archivos TS/TSX, 13 componentes, 10 páginas |
 | Fase 1.5 | Tests 40+ | ✅ | 97 tests backend pasando |
 | Fase 2 | Monitoreo continuo | ✅ | monitoring.py + cron scripts |
@@ -60,8 +60,8 @@ Búsqueda de TODO/FIXME/XXX en archivos fuente:
 | Archivo | TODO | Contexto | Prioridad |
 |---------|------|----------|-----------|
 | `digital_signature.py` | TODO: INDECOPI integration | Requiere certificado digital | 🟡 Baja (trámite externo) |
-| `email_service.py` | TODO: SendGrid API key | Configurable vía env vars | 🟢 Baja (ya funciona con SMTP) |
-| `run_ml_pipeline.py` | TODO: Retrain model weekly | Configurable vía cron | 🟢 Baja (pipeline listo) |
+| `digital_signature_v2.py` | TODO: INDECOPI integration | Requiere certificado digital | 🟡 Baja (trámite externo) |
+| `email_service.py` | Configurable via env vars | SendGrid API key opcional | 🟢 Baja (ya funciona con SMTP) |
 
 **Total TODOs activos:** 3 — todos requieren credenciales/acciones externas, no desarrollo de código.
 
@@ -71,7 +71,7 @@ Búsqueda de TODO/FIXME/XXX en archivos fuente:
 
 ```
 conflict-zero-fase1/
-├── backend/           74 archivos Python (FastAPI)
+├── backend/           78 archivos Python (FastAPI)
 ├── dashboard/        112 archivos TS/TSX (React + Vite)
 ├── database/           2 archivos SQL (Schema + Schema v2)
 ├── docs/               4 archivos Markdown
@@ -86,7 +86,7 @@ conflict-zero-fase1/
 └── nginx.conf
 ```
 
-**Total: 257 archivos en el proyecto**
+**Total: 261 archivos en el proyecto**
 
 ---
 
@@ -120,7 +120,7 @@ $ pytest backend/tests/ -v
 
 ## 📌 Recomendación al Usuario
 
-Este cron job ha estado ejecutándose 90 ciclos sin detectar trabajo pendiente. El desarrollo de código para Fase 1 y 2 está **completo**. Las tareas restantes son:
+Este cron job ha estado ejecutándose **95 ciclos** sin detectar trabajo pendiente de desarrollo de código. El desarrollo de Fase 1 y 2 está **completo**. Las tareas restantes son:
 
 1. **Trámites externos:** SUNAT, OSCE, TCE, INDECOPI credenciales
 2. **Fase 3:** Aún no definida en detalle — requiere planificación previa
@@ -133,4 +133,4 @@ Este cron job ha estado ejecutándose 90 ciclos sin detectar trabajo pendiente. 
 ---
 
 *Reporte generado automáticamente por cron job: conflict-zero-dev-progress*
-*Ciclo: #90 | Estado: ESTABLE SIN CAMBIOS | Próxima acción: Recomendado ajustar frecuencia*
+*Ciclo: #95 | Estado: ESTABLE SIN CAMBIOS | Próxima acción: Recomendado ajustar frecuencia*
