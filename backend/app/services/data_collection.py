@@ -6,6 +6,7 @@ Colecta datos de múltiples fuentes para verificaciones
 import os
 import json
 import hashlib
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Any
 import requests
@@ -13,6 +14,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.models_v2 import ApiCache, Company
+
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # DATA COLLECTION SERVICE (Clase)
@@ -176,7 +179,7 @@ def get_sunat_data(ruc: str, db: Session) -> Dict[str, Any]:
                 set_cached_response("sunat", ruc, sunat_data, db)
                 return sunat_data
         except Exception as e:
-            print(f"Error consultando Peru API: {e}")
+            logger.warning(f"Error consultando Peru API: {e}")
     
     # Fallback: datos simulados para demo
     demo_data = {
@@ -233,7 +236,7 @@ def get_osce_sanctions(ruc: str, db: Session) -> List[Dict[str, Any]]:
         
         return sanctions
     except Exception as e:
-        print(f"Error consultando OSCE: {e}")
+        logger.warning(f"Error consultando OSCE: {e}")
         return []
 
 
@@ -271,7 +274,7 @@ def get_rnp_sanctions(ruc: str, db: Session) -> List[Dict[str, Any]]:
         
         return sanctions
     except Exception as e:
-        print(f"Error consultando RNP: {e}")
+        logger.warning(f"Error consultando RNP: {e}")
         return []
 
 
@@ -311,7 +314,7 @@ def get_tce_sanctions(ruc: str, db: Session) -> List[Dict[str, Any]]:
         
         return sanctions
     except Exception as e:
-        print(f"Error consultando TCE: {e}")
+        logger.warning(f"Error consultando TCE: {e}")
         return []
 
 
@@ -398,7 +401,7 @@ def collect_multiple_rucs(rucs: List[str], db: Session) -> Dict[str, Any]:
             data = collect_all_data(ruc, db)
             results.append(data)
         except Exception as e:
-            print(f"Error colectando datos para {ruc}: {e}")
+            logger.warning(f"Error colectando datos para {ruc}: {e}")
             results.append({
                 "sunat": {"found": False, "ruc": ruc},
                 "osce_sanctions": [],

@@ -3,6 +3,7 @@ Servicio de monitoreo continuo de proveedores.
 Fase 2 - Conflict Zero
 """
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
@@ -15,6 +16,8 @@ from app.models_monitoring import (
 from app.models_v2 import Company
 from app.services.data_collection import collect_company_data
 from app.services.scoring_service import calculate_risk_score
+
+logger = logging.getLogger(__name__)
 
 
 class MonitoringService:
@@ -239,7 +242,7 @@ class MonitoringService:
                     
                 except Exception as e:
                     # Log error pero continuar con el siguiente
-                    print(f"Error procesando {company.ruc}: {str(e)}")
+                    logger.error(f"Error procesando {company.ruc}: {str(e)}")
                     continue
             
             # Actualizar schedule completado
