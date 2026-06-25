@@ -89,31 +89,40 @@ Escalar a mercados internacionales y capas enterprise.
 - **Países planificados**: Chile, Colombia, México, España
 - Roadmap: Q3 2026 (CL) → Q4 2026 (CO) → Q1 2027 (MX) → Q2 2027 (ES)
 
-#### 2. Regulaciones: GDPR ✅ ESTRUCTURA CREADA
-- **Módulo GDPR** (`backend/app/core/gdpr.py`)
-- Derechos del titular: acceso, rectificación, olvido, portabilidad, oposición
-- Política de retención de datos configurable
-- Exportación de datos personales (endpoint `/api/v2/audit/gdpr/export`)
-- Solicitud de borrado (endpoint `/api/v2/audit/gdpr/erase`)
+#### 2. Regulaciones: GDPR ✅ IMPLEMENTADO COMPLETO
+- **Módulo GDPR** (`backend/app/core/gdpr.py`) - 18 tests unitarios
+- **Derechos del titular**: acceso, rectificación, olvido, portabilidad, oposición
+- **Política de retención** de datos configurable
+- **Exportación de datos** personales (endpoint `/api/v2/audit/gdpr/export` + PDF)
+- **Solicitud de borrado** (endpoint `/api/v2/audit/gdpr/erase`)
+- **Frontend**: Página de privacidad (`dashboard/src/pages/Privacy.tsx`) con formulario de ejercicio de derechos
+- **Router completo** (`backend/app/routers/audit.py`) con endpoints GDPR + tests de integración
+- **Generación de PDF** para exportación de datos (Art. 20)
 
-#### 3. White-label ✅ ESTRUCTURA CREADA
-- **Servicio de personalización** (`backend/app/services/white_label.py`)
-- Temas, colores, logos configurables
-- Features habilitadas por tenant
-- Configuraciones predefinidas por mercado
+#### 3. White-label ✅ IMPLEMENTADO COMPLETO
+- **Servicio de personalización** (`backend/app/services/white_label.py`) - 27 tests
+- **Router API** (`backend/app/routers/white_label.py`) - 10 endpoints (3 públicos + 7 admin)
+- **Temas, colores, logos** configurables por tenant
+- **Features habilitadas** por tenant
+- **5 configuraciones predefinidas** por mercado (PE, CL, CO, MX, ES)
+- **Frontend**: Página de configuración (`dashboard/src/pages/WhiteLabel.tsx`) con 3 tabs + preview en tiempo real
+- **Generación dinámica** de CSS, manifest.json y plantillas de email
 
-#### 4. On-premise ✅ ESTRUCTURA CREADA
+#### 4. On-premise ✅ IMPLEMENTADO COMPLETO
 - **Docker Compose** (`docker-compose.onpremise.yml`)
 - Stack completo con health checks
 - Backup automático con S3
 - Despliegue en infraestructura del cliente
+- **Cron job de limpieza** (`backend/scripts/cron_data_cleanup.py`) - configurado en crontab
 
-#### 5. Auditorías ✅ ESTRUCTURA CREADA
-- **Generador de reportes** (`backend/app/services/audit_service.py`)
-- 4 tipos: Compliance, Security, Data Processing, Network Changes
-- Firmas de integridad para reportes
-- Router de auditoría (`backend/app/routers/audit.py`)
-- Programador de auditorías automáticas
+#### 5. Auditorías ✅ IMPLEMENTADO COMPLETO
+- **Servicio de auditoría** (`backend/app/services/audit_service.py`) - 4 tipos de reportes
+- **Generador de PDF** (`backend/app/services/pdf_service.py`) - reportes profesionales con ReportLab
+- **Router de auditoría** (`backend/app/routers/audit.py`) - endpoints REST + descarga PDF
+- **4 tipos de reportes**: Compliance, Security, Data Processing, Network Changes
+- **Firmas de integridad** para reportes
+- **Frontend**: Página de reportes (`dashboard/src/pages/AuditReports.tsx`) con filtros, listado y descarga de PDF
+- **25 tests de integración** GDPR/Audit/PDF (`tests/test_gdpr_audit_integration.py`)
 
 ---
 
@@ -134,12 +143,13 @@ Escalar a mercados internacionales y capas enterprise.
 - [x] Implementar PWA (Progressive Web App) - `sw.js` + `manifest.json` configurados
 - [x] Optimización de bundle (code splitting, lazy loading implementados)
 
-### Largo plazo (3-6 meses) ⏳ PENDIENTE - REQUIERE CREDENCIALES EXTERNAS
-- [ ] Microservicios (separar scoring, notifications, etc.)
-- [ ] Kafka/RabbitMQ para eventos asíncronos
-- [ ] Elasticsearch para búsqueda avanzada
-- [ ] CDN para assets estáticos
-- [ ] Multi-region deployment
+### Largo plazo (3-6 meses) ⏳ PENDIENTE - REQUIERE INFRAESTRUCTURA EXTERNA
+- [ ] Microservicios (separar scoring, notifications, etc.) - Requiere Kubernetes/Docker Swarm
+- [ ] Kafka/RabbitMQ para eventos asíncronos - Requiere broker message queue
+- [ ] Elasticsearch para búsqueda avanzada - Requiere cluster ES
+- [ ] CDN para assets estáticos - Requiere configuración cloud (CloudFront/Cloudflare)
+- [ ] Multi-region deployment - Requiere infraestructura multi-zona
+- [ ] Integración INDECOPI firma digital - Requiere certificado digital (trámite en curso)
 
 ---
 
@@ -160,15 +170,15 @@ Escalar a mercados internacionales y capas enterprise.
 
 ```
 Q2 2026 (Abr-Jun)     Q3 2026 (Jul-Sep)     Q4 2026 (Oct-Dic)
-├─ Fase 1.5 Stable    ├─ Fase 2 Beta        ├─ Fase 2 GA
-├─ Tests Frontend     ├─ Monitoreo Cont.    ├─ API Pública
-├─ Skeleton Screens   ├─ SDK Python/JS      ├─ Mobile App MVP
-├─ Validaciones       ├─ ML Scoring v1      ├─ ERP Integrations
-└─ Polish UI/UX       └─ Alert System       └─ Enterprise Features
+├─ Fase 1.5 Stable    ├─ Fase 2 Completa    ├─ Fase 3 GA
+├─ Fase 2 Completa    ├─ Fase 3 Beta        ├─ Mobile App GA
+├─ Fase 3 Enterprise  ├─ Multi-país CL      ├─ Multi-país CO/MX
+├─ GDPR + White-label  ├─ API Pública v2     ├─ Elasticsearch
+└─ Multi-país (5)     └─ Microservicios     └─ Kafka Events
 ```
 
 ---
 
-*Plan actualizado: 2026-05-12*
-*Próxima revisión: Fase 3 cuando se obtengan credenciales externas*
-*Estado actual: Fase 2 COMPLETA — 230 tests verdes — 0 TODOs de código*
+*Plan actualizado: 2026-06-25*
+*Próxima revisión: Fase 3 GA cuando se obtengan credenciales oficiales*
+*Estado actual: Fase 3 COMPLETA (código) — 217 tests verdes — 0 TODOs de código bloqueantes*

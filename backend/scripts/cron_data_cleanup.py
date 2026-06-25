@@ -31,12 +31,16 @@ def run_cleanup():
         start_time = datetime.now(timezone.utc)
         
         # Run cleanup
-        deleted_count = GDPRComplianceService.cleanup_expired_data(db)
+        results = GDPRComplianceService.cleanup_expired_data(db, dry_run=False)
+        deleted_count = sum(results.values())
         
         duration = datetime.now(timezone.utc) - start_time
         
         if deleted_count > 0:
             print(f"✅ Limpieza completada: {deleted_count} registros eliminados")
+            for category, count in results.items():
+                if count > 0:
+                    print(f"   - {category}: {count}")
         else:
             print("✅ Limpieza completada: no hay registros expirados")
             
