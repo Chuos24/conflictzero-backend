@@ -12,6 +12,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 
 // Lazy-loaded pages for code splitting
 const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Verifications = lazy(() => import('./pages/Verifications'));
 const Compare = lazy(() => import('./pages/Compare'));
@@ -21,6 +22,10 @@ const Network = lazy(() => import('./pages/Network'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Monitoring = lazy(() => import('./pages/Monitoring'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const AuditReports = lazy(() => import('./pages/AuditReports'));
+const WhiteLabel = lazy(() => import('./pages/WhiteLabel'));
+const Countries = lazy(() => import('./pages/Countries'));
 
 function PageLoader(): JSX.Element {
   return (
@@ -41,6 +46,7 @@ function App(): JSX.Element {
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
 
                   {/* Protected Routes */}
                   <Route element={<ProtectedRoute />}>
@@ -53,6 +59,10 @@ function App(): JSX.Element {
                       <Route path="/compliance" element={<Compliance />} />
                       <Route path="/network" element={<Network />} />
                       <Route path="/monitoring" element={<Monitoring />} />
+                      <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/audit" element={<AuditReports />} />
+                      <Route path="/white-label" element={<WhiteLabel />} />
+                      <Route path="/countries" element={<Countries />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/settings" element={<Settings />} />
                     </Route>

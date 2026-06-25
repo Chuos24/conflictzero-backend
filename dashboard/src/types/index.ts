@@ -54,6 +54,7 @@ export interface LoginResponse {
 
 export interface RegisterData {
   ruc: string;
+  country_code?: string;
   razon_social: string;
   contact_email: string;
   contact_phone?: string;
@@ -438,6 +439,77 @@ export interface PaginatedResponse<T> {
   page: number;
   page_size: number;
   total_pages: number;
+}
+
+// ============================================================
+// GDPR / PRIVACY
+// ============================================================
+
+export type GDPRRequestType = 'access' | 'rectification' | 'erasure' | 'portability' | 'objection' | 'restriction';
+export type GDPRRequestStatus = 'pending' | 'in_review' | 'fulfilled' | 'rejected' | 'partially_fulfilled';
+
+export interface GDPRRequest {
+  id: string;
+  request_number: string;
+  request_type: GDPRRequestType;
+  status: GDPRRequestStatus;
+  description?: string;
+  contact_email: string;
+  response_summary?: string;
+  requested_at: string;
+  due_at: string;
+  responded_at?: string;
+  days_remaining?: number;
+  is_overdue?: boolean;
+}
+
+export interface GDPRExportData {
+  company: Record<string, unknown>;
+  verifications: Record<string, unknown>[];
+  audit_logs: Record<string, unknown>[];
+  exported_at: string;
+  data_format: string;
+}
+
+export interface DataRetentionPolicy {
+  data_type: string;
+  retention_days: number;
+  legal_basis: string;
+  description: string;
+  allow_anonymization: boolean;
+  requires_manual_approval: boolean;
+}
+
+// ============================================================
+// AUDIT REPORTS
+// ============================================================
+
+export type AuditReportType = 'compliance' | 'security' | 'data_processing' | 'network_changes';
+export type AuditReportStatus = 'pending' | 'generated' | 'signed' | 'archived';
+
+export interface AuditReport {
+  id: string;
+  report_number: string;
+  report_type: AuditReportType;
+  status: AuditReportStatus;
+  period_start: string;
+  period_end: string;
+  generated_at?: string;
+  generated_by?: string;
+  signed_at?: string;
+  signed_by?: string;
+  integrity_hash?: string;
+  pdf_url?: string;
+  json_url?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface AuditSchedule {
+  report_type: AuditReportType;
+  frequency: string;
+  next_scheduled: string;
+  description: string;
+  is_active: boolean;
 }
 
 // ============================================================

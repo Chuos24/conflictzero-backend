@@ -180,4 +180,28 @@ export const webhookAPI = {
     api.get<WebhookDelivery[]>(`/api/v1/webhooks/${id}/deliveries`)
 };
 
+// GDPR / Privacy API
+export const gdprAPI = {
+  listRequests: () => api.get('/api/v2/audit/gdpr/requests'),
+  createRequest: (requestType: string, description?: string) =>
+    api.post('/api/v2/audit/gdpr/requests', null, {
+      params: { request_type: requestType, description }
+    }),
+  exportData: () => api.get('/api/v2/audit/gdpr/export', { responseType: 'blob' }),
+  requestErasure: () => api.delete('/api/v2/audit/gdpr/erase'),
+  getPolicies: () => api.get('/api/v2/audit/gdpr/policies')
+};
+
+// Audit Reports API
+export const auditAPI = {
+  listReports: () => api.get('/api/v2/audit/reports'),
+  generateReport: (type: string, startDate: string, endDate: string) =>
+    api.post(`/api/v2/audit/reports/${type}`, null, {
+      params: { start_date: startDate, end_date: endDate }
+    }),
+  getReport: (number: string) => api.get(`/api/v2/audit/reports/${number}`),
+  signReport: (number: string) => api.post(`/api/v2/audit/reports/${number}/sign`),
+  getSchedule: () => api.get('/api/v2/audit/schedule')
+};
+
 export default api;

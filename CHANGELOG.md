@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Fase 3 - Enterprise: Estructura base creada**
+  - `docs/MULTI_COUNTRY.md` - Documentación multi-país (PE, CL, CO, MX, ES)
+  - `backend/app/core/gdpr.py` - Módulo de cumplimiento GDPR/RGPD
+    - Derechos del titular: acceso, rectificación, olvido, portabilidad, oposición
+    - Política de retención de datos configurable
+    - Utilidades de enmascaramiento de datos sensibles
+  - `backend/app/services/audit_service.py` - Generador de reportes de auditoría
+    - 4 tipos: Compliance, Security, Data Processing, Network Changes
+    - Firmas de integridad SHA-256 para reportes
+    - Programador de auditorías automáticas (diario/semanal/mensual/trimestral)
+  - `backend/app/services/white_label.py` - Servicio de personalización de marca
+    - Temas y colores configurables
+    - Logos, favicons, tipografías
+    - Features habilitadas por tenant
+    - Configuraciones predefinidas por mercado
+  - `backend/app/routers/audit.py` - Endpoints de auditoría y GDPR
+    - Generación de reportes de auditoría
+    - Exportación de datos personales (GDPR Art. 20)
+    - Solicitud de borrado de datos (GDPR Art. 17)
+    - Calendario de auditorías programadas
+  - `docker-compose.onpremise.yml` - Despliegue On-Premise
+    - Stack completo: PostgreSQL, Redis, Backend, Dashboard, Nginx
+    - Backup automático con S3 (perfil opcional)
+    - Health checks en todos los servicios
 - React component tests (Badge, Card, Modal, DataTable, Skeleton) with Vitest + React Testing Library
 - Hook tests (useLocalStorage, useDebounce, useWindowSize, useToggle)
 - Skeleton component with variants: Skeleton, SkeletonCard, SkeletonTable, SkeletonProfile

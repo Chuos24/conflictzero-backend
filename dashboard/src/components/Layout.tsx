@@ -27,6 +27,10 @@ function Layout(): JSX.Element {
     { path: '/monitoring', label: 'Monitoreo', icon: '🔔' },
     { path: '/invites', label: 'Invitaciones', icon: '📧' },
     { path: '/compliance', label: 'Compliance', icon: '🛡️' },
+    { path: '/privacy', label: 'Privacidad', icon: '🔐' },
+    { path: '/audit', label: 'Auditoría', icon: '📋' },
+    { path: '/white-label', label: 'Marca', icon: '🎨' },
+    { path: '/countries', label: 'Países', icon: '🌍' },
     { path: '/profile', label: 'Perfil', icon: '👤' },
     { path: '/settings', label: 'Configuración', icon: '⚙️' },
   ]

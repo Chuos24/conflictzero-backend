@@ -98,6 +98,9 @@ class Company(Base):
     is_archived = Column(Boolean, default=False)
     retained_until = Column(DateTime)  # 5 años desde created_at
     
+    # País (multi-país Fase 3)
+    country_code = Column(String(2), default="PE")  # PE, CL, CO, MX, ES
+    
     # Metadata
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
@@ -669,8 +672,214 @@ class SystemConfig(Base):
 
 
 # ============================================================
-# EVENTS (Triggers)
+# 13. GDPR REQUESTS (Derechos del titular de datos)
 # ============================================================
+
+class GDPRRequest(Base):
+    """Solicitudes GDPR/RGPD - Art. 15-21"""
+    __tablename__ = "gdpr_requests"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Empresa que solicita (titular de datos)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Identificador público para tracking
+    request_number = Column(String(50), unique=True, nullable=False, index=True)
+    
+    # Tipo de solicitud (Art. 15-21 GDPR)
+    request_type = Column(String(30), nullable=False)  # access, rectification, erasure, portability, objection, restriction
+    
+    # Estado de la solicitud
+    status = Column(String(20), default="pending")  # pending, in_review, fulfilled, rejected, partially_fulfilled
+    
+    # Descripción/detalle de la solicitud
+    description = Column(Text)
+    
+    # Datos de contacto para seguimiento
+    contact_email = Column(String(255), nullable=False)
+    
+    # Respuesta/resultado
+    response_summary = Column(Text)
+    response_data_url = Column(String(500))  # URL a exportación de datos (portabilidad/acceso)
+    
+    # Métricas de cumplimiento
+    requested_at = Column(DateTime, default=utc_now)
+    due_at = Column(DateTime)  # Fecha límite de respuesta (30 días GDPR)
+    responded_at = Column(DateTime)
+    
+    # Quién procesó
+    processed_by = Column(String(255))
+    
+    # Motivo de rechazo (si aplica)
+    rejection_reason = Column(Text)
+    
+    # Metadata
+    ip_address = Column(String(45))
+    user_agent = Column(Text)
+    
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+    
+    __table_args__ = (
+        CheckConstraint("request_type IN ('access', 'rectification', 'erasure', 'portability', 'objection', 'restriction')", name="valid_gdpr_request_type"),
+        CheckConstraint("status IN ('pending', 'in_review', 'fulfilled', 'rejected', 'partially_fulfilled')", name="valid_gdpr_status"),
+    )
+    
+    def set_due_date(self):
+        """Establece fecha límite: 30 días desde la solicitud (Art. 12 GDPR)"""
+        self.due_at = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    def is_overdue(self) -> bool:
+        """Verifica si la solicitud está vencida"""
+        if self.due_at and self.status in ['pending', 'in_review']:
+            now = datetime.now(timezone.utc)
+            due = self.due_at
+            if due.tzinfo is None:
+                due = due.replace(tzinfo=timezone.utc)
+            return now > due
+        return False
+    
+    def get_days_remaining(self) -> Optional[int]:
+        """Días restantes para responder"""
+        if self.due_at and self.status in ['pending', 'in_review']:
+            now = datetime.now(timezone.utc)
+            due = self.due_at
+            if due.tzinfo is None:
+                due = due.replace(tzinfo=timezone.utc)
+            return max(0, (due - now).days)
+        return None
+
+
+# ============================================================
+# 14. AUDIT REPORTS (Reportes de auditoría)
+# ============================================================
+
+class AuditReport(Base):
+    """Reportes de auditoría generados por el sistema"""
+    __tablename__ = "audit_reports"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Empresa que solicita el reporte
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Identificador único del reporte
+    report_number = Column(String(100), unique=True, nullable=False, index=True)
+    
+    # Tipo de reporte
+    report_type = Column(String(50), nullable=False)  # compliance, security, data_processing, network_changes
+    
+    # Estado
+    status = Column(String(20), default="pending")  # pending, generating, completed, failed
+    
+    # Período del reporte
+    period_start = Column(DateTime, nullable=False)
+    period_end = Column(DateTime, nullable=False)
+    
+    # Contenido del reporte (JSON estructurado)
+    report_data = Column(JSONB_TYPE)
+    
+    # URLs de descarga
+    pdf_url = Column(String(500))
+    json_url = Column(String(500))
+    
+    # Firma de integridad
+    integrity_hash = Column(String(64))
+    
+    # Programación
+    is_scheduled = Column(Boolean, default=False)
+    schedule_frequency = Column(String(20))  # daily, weekly, monthly, quarterly
+    next_scheduled_at = Column(DateTime)
+    
+    # Metadatas
+    generated_at = Column(DateTime)
+    generated_by = Column(String(255))  # user_id o 'system'
+    
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+    
+    __table_args__ = (
+        CheckConstraint("report_type IN ('compliance', 'security', 'data_processing', 'network_changes')", name="valid_report_type"),
+        CheckConstraint("status IN ('pending', 'generating', 'completed', 'failed')", name="valid_report_status"),
+        CheckConstraint("schedule_frequency IN ('daily', 'weekly', 'monthly', 'quarterly')", name="valid_schedule_freq"),
+    )
+
+
+# ============================================================
+# 15. AUDIT REPORT SIGNATURES
+# ============================================================
+
+class AuditReportSignature(Base):
+    """Firmas digitales de reportes de auditoría"""
+    __tablename__ = "audit_report_signatures"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    report_id = Column(UUID(as_uuid=True), ForeignKey("audit_reports.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Quién firmó
+    signed_by = Column(String(255), nullable=False)
+    signed_by_type = Column(String(20), default="system")  # system, user, external
+    
+    # Firma criptográfica
+    signature_hash = Column(String(64), nullable=False)
+    document_hash = Column(String(64), nullable=False)
+    
+    # Algoritmo y metadatos
+    algorithm = Column(String(50), default="SHA256")
+    key_id = Column(String(255))
+    
+    # Estado
+    is_valid = Column(Boolean, default=True)
+    verified_at = Column(DateTime)
+    
+    created_at = Column(DateTime, default=utc_now)
+    
+    __table_args__ = (
+        CheckConstraint("signed_by_type IN ('system', 'user', 'external')", name="valid_signer_type"),
+    )
+
+
+# ============================================================
+# 16. DATA RETENTION POLICY
+# ============================================================
+
+class DataRetentionPolicy(Base):
+    """Políticas de retención de datos por tipo"""
+    __tablename__ = "data_retention_policies"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Tipo de dato
+    data_type = Column(String(50), unique=True, nullable=False)  # verification, company, audit_log, gdpr_request, etc.
+    
+    # Período de retención
+    retention_days = Column(Integer, nullable=False)
+    
+    # Base legal
+    legal_basis = Column(String(50))  # contract, legal_obligation, consent, legitimate_interest
+    
+    # Descripción
+    description = Column(Text)
+    
+    # ¿Se puede anonimizar en vez de borrar?
+    allow_anonymization = Column(Boolean, default=True)
+    
+    # ¿Requiere aprobación manual para borrado?
+    requires_manual_approval = Column(Boolean, default=False)
+    
+    is_active = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+    updated_by = Column(String(255))
+    
+    __table_args__ = (
+        CheckConstraint("legal_basis IN ('contract', 'legal_obligation', 'consent', 'legitimate_interest')", name="valid_legal_basis"),
+    )
+
+
 
 @event.listens_for(Company, 'before_insert')
 def set_retention_date(mapper, connection, target):

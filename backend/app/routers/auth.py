@@ -21,6 +21,7 @@ from app.core.security import (
 )
 from app.models_v2 import Company, AuditLog
 from app.services.email_service import get_email_service
+from app.core.countries import validate_document, get_country_config
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -31,7 +32,8 @@ router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 class RegisterRequest(BaseModel):
     """Registro de nueva empresa"""
-    ruc: str = Field(..., min_length=11, max_length=11, pattern=r'^\d{11}$')
+    ruc: str = Field(..., min_length=11, max_length=20, description="Documento de identificación tributaria")
+    country_code: str = Field(default="PE", pattern=r'^(PE|CL|CO|MX|ES)$', description="Código de país (ISO 3166-1 alpha-2)")
     razon_social: str = Field(..., min_length=3, max_length=255)
     contact_email: EmailStr
     contact_name: str = Field(..., min_length=2, max_length=255)
@@ -88,9 +90,51 @@ class ApiKeyResponse(BaseModel):
     message: str
 
 
+class ValidateDocumentRequest(BaseModel):
+    """Validación de documento por país"""
+    country_code: str = Field(..., pattern=r'^(PE|CL|CO|MX|ES)$')
+    document: str = Field(..., min_length=8, max_length=20)
+
+
+class ValidateDocumentResponse(BaseModel):
+    """Respuesta de validación de documento"""
+    valid: bool
+    country_code: str
+    country_name: str
+    error: Optional[str] = None
+
+
 # ============================================================
 # ENDPOINTS
 # ============================================================
+
+@router.post("/validate-document", response_model=ValidateDocumentResponse, summary="Validar documento por país")
+async def validate_document_endpoint(request: ValidateDocumentRequest):
+    """
+    Valida un documento de identificación según el país.
+    
+    - PE: RUC (11 dígitos, módulo 11)
+    - CL: RUT (8-9 dígitos + dígito verificador K)
+    - CO: NIT (9-10 dígitos, algoritmo DIAN)
+    - MX: RFC (12-13 caracteres, validación de fecha)
+    - ES: NIF/CIF (9 caracteres, validación de letra)
+    """
+    country_config = get_country_config(request.country_code)
+    if not country_config:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"País no soportado: {request.country_code}"
+        )
+    
+    is_valid, error_msg = validate_document(request.country_code, request.document)
+    
+    return ValidateDocumentResponse(
+        valid=is_valid,
+        country_code=request.country_code,
+        country_name=country_config["name"],
+        error=error_msg if not is_valid else None
+    )
+
 
 @router.post("/register", response_model=AuthResponse, summary="Registrar nueva empresa")
 async def register(
@@ -99,7 +143,23 @@ async def register(
 ):
     """
     Registra una nueva empresa en el sistema.
+    Valida el documento según el país seleccionado (PE, CL, CO, MX, ES).
     """
+    # Validar documento según país
+    country_config = get_country_config(request.country_code)
+    if not country_config:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"País no soportado: {request.country_code}"
+        )
+    
+    is_valid, error_msg = validate_document(request.country_code, request.ruc)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Documento inválido: {error_msg}"
+        )
+    
     # Verificar si el RUC ya existe
     ruc_hash = hashlib.sha256(request.ruc.encode()).hexdigest()
     existing = db.query(Company).filter(
@@ -126,7 +186,8 @@ async def register(
         password_hash=password_hash,
         invited_by_code=request.invited_by_code,
         plan_tier="bronze",
-        status="active"
+        status="active",
+        country_code=request.country_code
     )
     
     db.add(company)

@@ -13,13 +13,18 @@ export const loginSchema = z.object({
     .min(6, 'La contraseña debe tener al menos 6 caracteres'),
 })
 
-// Esquema de registro
+// Esquema de registro con soporte multi-país
 export const registerSchema = z.object({
+  country_code: z
+    .string()
+    .min(2, 'Seleccione un país')
+    .max(2)
+    .regex(/^(PE|CL|CO|MX|ES)$/),
   ruc: z
     .string()
-    .min(1, 'El RUC es requerido')
-    .length(11, 'El RUC debe tener exactamente 11 dígitos')
-    .regex(/^\d+$/, 'El RUC solo debe contener números'),
+    .min(1, 'El documento es requerido')
+    .min(8, 'Mínimo 8 caracteres')
+    .max(20, 'Máximo 20 caracteres'),
   razon_social: z
     .string()
     .min(1, 'La razón social es requerida')

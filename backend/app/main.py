@@ -14,6 +14,7 @@ import time
 from app.core.database import init_db, test_connection
 from app.core.rate_limit import add_rate_limit_headers
 from app.routers import (
+    audit,  # Fase 3 - Enterprise Auditing
     founder_applications,
     founder_compliance,
     api_v2,
@@ -30,7 +31,8 @@ from app.routers import (
     monitoring,
     ml_scoring,
     notifications,
-    push
+    push,
+    white_label  # Fase 3 - White-label
 )
 from app.services.digital_signature_v2 import signature_service
 
@@ -156,6 +158,8 @@ app.include_router(monitoring.router, prefix="/api/v2")  # Monitoreo Continuo - 
 app.include_router(ml_scoring.router, prefix="/api/v2")  # ML Scoring - Fase 2
 app.include_router(notifications.router)  # Notifications - Fase 2
 app.include_router(push.router, prefix="/api/v2")  # Push Notifications - Fase 2
+app.include_router(audit.router, prefix="/api/v2")  # Audit & GDPR - Fase 3
+app.include_router(white_label.router, prefix="/api/v2")  # White-label - Fase 3
 
 
 # Error handlers

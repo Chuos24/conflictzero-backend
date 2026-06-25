@@ -55,17 +55,65 @@ Transformar Conflict Zero de herramienta de verificación puntual a plataforma d
 
 ---
 
-## Fase 3 - Escalamiento & Enterprise 🚀 FUTURO
+## Fase 3 - Escalamiento & Enterprise 🚧 EN PROGRESO
 
 ### Objetivo
 Escalar a mercados internacionales y capas enterprise.
 
 ### Alcance
-- **Multi-país**: Chile, Colombia, México, España
-- **Regulaciones**: Compliance GDPR, SOX, etc.
-- **White-label**: Personalización de marca
-- **On-premise**: Despliegue en infraestructura del cliente
-- **Auditorías**: Reportes para audits de terceros
+
+## Fase 3 - Escalamiento & Enterprise 🚧 EN PROGRESO
+
+### Objetivo
+Escalar a mercados internacionales y capas enterprise.
+
+### Alcance
+
+#### 1. Multi-país ✅ IMPLEMENTADO (NUEVO)
+- **Módulo multi-país** (`backend/app/core/countries.py`) - Validación y configuración por país
+- **5 países soportados**: Perú (PE), Chile (CL), Colombia (CO), México (MX), España (ES)
+- **Validadores de documentos** con algoritmos de verificación:
+  - RUC peruano (11 dígitos, módulo 11)
+  - RUT chileno (8-9 dígitos + dígito verificador K)
+  - NIT colombiano (9-10 dígitos, algoritmo DIAN)
+  - RFC mexicano (12-13 caracteres, validación de fecha)
+  - NIF/CIF español (DNI, NIE, CIF con validación de letra)
+- **Configuración por país**: moneda, impuestos, timezone, fuentes de verificación, marco legal
+- **Frontend**: Página de administración multi-país (`dashboard/src/pages/Countries.tsx`) con:
+  - Selector de país con flags y estado ON/OFF
+  - Validador interactivo de documentos
+  - Información de moneda, impuestos, documentos
+  - Fuentes de verificación por país
+  - Marco legal aplicable
+- **Tests**: 50 tests unitarios (`tests/test_countries.py`) - 100% pass
+- **Países planificados**: Chile, Colombia, México, España
+- Roadmap: Q3 2026 (CL) → Q4 2026 (CO) → Q1 2027 (MX) → Q2 2027 (ES)
+
+#### 2. Regulaciones: GDPR ✅ ESTRUCTURA CREADA
+- **Módulo GDPR** (`backend/app/core/gdpr.py`)
+- Derechos del titular: acceso, rectificación, olvido, portabilidad, oposición
+- Política de retención de datos configurable
+- Exportación de datos personales (endpoint `/api/v2/audit/gdpr/export`)
+- Solicitud de borrado (endpoint `/api/v2/audit/gdpr/erase`)
+
+#### 3. White-label ✅ ESTRUCTURA CREADA
+- **Servicio de personalización** (`backend/app/services/white_label.py`)
+- Temas, colores, logos configurables
+- Features habilitadas por tenant
+- Configuraciones predefinidas por mercado
+
+#### 4. On-premise ✅ ESTRUCTURA CREADA
+- **Docker Compose** (`docker-compose.onpremise.yml`)
+- Stack completo con health checks
+- Backup automático con S3
+- Despliegue en infraestructura del cliente
+
+#### 5. Auditorías ✅ ESTRUCTURA CREADA
+- **Generador de reportes** (`backend/app/services/audit_service.py`)
+- 4 tipos: Compliance, Security, Data Processing, Network Changes
+- Firmas de integridad para reportes
+- Router de auditoría (`backend/app/routers/audit.py`)
+- Programador de auditorías automáticas
 
 ---
 
