@@ -108,6 +108,72 @@ Authorization: Bearer <jwt_token>
 | DELETE | `/api/v1/webhooks/{id}` | Delete webhook | Yes |
 | POST | `/api/v1/webhooks/{id}/test` | Test webhook | Yes |
 
+### Monitoring (Monitoreo Continuo - Fase 2)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v2/monitoring/suppliers` | List monitored suppliers | Yes |
+| POST | `/api/v2/monitoring/suppliers` | Add supplier to monitoring | Yes |
+| DELETE | `/api/v2/monitoring/suppliers/{id}` | Remove from monitoring | Yes |
+| GET | `/api/v2/monitoring/alerts` | Get monitoring alerts | Yes |
+| GET | `/api/v2/monitoring/stats` | Get monitoring statistics | Yes |
+| GET | `/api/v2/monitoring/history/{supplier_id}` | Get supplier history | Yes |
+
+### ML Scoring (Machine Learning - Fase 2)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v2/ml/score/{ruc}` | Get ML risk score | Yes |
+| GET | `/api/v2/ml/benchmark/{sector}` | Get sector benchmark | Yes |
+| POST | `/api/v2/ml/analyze` | Analyze supplier patterns | Yes |
+| GET | `/api/v2/ml/recommendations` | Get alternative suppliers | Yes |
+
+### Notifications (Fase 2)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v2/notifications` | List notifications | Yes |
+| PATCH | `/api/v2/notifications/{id}/read` | Mark as read | Yes |
+| POST | `/api/v2/notifications/mark-all-read` | Mark all as read | Yes |
+| GET | `/api/v2/notifications/settings` | Get notification settings | Yes |
+| PATCH | `/api/v2/notifications/settings` | Update settings | Yes |
+
+### Push Notifications (Fase 2)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/v2/push/register` | Register device token | Yes |
+| DELETE | `/api/v2/push/unregister` | Unregister device | Yes |
+| POST | `/api/v2/push/test` | Send test notification | Yes |
+
+### Audit & GDPR (Fase 3 - Enterprise)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v2/audit/reports` | List audit reports | Yes |
+| POST | `/api/v2/audit/reports` | Generate new report | Yes |
+| GET | `/api/v2/audit/reports/{id}` | Get report by ID | Yes |
+| GET | `/api/v2/audit/reports/{id}/download` | Download PDF report | Yes |
+| GET | `/api/v2/audit/schedule` | Get audit schedule | Yes |
+| POST | `/api/v2/audit/schedule` | Schedule audit | Yes |
+| GET | `/api/v2/audit/gdpr/export` | Export personal data (GDPR Art. 20) | Yes |
+| POST | `/api/v2/audit/gdpr/erase` | Request data deletion (GDPR Art. 17) | Yes |
+| GET | `/api/v2/audit/gdpr/requests` | List GDPR requests (Admin) | Admin |
+| POST | `/api/v2/audit/gdpr/requests/{id}/process` | Process GDPR request (Admin) | Admin |
+
+### White-label (Fase 3 - Enterprise)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v2/white-label/config` | Get white-label config (Public) | No |
+| GET | `/api/v2/white-label/css` | Get custom CSS (Public) | No |
+| GET | `/api/v2/white-label/manifest.json` | Get manifest (Public) | No |
+| GET | `/api/v2/white-label/admin/tenants` | List tenants (Admin) | Admin |
+| POST | `/api/v2/white-label/admin/tenants` | Create tenant (Admin) | Admin |
+| GET | `/api/v2/white-label/admin/markets` | List market configs (Admin) | Admin |
+| POST | `/api/v2/white-label/admin/clone-market` | Clone market config (Admin) | Admin |
+
+### Countries (Multi-país - Fase 3)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v2/countries` | List supported countries | No |
+| GET | `/api/v2/countries/{code}` | Get country details | No |
+| POST | `/api/v2/countries/validate-document` | Validate document by country | No |
+
 ## Error Codes
 
 | Code | Description |
@@ -219,4 +285,4 @@ For API support, contact:
 ---
 
 *API Version: 2.0.0*
-*Last Updated: 2026-04-23*
+*Last Updated: 2026-06-27*

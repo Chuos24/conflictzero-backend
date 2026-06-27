@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - React Query integration with 20+ server-state hooks
 - Zod validation schemas for all forms
 - React Hook Form integration on Login, Profile, Verifications pages
+- **Docs**: API documentation updated with Fase 2 & Fase 3 endpoints (Monitoring, ML Scoring, Notifications, Push, Audit/GDPR, White-label, Countries)
 
 ### Changed
 - Backend version bump: v2.0.0
@@ -122,11 +123,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Release Checklist
 
-- [ ] Update version in `backend/app/main.py`
-- [ ] Update version in `dashboard/package.json`
-- [ ] Update `CHANGELOG.md`
-- [ ] Run all tests
-- [ ] Update API documentation
+- [x] Update version in `backend/app/main.py`
+- [x] Update version in `dashboard/package.json`
+- [x] Update `CHANGELOG.md`
+- [x] Run all tests
+- [x] Update API documentation
 - [ ] Update architecture documentation
 - [ ] Create Git tag
 - [ ] Deploy to staging
