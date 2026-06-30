@@ -1,7 +1,7 @@
 {
   "name": "conflictzero-backend",
-  "version": "1.0.0",
-  "description": "Backend API for Conflict Zero - RUC verification",
+  "version": "2.0.0",
+  "description": "Backend API para ConflictZero - Consulta de riesgo de proveedores en Perú",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -14,6 +14,9 @@
     "cheerio": "^1.0.0-rc.12",
     "express": "^4.18.2",
     "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
