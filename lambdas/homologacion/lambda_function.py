@@ -29,7 +29,7 @@ AGENTES = {
             'identidad_legal':     0.20,
             'tributario':          0.15,
             'laboral':             0.15,
-            'regulatorio':         0.15,  # OSCE/RNP habilitación
+            'regulatorio':         0.15,
             'financiero':          0.10,
             'legal_judicial':      0.10,
             'reputacional':        0.05,
@@ -43,7 +43,7 @@ AGENTES = {
         'pesos': {
             'identidad_legal':     0.20,
             'tributario':          0.15,
-            'laboral':             0.25,  # más peso en servicios
+            'laboral':             0.25,
             'regulatorio':         0.10,
             'financiero':          0.10,
             'legal_judicial':      0.10,
@@ -57,8 +57,8 @@ AGENTES = {
         'pesos': {
             'identidad_legal':     0.15,
             'tributario':          0.15,
-            'regulatorio':         0.20,  # permisos sectoriales críticos
-            'ambiental':           0.20,  # OEFA/MINAM
+            'regulatorio':         0.20,
+            'ambiental':           0.20,
             'financiero':          0.10,
             'legal_judicial':      0.10,
             'capacidad_tecnica':   0.10,
@@ -71,8 +71,8 @@ AGENTES = {
         'pesos': {
             'identidad_legal':     0.15,
             'tributario':          0.15,
-            'financiero':          0.25,  # core del agente
-            'compliance_aml':      0.20,  # UIF/listas restrictivas
+            'financiero':          0.25,
+            'compliance_aml':      0.20,
             'legal_judicial':      0.15,
             'reputacional':        0.10,
         }
@@ -84,7 +84,7 @@ AGENTES = {
         'pesos': {
             'identidad_legal':     0.20,
             'tributario':          0.15,
-            'seguridad_info':      0.25,  # ISO 27001, protección de datos
+            'seguridad_info':      0.25,
             'legal_judicial':      0.10,
             'reputacional':        0.15,
             'capacidad_tecnica':   0.15,
@@ -210,7 +210,6 @@ def calcular_score(ruc, sunat_data, sanciones_osce, sector='construccion'):
     scores = {}
     alertas = []
 
-    # 1. Identidad legal (SUNAT)
     if 'identidad_legal' in pesos:
         score_il = 100
         if sunat_data.get('error'):
@@ -224,7 +223,6 @@ def calcular_score(ruc, sunat_data, sanciones_osce, sector='construccion'):
             alertas.append({'nivel': 'CRITICO', 'descripcion': 'Contribuyente NO HABIDO en SUNAT'})
         scores['identidad_legal'] = score_il
 
-    # 2. Regulatorio / inhabilitaciones OSCE-TCE
     if 'regulatorio' in pesos:
         score_reg = 100
         if ruc in sanciones_osce:
@@ -235,26 +233,23 @@ def calcular_score(ruc, sunat_data, sanciones_osce, sector='construccion'):
             })
         scores['regulatorio'] = score_reg
 
-    # 3. Tributario (proxy desde SUNAT)
     if 'tributario' in pesos:
-        score_trib = 80  # base conservadora sin API tributaria completa
+        score_trib = 80
         if sunat_data.get('omiso_declaraciones'):
             score_trib = 40
             alertas.append({'nivel': 'MEDIO', 'descripcion': 'Omiso a declaraciones tributarias'})
         scores['tributario'] = score_trib
 
-    # 4. Resto de categorías: score base 75 (pendiente integración de fuentes)
     categorias_base = ['laboral', 'financiero', 'legal_judicial', 'reputacional',
                        'capacidad_tecnica', 'ambiental', 'compliance_aml', 'seguridad_info']
     for cat in categorias_base:
         if cat in pesos and cat not in scores:
-            scores[cat] = 75  # placeholder hasta integrar fuente
+            scores[cat] = 75
             alertas.append({
                 'nivel': 'INFO',
                 'descripcion': f'Categoría {cat.upper()} pendiente de integración de fuente'
             })
 
-    # Score general ponderado
     score_total = 0
     for cat, peso in pesos.items():
         score_total += scores.get(cat, 75) * peso
@@ -358,20 +353,42 @@ def generar_html_certificado(ruc, razon_social, score_data, sector):
   </div>
 </div></body></html>'''
 
+# ─── Normalizar evento (REST v1 y HTTP v2) ───────────────────────────────────
+def normalize_event(event):
+    """
+    API Gateway REST (v1):  event['httpMethod'], event['path']
+    API Gateway HTTP (v2):  event['requestContext']['http']['method'], event['rawPath']
+    """
+    # Método HTTP
+    method = (
+        event.get('httpMethod') or
+        (event.get('requestContext', {}).get('http', {}).get('method', 'GET'))
+    )
+    # Path
+    path = (
+        event.get('path') or
+        event.get('rawPath') or
+        '/'
+    )
+    # Query string
+    qs = event.get('queryStringParameters') or {}
+    # Path parameters
+    params = event.get('pathParameters') or {}
+    # Headers
+    headers = event.get('headers') or {}
+    origin = headers.get('origin') or headers.get('Origin') or ''
+
+    return method, path, qs, params, origin
+
 # ─── Handler principal ────────────────────────────────────────────────────────
 def lambda_handler(event, context):
-    origin = (event.get('headers') or {}).get('origin', '')
-    method = event.get('httpMethod', 'GET')
-    path = event.get('path', '')
+    method, path, qs, params, origin = normalize_event(event)
 
     if method == 'OPTIONS':
         return response(200, {'message': 'OK'}, origin)
 
-    params = event.get('pathParameters') or {}
-    qs = event.get('queryStringParameters') or {}
-
     # ── GET /health ───────────────────────────────────────────────────────────
-    if path.endswith('/health') or path == '/':
+    if path in ('/', '/health') or path.endswith('/health'):
         return response(200, {
             'status': 'ok',
             'version': '2.0',
@@ -390,7 +407,7 @@ def lambda_handler(event, context):
 
     # ── GET /consulta/{ruc} ───────────────────────────────────────────────────
     if '/consulta/' in path or '/consulta-osce/' in path:
-        ruc = params.get('ruc') or path.split('/')[-1]
+        ruc = params.get('ruc') or path.rstrip('/').split('/')[-1]
         sector = qs.get('sector', 'construccion').lower()
 
         valid, err = validate_ruc(ruc)
@@ -417,7 +434,7 @@ def lambda_handler(event, context):
 
     # ── GET /generar-certificado/{ruc} ────────────────────────────────────────
     if '/generar-certificado/' in path or '/certificado/' in path:
-        ruc = params.get('ruc') or path.split('/')[-1]
+        ruc = params.get('ruc') or path.rstrip('/').split('/')[-1]
         sector = qs.get('sector', 'construccion').lower()
 
         valid, err = validate_ruc(ruc)
@@ -448,7 +465,7 @@ def lambda_handler(event, context):
             url_firmada = s3_client.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': S3_BUCKET, 'Key': key},
-                ExpiresIn=604800  # 7 días
+                ExpiresIn=604800
             )
             return response(200, {
                 'ruc': ruc,
