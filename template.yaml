@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ConflictZero Backend - Serverless AWS
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        S3_BUCKET: conflictzero-certificados-prod
+        DYNAMODB_TABLE: conflictzero-consultas
+        ALLOWED_ORIGIN: https://czperu.com
+        BUSCARUC_TOKEN: !Sub '{{resolve:ssm:/conflictzero/buscaruc_token}}'
+    Layers:
+      - !Ref SharedLayer
+
+Resources:
+
+  # ─── LAYER COMPARTIDO ───────────────────────────────────────────────
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: conflictzero-shared
+      Description: Utils compartidos (cache DynamoDB, CORS, validacion RUC)
+      ContentUri: layers/shared/
+      CompatibleRuntimes:
+        - python3.12
+
+  # ─── API GATEWAY ────────────────────────────────────────────────────
+  ConflictZeroApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'https://czperu.com'"
+
+  # ─── LAMBDA: HEALTH ─────────────────────────────────────────────────
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: conflictzero-health
+      CodeUri: lambdas/health/
+      Handler: handler.lambda_handler
+      Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
+      Events:
+        HealthGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ConflictZeroApi
+            Path: /health
+            Method: GET
+
+  # ─── LAMBDA: CONSULTA RUC (SUNAT) ───────────────────────────────────
+  ConsultaRucFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: conflictzero-consulta-ruc
+      CodeUri: lambdas/consulta-ruc/
+      Handler: handler.lambda_handler
+      Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
+      Timeout: 20
+      Events:
+        ConsultaRucGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ConflictZeroApi
+            Path: /consulta-ruc/{ruc}
+            Method: GET
+
+  # ─── LAMBDA: CONSULTA OSCE / TCE / RNP ──────────────────────────────
+  ConsultaSancionesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: conflictzero-sanciones
+      CodeUri: lambdas/sanciones/
+      Handler: handler.lambda_handler
+      Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
+      Timeout: 30
+      Events:
+        SancionesGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ConflictZeroApi
+            Path: /sanciones/{ruc}
+            Method: GET
+
+  # ─── LAMBDA: SCORING ────────────────────────────────────────────────
+  ScoringFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: conflictzero-scoring
+      CodeUri: lambdas/scoring/
+      Handler: handler.lambda_handler
+      Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
+      Timeout: 60
+      Events:
+        ScoringGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ConflictZeroApi
+            Path: /consulta-completa/{ruc}
+            Method: GET
+
+  # ─── LAMBDA: CERTIFICADOS ───────────────────────────────────────────
+  CertificadoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: conflictzero-certificado
+      CodeUri: lambdas/certificado/
+      Handler: handler.lambda_handler
+      Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
+      Timeout: 30
+      Events:
+        CertificadoGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ConflictZeroApi
+            Path: /generar-certificado/{ruc}
+            Method: GET
+
+  # ─── DYNAMODB: CACHE DE CONSULTAS ───────────────────────────────────
+  ConsultasTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: conflictzero-consultas
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+Outputs:
+  ApiUrl:
+    Description: URL base de la API
+    Value: !Sub 'https://${ConflictZeroApi}.execute-api.${AWS::Region}.amazonaws.com/prod'

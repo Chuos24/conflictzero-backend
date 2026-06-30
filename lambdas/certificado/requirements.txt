@@ -1,0 +1,1 @@
+# boto3 disponible por defecto en Lambda runtime

@@ -1,36 +1,42 @@
-# Dependencies
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+env/
+.env/
+
+# Node (solo si se usan herramientas de build locales)
 node_modules/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+
+# SAM / CDK build artifacts
+.aws-sam/
+cdk.out/
 
 # Environment
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Playwright / Chromium
-/ms-playwright/
-
-# Logs
-logs/
-*.log
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Build
-dist/
-build/
-
-# Coverage
-coverage/
-
-# Misc
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# Playwright / Chromium (no va en Lambda)
+/ms-playwright/
+
+# Logs
+*.log
+logs/

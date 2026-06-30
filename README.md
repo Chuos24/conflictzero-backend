@@ -1,40 +1,77 @@
-# ConflictZero Backend v2.0.0
+# ConflictZero Backend v3.0 — AWS Serverless
 
-API de consulta de riesgo de proveedores para el mercado peruano.
+Arquitectura 100% serverless en AWS. Sin servidores, sin Render, sin Vercel.
 
-## Fuentes de datos
+## Stack
 
-| Fuente | Endpoint base | Descripción |
-|--------|--------------|-------------|
-| SUNAT | `/sunat/ruc/:ruc` | Estado tributario |
-| OSCE | `/osce/inhabilitados` | Inhabilitados en contrataciones del Estado |
-| TCE | `/tce/inhabilitados` | Tribunal de Contrataciones |
-| RNP | `/rnp/inhabilitados` | Registro Nacional de Proveedores |
-| SUNAFIL | `/sunafil/sanciones` | Sanciones laborales |
+| Capa | Servicio AWS |
+|------|--------------|
+| API | API Gateway (REST) |
+| Lógica | AWS Lambda (Python 3.12) |
+| Cache | DynamoDB (TTL automático) |
+| Certificados | S3 (presigned URLs) |
+| Secrets | SSM Parameter Store |
+| Infra como código | AWS SAM (`template.yaml`) |
 
-## Consulta completa
+## Endpoints
+
+| Método | Ruta | Lambda | Descripción |
+|--------|------|--------|-------------|
+| GET | `/health` | health | Status de la API |
+| GET | `/consulta-ruc/{ruc}` | consulta-ruc | Datos SUNAT |
+| GET | `/sanciones/{ruc}` | sanciones | OSCE + TCE |
+| GET | `/consulta-completa/{ruc}` | scoring | Score de riesgo completo |
+| GET | `/generar-certificado/{ruc}` | certificado | Genera y sube certificado a S3 |
+
+## Estructura
 
 ```
-GET /consulta-completa/:ruc
+conflictzero-backend/
+├── template.yaml              # SAM - infraestructura como código
+├── lambdas/
+│   ├── health/                # Health check
+│   ├── consulta-ruc/          # SUNAT
+│   ├── sanciones/             # OSCE + TCE
+│   ├── scoring/               # Score de riesgo
+│   └── certificado/           # Generación + S3
+└── layers/
+    └── shared/python/utils/   # CORS, cache DynamoDB, validación RUC
 ```
 
-Devuelve score de riesgo (0-100), nivel (`BAJO / MEDIO / ALTO / CRÍTICO`) y todas las sanciones activas.
-
-## Setup local
+## Deploy
 
 ```bash
-cp .env.example .env
-# Editar .env con tus API keys
-npm install
-npm run dev
+# Instalar AWS SAM CLI
+brew install aws-sam-cli
+
+# Configurar credenciales AWS
+aws configure
+
+# Antes del primer deploy: guardar el token en SSM
+aws ssm put-parameter \
+  --name /conflictzero/buscaruc_token \
+  --value "TU_TOKEN" \
+  --type SecureString
+
+# Build y deploy
+sam build
+sam deploy --guided
+
+# Deploys siguientes
+sam build && sam deploy
 ```
 
-## Variables de entorno
+## Variables de entorno en Lambda
 
-Ver `.env.example` para la lista completa.
+Configurar en AWS Console > Lambda > Configuration > Environment Variables:
 
-## Deploy (Render)
+- `S3_BUCKET`: `conflictzero-certificados-prod`
+- `DYNAMODB_TABLE`: `conflictzero-consultas`
+- `API_BASE_URL`: URL de API Gateway tras el primer deploy
+- `ALLOWED_ORIGIN`: `https://czperu.com`
 
-- Build Command: `npm install`
-- Start Command: `npm start`
-- Node version: 18+
+## IAM Role
+
+`arn:aws:iam::981207387949:role/conflictzero-lambda-role`
+
+El role necesita permisos para: `s3:PutObject`, `s3:GetObject`, `dynamodb:GetItem`, `dynamodb:PutItem`, `ssm:GetParameter`.
