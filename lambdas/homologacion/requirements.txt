@@ -1,0 +1,2 @@
+# Sin dependencias externas — usa solo stdlib de Python 3.11
+# boto3 viene preinstalado en Lambda runtime

@@ -1,77 +1,87 @@
-# ConflictZero Backend v3.0 — AWS Serverless
+# ConflictZero Backend
 
-Arquitectura 100% serverless en AWS. Sin servidores, sin Render, sin Vercel.
+Plataforma SaaS B2B de homologación, verificación y descubrimiento de proveedores para el mercado peruano.
 
-## Stack
+## Arquitectura
 
-| Capa | Servicio AWS |
-|------|--------------|
-| API | API Gateway (REST) |
-| Lógica | AWS Lambda (Python 3.12) |
-| Cache | DynamoDB (TTL automático) |
-| Certificados | S3 (presigned URLs) |
-| Secrets | SSM Parameter Store |
-| Infra como código | AWS SAM (`template.yaml`) |
+AWS Lambda + API Gateway (Python 3.11). Sin dependencias externas — solo stdlib y boto3.
+
+## Agentes sectoriales
+
+| Agente | Sectores | Fuentes principales |
+|---|---|---|
+| `construccion` | Obras, infraestructura, ingeniería | SUNAT, OSCE, RNP, TCE, CIP |
+| `servicios` | Limpieza, seguridad, logística | SUNAT, SUNAFIL, MTPE, INDECOPI |
+| `productivo` | Alimentos, minería, energía | PRODUCE, SENASA, OEFA, OSINERGMIN |
+| `financiero` | Fintech, seguros, factoring | SBS, SMV, UIF, burós de crédito |
+| `tech` | SaaS, ciberseguridad, TI | INDECOPI, ISO 27001, protección de datos |
+| `transversales` | Compliance general | Poder Judicial, listas restrictivas |
 
 ## Endpoints
 
-| Método | Ruta | Lambda | Descripción |
-|--------|------|--------|-------------|
-| GET | `/health` | health | Status de la API |
-| GET | `/consulta-ruc/{ruc}` | consulta-ruc | Datos SUNAT |
-| GET | `/sanciones/{ruc}` | sanciones | OSCE + TCE |
-| GET | `/consulta-completa/{ruc}` | scoring | Score de riesgo completo |
-| GET | `/generar-certificado/{ruc}` | certificado | Genera y sube certificado a S3 |
-
-## Estructura
-
 ```
-conflictzero-backend/
-├── template.yaml              # SAM - infraestructura como código
-├── lambdas/
-│   ├── health/                # Health check
-│   ├── consulta-ruc/          # SUNAT
-│   ├── sanciones/             # OSCE + TCE
-│   ├── scoring/               # Score de riesgo
-│   └── certificado/           # Generación + S3
-└── layers/
-    └── shared/python/utils/   # CORS, cache DynamoDB, validación RUC
+GET  /health                          → Estado del sistema y agentes activos
+GET  /agentes                         → Lista de agentes y sus fuentes
+GET  /consulta/{ruc}?sector=XXX       → Homologación completa del proveedor
+GET  /generar-certificado/{ruc}?sector=XXX → Certificado HTML en S3
 ```
 
-## Deploy
+## Variables de entorno
+
+```
+S3_BUCKET     = conflictzero-certificados-prod
+BACKEND_URL   = https://conflictzero-backend1.onrender.com
+```
+
+## Estructura del repo
+
+```
+lambdas/
+  homologacion/     ← Motor principal: 6 agentes + scoring + certificados
+  consulta-ruc/     ← Lambda específica consulta SUNAT
+  sanciones/        ← Lambda específica sanciones OSCE/TCE/SUNAFIL
+  scoring/          ← Motor de scoring aislado
+  certificado/      ← Generador de certificados
+  health/           ← Health check
+layers/             ← Layers compartidos (futuro)
+```
+
+## Deploy rápido (AWS CloudShell)
 
 ```bash
-# Instalar AWS SAM CLI
-brew install aws-sam-cli
+# 1. Clonar y empaquetar
+git clone https://github.com/Chuos24/conflictzero-backend.git
+cd conflictzero-backend/lambdas/homologacion
+zip -r ../../deploy.zip lambda_function.py
 
-# Configurar credenciales AWS
-aws configure
+# 2. Actualizar Lambda existente
+cd ../..
+aws lambda update-function-code \
+  --function-name conflictzero-homologacion \
+  --zip-file fileb://deploy.zip
 
-# Antes del primer deploy: guardar el token en SSM
-aws ssm put-parameter \
-  --name /conflictzero/buscaruc_token \
-  --value "TU_TOKEN" \
-  --type SecureString
-
-# Build y deploy
-sam build
-sam deploy --guided
-
-# Deploys siguientes
-sam build && sam deploy
+# 3. Verificar
+aws lambda invoke \
+  --function-name conflictzero-homologacion \
+  --payload '{"path":"/health","httpMethod":"GET"}' \
+  response.json && cat response.json
 ```
 
-## Variables de entorno en Lambda
+## Scoring
 
-Configurar en AWS Console > Lambda > Configuration > Environment Variables:
+El score de 0–100 pondera categorías según el agente sectorial:
+- **≥ 70** → APROBADO ✅
+- **40–69** → OBSERVADO ⚠️
+- **< 40** → RECHAZADO ❌
 
-- `S3_BUCKET`: `conflictzero-certificados-prod`
-- `DYNAMODB_TABLE`: `conflictzero-consultas`
-- `API_BASE_URL`: URL de API Gateway tras el primer deploy
-- `ALLOWED_ORIGIN`: `https://czperu.com`
+## Estado de integración de fuentes
 
-## IAM Role
-
-`arn:aws:iam::981207387949:role/conflictzero-lambda-role`
-
-El role necesita permisos para: `s3:PutObject`, `s3:GetObject`, `dynamodb:GetItem`, `dynamodb:PutItem`, `ssm:GetParameter`.
+| Fuente | Estado |
+|---|---|
+| SUNAT (vía Render) | ✅ Activo |
+| OSCE/TCE inhabilitados | ✅ Activo (scraping) |
+| SUNAFIL | 🔄 Pendiente (datos abiertos CSV) |
+| OEFA | 🔄 Pendiente (datos abiertos) |
+| Burós de crédito | 🔄 Pendiente (partnership) |
+| SBS / SMV | 🔄 Pendiente (datos abiertos) |
+| Poder Judicial | 🔄 Pendiente (scraping) |
