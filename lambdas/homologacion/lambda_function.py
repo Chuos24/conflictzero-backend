@@ -10,7 +10,7 @@ import re
 
 # ─── Configuración ───────────────────────────────────────────────────────────
 S3_BUCKET = os.environ.get('S3_BUCKET', 'conflictzero-certificados-prod')
-BACKEND_URL = os.environ.get('BACKEND_URL', 'https://conflictzero-backend1.onrender.com')
+BUSCARUC_TOKEN = os.environ.get('BUSCARUC_TOKEN', '')
 s3_client = boto3.client('s3')
 
 ALLOWED_ORIGINS = [
@@ -147,21 +147,57 @@ def cache_get(key, ttl_seconds=1800):
 def cache_set(key, data):
     _cache[key] = {'data': data, 'ts': datetime.now()}
 
-# ─── Consulta SUNAT via backend Render ──────────────────────────────────────
+# ─── Consulta SUNAT via buscaruc.com (directo, sin Render) ───────────────────
 def consultar_sunat(ruc):
     cached = cache_get(f'sunat_{ruc}')
     if cached:
         return cached
+
+    token = BUSCARUC_TOKEN
+    if not token:
+        # Sin token: devolver estructura neutral para no bloquear el scoring
+        return {
+            'ruc': ruc,
+            'razonSocial': 'NO DISPONIBLE',
+            'estado': 'DESCONOCIDO',
+            'condicion': 'DESCONOCIDO',
+            'domicilioFiscal': '',
+            'fuente': 'buscaruc_com',
+            'error': 'BUSCARUC_TOKEN no configurado'
+        }
+
     try:
-        ctx = ssl.create_default_context()
-        url = f'{BACKEND_URL}/api/sunat/{ruc}'
-        req = urllib.request.Request(url, headers={'User-Agent': 'ConflictZero/2.0'})
-        with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
-            data = json.loads(resp.read().decode())
-        cache_set(f'sunat_{ruc}', data)
-        return data
+        payload = json.dumps({'token': token, 'ruc': ruc}).encode('utf-8')
+        req = urllib.request.Request(
+            'https://buscaruc.com/api/v1/ruc',
+            data=payload,
+            headers={
+                'Content-Type': 'application/json',
+                'User-Agent': 'ConflictZero/2.0'
+            },
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+
+        if not data.get('success') or not data.get('result'):
+            return {'error': 'RUC no encontrado en buscaruc.com', 'ruc': ruc, 'fuente': 'buscaruc_com'}
+
+        r = data['result']
+        result = {
+            'ruc': r.get('ruc', ruc),
+            'razonSocial': r.get('social_reason', ''),
+            'estado': r.get('taxpayer_state', 'ACTIVO'),
+            'condicion': r.get('domicile_condition', 'HABIDO'),
+            'domicilioFiscal': r.get('address', ''),
+            'ubigeo': r.get('ubigeo', ''),
+            'fuente': 'buscaruc_com'
+        }
+        cache_set(f'sunat_{ruc}', result)
+        return result
+
     except Exception as e:
-        return {'error': str(e), 'ruc': ruc, 'fuente': 'SUNAT'}
+        return {'error': str(e), 'ruc': ruc, 'fuente': 'buscaruc_com'}
 
 # ─── Scraping OSCE/TCE inhabilitados ─────────────────────────────────────────
 OSCE_URL = 'http://www.osce.gob.pe/consultasenlinea/inhabilitados/inhabil_publi_mes.asp'
@@ -212,7 +248,10 @@ def calcular_score(ruc, sunat_data, sanciones_osce, sector='construccion'):
 
     if 'identidad_legal' in pesos:
         score_il = 100
-        if sunat_data.get('error'):
+        if sunat_data.get('error') and 'TOKEN' in sunat_data.get('error', ''):
+            score_il = 60
+            alertas.append({'nivel': 'INFO', 'descripcion': 'Validación SUNAT pendiente: configurar BUSCARUC_TOKEN'})
+        elif sunat_data.get('error'):
             score_il = 40
             alertas.append({'nivel': 'CRITICO', 'descripcion': 'No se pudo validar identidad en SUNAT'})
         elif sunat_data.get('estado') not in ['ACTIVO', 'HABIDO']:
@@ -355,29 +394,19 @@ def generar_html_certificado(ruc, razon_social, score_data, sector):
 
 # ─── Normalizar evento (REST v1 y HTTP v2) ───────────────────────────────────
 def normalize_event(event):
-    """
-    API Gateway REST (v1):  event['httpMethod'], event['path']
-    API Gateway HTTP (v2):  event['requestContext']['http']['method'], event['rawPath']
-    """
-    # Método HTTP
     method = (
         event.get('httpMethod') or
         (event.get('requestContext', {}).get('http', {}).get('method', 'GET'))
     )
-    # Path
     path = (
         event.get('path') or
         event.get('rawPath') or
         '/'
     )
-    # Query string
     qs = event.get('queryStringParameters') or {}
-    # Path parameters
     params = event.get('pathParameters') or {}
-    # Headers
     headers = event.get('headers') or {}
     origin = headers.get('origin') or headers.get('Origin') or ''
-
     return method, path, qs, params, origin
 
 # ─── Handler principal ────────────────────────────────────────────────────────
@@ -391,8 +420,9 @@ def lambda_handler(event, context):
     if path in ('/', '/health') or path.endswith('/health'):
         return response(200, {
             'status': 'ok',
-            'version': '2.0',
+            'version': '2.1',
             'agentes': list(AGENTES.keys()),
+            'sunat_token_configurado': bool(BUSCARUC_TOKEN),
             'timestamp': datetime.now().isoformat()
         }, origin)
 
@@ -420,7 +450,7 @@ def lambda_handler(event, context):
 
         return response(200, {
             'ruc': ruc,
-            'razon_social': sunat_data.get('razonSocial') or sunat_data.get('razon_social', 'NO ENCONTRADO'),
+            'razon_social': sunat_data.get('razonSocial') or sunat_data.get('razon_social', 'NO DISPONIBLE'),
             'estado_sunat': sunat_data.get('estado', 'DESCONOCIDO'),
             'condicion_sunat': sunat_data.get('condicion', 'DESCONOCIDO'),
             'domicilio_fiscal': sunat_data.get('domicilioFiscal') or sunat_data.get('domicilio', ''),
