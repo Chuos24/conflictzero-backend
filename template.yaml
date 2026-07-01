@@ -4,15 +4,15 @@ Description: ConflictZero Backend - Serverless AWS
 
 Globals:
   Function:
-    Runtime: python3.12
+    Runtime: python3.11
     Timeout: 30
-    MemorySize: 512
+    MemorySize: 256
     Environment:
       Variables:
-        S3_BUCKET: conflictzero-certificados-prod
+        S3_BUCKET: conflictzero-documentos-prod
         DYNAMODB_TABLE: conflictzero-consultas
         ALLOWED_ORIGIN: https://czperu.com
-        BUSCARUC_TOKEN: !Sub '{{resolve:ssm:/conflictzero/buscaruc_token}}'
+        BUSCARUC_TOKEN: ''
     Layers:
       - !Ref SharedLayer
 
@@ -26,7 +26,7 @@ Resources:
       Description: Utils compartidos (cache DynamoDB, CORS, validacion RUC)
       ContentUri: layers/shared/
       CompatibleRuntimes:
-        - python3.12
+        - python3.11
 
   # ─── API GATEWAY ────────────────────────────────────────────────────
   ConflictZeroApi:
@@ -35,7 +35,7 @@ Resources:
       StageName: prod
       Cors:
         AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
+        AllowHeaders: "'Content-Type,Authorization,X-Sector'"
         AllowOrigin: "'https://czperu.com'"
 
   # ─── LAMBDA: HEALTH ─────────────────────────────────────────────────
@@ -54,73 +54,54 @@ Resources:
             Path: /health
             Method: GET
 
-  # ─── LAMBDA: CONSULTA RUC (SUNAT) ───────────────────────────────────
-  ConsultaRucFunction:
+  # ─── LAMBDA: HOMOLOGACION (motor principal) ──────────────────────────
+  HomologacionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: conflictzero-consulta-ruc
-      CodeUri: lambdas/consulta-ruc/
-      Handler: handler.lambda_handler
-      Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
-      Timeout: 20
-      Events:
-        ConsultaRucGet:
-          Type: Api
-          Properties:
-            RestApiId: !Ref ConflictZeroApi
-            Path: /consulta-ruc/{ruc}
-            Method: GET
-
-  # ─── LAMBDA: CONSULTA OSCE / TCE / RNP ──────────────────────────────
-  ConsultaSancionesFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: conflictzero-sanciones
-      CodeUri: lambdas/sanciones/
-      Handler: handler.lambda_handler
-      Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
-      Timeout: 30
-      Events:
-        SancionesGet:
-          Type: Api
-          Properties:
-            RestApiId: !Ref ConflictZeroApi
-            Path: /sanciones/{ruc}
-            Method: GET
-
-  # ─── LAMBDA: SCORING ────────────────────────────────────────────────
-  ScoringFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: conflictzero-scoring
-      CodeUri: lambdas/scoring/
-      Handler: handler.lambda_handler
+      FunctionName: conflictzero-homologacion
+      CodeUri: lambdas/homologacion/
+      Handler: lambda_function.lambda_handler
       Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
       Timeout: 60
       Events:
-        ScoringGet:
+        ConsultaGet:
           Type: Api
           Properties:
             RestApiId: !Ref ConflictZeroApi
-            Path: /consulta-completa/{ruc}
+            Path: /consulta/{ruc}
             Method: GET
-
-  # ─── LAMBDA: CERTIFICADOS ───────────────────────────────────────────
-  CertificadoFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: conflictzero-certificado
-      CodeUri: lambdas/certificado/
-      Handler: handler.lambda_handler
-      Role: arn:aws:iam::981207387949:role/conflictzero-lambda-role
-      Timeout: 30
-      Events:
         CertificadoGet:
           Type: Api
           Properties:
             RestApiId: !Ref ConflictZeroApi
             Path: /generar-certificado/{ruc}
             Method: GET
+        AgentesGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ConflictZeroApi
+            Path: /agentes
+            Method: GET
+
+  # ─── LAMBDA: CONSULTA RUC (SUNAT) — Fase 3 ──────────────────────────
+  # ConsultaRucFunction:
+  #   FunctionName: conflictzero-consulta-ruc
+  #   CodeUri: lambdas/consulta-ruc/
+
+  # ─── LAMBDA: SANCIONES OSCE/TCE — Fase 3 ────────────────────────────
+  # ConsultaSancionesFunction:
+  #   FunctionName: conflictzero-sanciones
+  #   CodeUri: lambdas/sanciones/
+
+  # ─── LAMBDA: SCORING — Fase 3 ────────────────────────────────────────
+  # ScoringFunction:
+  #   FunctionName: conflictzero-scoring
+  #   CodeUri: lambdas/scoring/
+
+  # ─── LAMBDA: CERTIFICADOS — Fase 3 ──────────────────────────────────
+  # CertificadoFunction:
+  #   FunctionName: conflictzero-certificado
+  #   CodeUri: lambdas/certificado/
 
   # ─── DYNAMODB: CACHE DE CONSULTAS ───────────────────────────────────
   ConsultasTable:
