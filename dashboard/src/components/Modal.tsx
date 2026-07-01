@@ -1,62 +1,64 @@
-import React, { useEffect, useRef } from 'react'
-import './Modal.css'
+import React, { useEffect, useRef } from 'react';
+import './Modal.css';
 
 export interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title?: string
-  children: React.ReactNode
-  size?: 'small' | 'medium' | 'large' | 'fullscreen'
-  showCloseButton?: boolean
-  closeOnOverlay?: boolean
-  closeOnEscape?: boolean
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+  size?: 'small' | 'medium' | 'large' | 'fullscreen';
+  showCloseButton?: boolean;
+  closeOnOverlay?: boolean;
+  closeOnEscape?: boolean;
 }
 
 /**
  * Reusable Modal Component
  */
-function Modal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
+function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
   size = 'medium',
   showCloseButton = true,
   closeOnOverlay = true,
-  closeOnEscape = true
+  closeOnEscape = true,
 }: ModalProps): JSX.Element | null {
-  const modalRef = useRef<HTMLDivElement>(null)
-  
+  const modalRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (closeOnEscape && e.key === 'Escape') {
-        onClose()
+        onClose();
       }
-    }
-    
+    };
+
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
     }
-    
+
     return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = ''
-    }
-  }, [isOpen, closeOnEscape, onClose])
-  
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, closeOnEscape, onClose]);
+
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (closeOnOverlay && e.target === e.currentTarget) {
-      onClose()
+      onClose();
     }
+  };
+
+  if (!isOpen) {
+    return null;
   }
-  
-  if (!isOpen) return null
-  
+
   return (
     <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div 
-        className={`modal modal--${size}`} 
+      <div
+        className={`modal modal--${size}`}
         ref={modalRef}
         role="dialog"
         aria-modal="true"
@@ -69,21 +71,15 @@ function Modal({
             </h2>
           )}
           {showCloseButton && (
-            <button 
-              className="modal__close-btn"
-              onClick={onClose}
-              aria-label="Cerrar"
-            >
+            <button className="modal__close-btn" onClick={onClose} aria-label="Cerrar">
               ×
             </button>
           )}
         </div>
-        <div className="modal__body">
-          {children}
-        </div>
+        <div className="modal__body">{children}</div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Modal
+export default Modal;

@@ -1,15 +1,14 @@
-import { useState, FormEvent, useEffect } from 'react'
-import { webhookAPI } from '../services/api'
-import api from '../services/api'
-import type { Webhook, WebhookDelivery, ApiKey } from '../types'
-import './Settings.css'
+import { useState, FormEvent, useEffect } from 'react';
+
+import api, { webhookAPI } from '../services/api';
+import type { Webhook, WebhookDelivery, ApiKey } from '../types';
+import './Settings.css';
 
 interface PasswordData {
-  current_password: string
-  new_password: string
-  confirm_password: string
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
 }
-
 
 const WEBHOOK_EVENTS = [
   { value: 'verification.completed', label: 'Verificación completada' },
@@ -17,206 +16,216 @@ const WEBHOOK_EVENTS = [
   { value: 'supplier.changed', label: 'Proveedor cambió' },
   { value: 'alert.created', label: 'Nueva alerta' },
   { value: 'invite.registered', label: 'Invitado registrado' },
-]
+];
 
 export default function Settings(): JSX.Element {
-  const [activeTab, setActiveTab] = useState<string>('password')
-  const [loading, setLoading] = useState<boolean>(false)
-  const [message, setMessage] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<string>('password');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>('');
 
   const [passwordData, setPasswordData] = useState<PasswordData>({
     current_password: '',
     new_password: '',
-    confirm_password: ''
-  })
+    confirm_password: '',
+  });
 
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
-  const [newKeyName, setNewKeyName] = useState('')
-  const [newKeyDesc, setNewKeyDesc] = useState('')
-  const [createdKey, setCreatedKey] = useState<{api_key: string; name: string} | null>(null)
-  const [showCreatedKey, setShowCreatedKey] = useState(false)
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyDesc, setNewKeyDesc] = useState('');
+  const [createdKey, setCreatedKey] = useState<{ api_key: string; name: string } | null>(null);
+  const [showCreatedKey, setShowCreatedKey] = useState(false);
 
   // Webhooks state
-  const [webhooks, setWebhooks] = useState<Webhook[]>([])
-  const [webhookUrl, setWebhookUrl] = useState('')
-  const [webhookSecret, setWebhookSecret] = useState('')
-  const [selectedEvents, setSelectedEvents] = useState<string[]>(['verification.completed'])
-  const [webhookDeliveries, setWebhookDeliveries] = useState<Record<string, WebhookDelivery[]>>({})
-  const [expandedWebhook, setExpandedWebhook] = useState<string | null>(null)
+  const [webhooks, setWebhooks] = useState<Webhook[]>([]);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [selectedEvents, setSelectedEvents] = useState<string[]>(['verification.completed']);
+  const [webhookDeliveries, setWebhookDeliveries] = useState<Record<string, WebhookDelivery[]>>({});
+  const [expandedWebhook, setExpandedWebhook] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeTab === 'webhooks') {
-      loadWebhooks()
+      loadWebhooks();
     }
-  }, [activeTab])
+  }, [activeTab]);
 
   const loadWebhooks = async () => {
     try {
-      const response = await webhookAPI.list()
-      setWebhooks(response.data)
+      const response = await webhookAPI.list();
+      setWebhooks(response.data);
     } catch {
-      setMessage('Error al cargar webhooks')
+      setMessage('Error al cargar webhooks');
     }
-  }
+  };
 
   const handleCreateWebhook = async (e: FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!webhookUrl.trim()) {
-      setMessage('La URL del webhook es obligatoria')
-      return
+      setMessage('La URL del webhook es obligatoria');
+      return;
     }
-    setLoading(true)
+    setLoading(true);
     try {
       await webhookAPI.create({
         url: webhookUrl,
         events: selectedEvents,
-        secret: webhookSecret || undefined
-      })
-      setMessage('Webhook registrado correctamente')
-      setWebhookUrl('')
-      setWebhookSecret('')
-      setSelectedEvents(['verification.completed'])
-      await loadWebhooks()
+        secret: webhookSecret || undefined,
+      });
+      setMessage('Webhook registrado correctamente');
+      setWebhookUrl('');
+      setWebhookSecret('');
+      setSelectedEvents(['verification.completed']);
+      await loadWebhooks();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al crear webhook'
-      setMessage(msg)
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        'Error al crear webhook';
+      setMessage(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeleteWebhook = async (id: string) => {
-    if (!confirm('¿Eliminar este webhook?')) return
-    setLoading(true)
-    try {
-      await webhookAPI.delete(id)
-      setMessage('Webhook eliminado')
-      await loadWebhooks()
-      if (expandedWebhook === id) setExpandedWebhook(null)
-    } catch {
-      setMessage('Error al eliminar webhook')
-    } finally {
-      setLoading(false)
+    if (!confirm('¿Eliminar este webhook?')) {
+      return;
     }
-  }
+    setLoading(true);
+    try {
+      await webhookAPI.delete(id);
+      setMessage('Webhook eliminado');
+      await loadWebhooks();
+      if (expandedWebhook === id) {
+        setExpandedWebhook(null);
+      }
+    } catch {
+      setMessage('Error al eliminar webhook');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleTestWebhook = async (id: string) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      await webhookAPI.test(id)
-      setMessage('Evento de prueba enviado')
+      await webhookAPI.test(id);
+      setMessage('Evento de prueba enviado');
     } catch {
-      setMessage('Error al enviar prueba')
+      setMessage('Error al enviar prueba');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const toggleEvent = (event: string) => {
     setSelectedEvents(prev =>
       prev.includes(event) ? prev.filter(e => e !== event) : [...prev, event]
-    )
-  }
+    );
+  };
 
   const toggleDeliveries = async (id: string) => {
     if (expandedWebhook === id) {
-      setExpandedWebhook(null)
-      return
+      setExpandedWebhook(null);
+      return;
     }
-    setExpandedWebhook(id)
+    setExpandedWebhook(id);
     if (!webhookDeliveries[id]) {
       try {
-        const response = await webhookAPI.deliveries(id)
-        setWebhookDeliveries(prev => ({ ...prev, [id]: response.data }))
+        const response = await webhookAPI.deliveries(id);
+        setWebhookDeliveries(prev => ({ ...prev, [id]: response.data }));
       } catch {
-        setMessage('Error al cargar entregas')
+        setMessage('Error al cargar entregas');
       }
     }
-  }
+  };
 
   const handlePasswordChange = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
-    setMessage('')
+    e.preventDefault();
+    setMessage('');
     if (passwordData.new_password !== passwordData.confirm_password) {
-      setMessage('Las contraseñas no coinciden')
-      return
+      setMessage('Las contraseñas no coinciden');
+      return;
     }
-    setLoading(true)
+    setLoading(true);
     try {
       await api.post('/api/v1/auth/change-password', {
         current_password: passwordData.current_password,
-        new_password: passwordData.new_password
-      })
-      setMessage('Contraseña actualizada correctamente')
-      setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
+        new_password: passwordData.new_password,
+      });
+      setMessage('Contraseña actualizada correctamente');
+      setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al cambiar contraseña'
-      setMessage(msg)
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        'Error al cambiar contraseña';
+      setMessage(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const loadApiKeys = async () => {
     try {
-      const response = await api.get('/api/v1/company/api-keys')
-      setApiKeys(response.data.items || [])
+      const response = await api.get('/api/v1/company/api-keys');
+      setApiKeys(response.data.items || []);
     } catch {
-      setMessage('Error al cargar API keys')
+      setMessage('Error al cargar API keys');
     }
-  }
+  };
 
   const handleCreateApiKey = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
+    e.preventDefault();
     if (!newKeyName.trim()) {
-      setMessage('El nombre es obligatorio')
-      return
+      setMessage('El nombre es obligatorio');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       const response = await api.post('/api/v1/company/api-keys', {
         name: newKeyName,
-        description: newKeyDesc || undefined
-      })
-      setCreatedKey(response.data)
-      setShowCreatedKey(true)
-      setNewKeyName('')
-      setNewKeyDesc('')
-      setMessage('API key creada. Guárdala ahora, no se mostrará de nuevo.')
-      await loadApiKeys()
+        description: newKeyDesc || undefined,
+      });
+      setCreatedKey(response.data);
+      setShowCreatedKey(true);
+      setNewKeyName('');
+      setNewKeyDesc('');
+      setMessage('API key creada. Guárdala ahora, no se mostrará de nuevo.');
+      await loadApiKeys();
     } catch (err: unknown) {
-      setMessage('Error al crear API key')
+      setMessage('Error al crear API key');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleRevokeApiKey = async (id: string): Promise<void> => {
-    if (!confirm('¿Revocar esta API key? Dejará de funcionar inmediatamente.')) return
-
-    setLoading(true)
-    try {
-      await api.delete(`/api/v1/company/api-keys/${id}`)
-      setMessage('API key revocada')
-      await loadApiKeys()
-    } catch {
-      setMessage('Error al revocar API key')
-    } finally {
-      setLoading(false)
+    if (!confirm('¿Revocar esta API key? Dejará de funcionar inmediatamente.')) {
+      return;
     }
-  }
+
+    setLoading(true);
+    try {
+      await api.delete(`/api/v1/company/api-keys/${id}`);
+      setMessage('API key revocada');
+      await loadApiKeys();
+    } catch {
+      setMessage('Error al revocar API key');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const copyToClipboard = (text: string): void => {
-    navigator.clipboard.writeText(text)
-    setMessage('Copiado al portapapeles')
-  }
+    navigator.clipboard.writeText(text);
+    setMessage('Copiado al portapapeles');
+  };
 
   useEffect(() => {
     if (activeTab === 'api') {
-      loadApiKeys()
+      loadApiKeys();
     }
-  }, [activeTab])
+  }, [activeTab]);
 
   return (
     <div className="settings-container">
@@ -229,10 +238,7 @@ export default function Settings(): JSX.Element {
         >
           Contraseña
         </button>
-        <button
-          className={activeTab === 'api' ? 'active' : ''}
-          onClick={() => setActiveTab('api')}
-        >
+        <button className={activeTab === 'api' ? 'active' : ''} onClick={() => setActiveTab('api')}>
           API Key
         </button>
         <button
@@ -264,7 +270,9 @@ export default function Settings(): JSX.Element {
               <input
                 type="password"
                 value={passwordData.current_password}
-                onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                onChange={e =>
+                  setPasswordData({ ...passwordData, current_password: e.target.value })
+                }
                 required
               />
             </div>
@@ -273,7 +281,7 @@ export default function Settings(): JSX.Element {
               <input
                 type="password"
                 value={passwordData.new_password}
-                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                onChange={e => setPasswordData({ ...passwordData, new_password: e.target.value })}
                 minLength={8}
                 required
               />
@@ -283,7 +291,9 @@ export default function Settings(): JSX.Element {
               <input
                 type="password"
                 value={passwordData.confirm_password}
-                onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                onChange={e =>
+                  setPasswordData({ ...passwordData, confirm_password: e.target.value })
+                }
                 required
               />
             </div>
@@ -306,17 +316,11 @@ export default function Settings(): JSX.Element {
               <div className="api-key-display">
                 <label>API Key (solo se muestra una vez):</label>
                 <code className="key-value">{createdKey.api_key}</code>
-                <button
-                  className="btn-copy"
-                  onClick={() => copyToClipboard(createdKey.api_key)}
-                >
+                <button className="btn-copy" onClick={() => copyToClipboard(createdKey.api_key)}>
                   Copiar
                 </button>
               </div>
-              <button
-                className="btn-small"
-                onClick={() => setShowCreatedKey(false)}
-              >
+              <button className="btn-small" onClick={() => setShowCreatedKey(false)}>
                 Ocultar
               </button>
             </div>
@@ -328,7 +332,7 @@ export default function Settings(): JSX.Element {
               <input
                 type="text"
                 value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
+                onChange={e => setNewKeyName(e.target.value)}
                 placeholder="Ej: Producción, Desarrollo, Zapier"
                 required
               />
@@ -338,7 +342,7 @@ export default function Settings(): JSX.Element {
               <input
                 type="text"
                 value={newKeyDesc}
-                onChange={(e) => setNewKeyDesc(e.target.value)}
+                onChange={e => setNewKeyDesc(e.target.value)}
                 placeholder="Para qué se usará esta key"
               />
             </div>
@@ -358,12 +362,8 @@ export default function Settings(): JSX.Element {
                     <div className="webhook-info">
                       <strong>{key.name}</strong>
                       <code className="webhook-url">{key.key_prefix}...</code>
-                      {key.description && (
-                        <span className="webhook-events">{key.description}</span>
-                      )}
-                      <span className="event-tag">
-                        {key.usage_count} usos
-                      </span>
+                      {key.description && <span className="webhook-events">{key.description}</span>}
+                      <span className="event-tag">{key.usage_count} usos</span>
                       {key.last_used_at && (
                         <span className="event-tag">
                           Último uso: {new Date(key.last_used_at).toLocaleDateString()}
@@ -374,9 +374,7 @@ export default function Settings(): JSX.Element {
                           Expira: {new Date(key.expires_at).toLocaleDateString()}
                         </span>
                       )}
-                      {!key.is_active && (
-                        <span className="status-badge failed">Revocada</span>
-                      )}
+                      {!key.is_active && <span className="status-badge failed">Revocada</span>}
                     </div>
                     <div className="webhook-actions">
                       {key.is_active && (
@@ -416,7 +414,7 @@ export default function Settings(): JSX.Element {
               <input
                 type="url"
                 value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
+                onChange={e => setWebhookUrl(e.target.value)}
                 placeholder="https://tuservidor.com/webhook"
                 required
               />
@@ -426,7 +424,7 @@ export default function Settings(): JSX.Element {
               <input
                 type="text"
                 value={webhookSecret}
-                onChange={(e) => setWebhookSecret(e.target.value)}
+                onChange={e => setWebhookSecret(e.target.value)}
                 placeholder="whsec_..."
               />
             </div>
@@ -462,8 +460,12 @@ export default function Settings(): JSX.Element {
                       <code className="webhook-url">{wh.url}</code>
                       <span className="webhook-events">
                         {wh.events.map(e => {
-                          const label = WEBHOOK_EVENTS.find(we => we.value === e)?.label || e
-                          return <span key={e} className="event-tag">{label}</span>
+                          const label = WEBHOOK_EVENTS.find(we => we.value === e)?.label || e;
+                          return (
+                            <span key={e} className="event-tag">
+                              {label}
+                            </span>
+                          );
                         })}
                       </span>
                       {wh.secret && <span className="secret-badge">🔒 HMAC</span>}
@@ -510,9 +512,7 @@ export default function Settings(): JSX.Element {
                               <tr key={d.id}>
                                 <td>{d.event}</td>
                                 <td>
-                                  <span className={`status-badge ${d.status}`}>
-                                    {d.status}
-                                  </span>
+                                  <span className={`status-badge ${d.status}`}>{d.status}</span>
                                 </td>
                                 <td>{d.http_status || '-'}</td>
                                 <td>{new Date(d.created_at).toLocaleString()}</td>
@@ -537,5 +537,5 @@ export default function Settings(): JSX.Element {
         </div>
       )}
     </div>
-  )
+  );
 }

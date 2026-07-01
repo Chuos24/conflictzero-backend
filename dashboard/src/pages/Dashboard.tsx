@@ -1,42 +1,54 @@
-import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useDashboardStats, useMLScore } from '../hooks/useQueries'
-import LoadingSpinner from '../components/LoadingSpinner'
-import Badge from '../components/Badge'
+import { Link } from 'react-router-dom';
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from 'recharts'
-import './Dashboard.css'
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+
+import { useAuth } from '../context/AuthContext';
+import { useDashboardStats, useMLScore } from '../hooks/useQueries';
+import LoadingSpinner from '../components/LoadingSpinner';
+import Badge from '../components/Badge';
+import './Dashboard.css';
 
 interface ChartDataPoint {
-  month: string
-  count: number
-  score: number
+  month: string;
+  count: number;
+  score: number;
 }
 
 interface ComplianceDistributionItem {
-  name: string
-  value: number
-  color: string
+  name: string;
+  value: number;
+  color: string;
 }
 
 interface RiskFactorItem {
-  factor: string
-  count: number
+  factor: string;
+  count: number;
 }
 
 interface DefaultChartData {
-  verificationsByMonth: ChartDataPoint[]
-  complianceDistribution: ComplianceDistributionItem[]
-  topRiskFactors: RiskFactorItem[]
+  verificationsByMonth: ChartDataPoint[];
+  complianceDistribution: ComplianceDistributionItem[];
+  topRiskFactors: RiskFactorItem[];
 }
 
 interface ActivityItem {
-  title: string
-  status: string
-  date: string
-  ruc?: string
+  title: string;
+  status: string;
+  date: string;
+  ruc?: string;
 }
 
 // Mock chart data (server-side rendering fallback)
@@ -45,39 +57,39 @@ const defaultChartData: DefaultChartData = {
     { month: 'Ene', count: 12, score: 78 },
     { month: 'Feb', count: 18, score: 82 },
     { month: 'Mar', count: 25, score: 85 },
-    { month: 'Abr', count: 32, score: 88 }
+    { month: 'Abr', count: 32, score: 88 },
   ],
   complianceDistribution: [
     { name: 'Compliant', value: 75, color: '#4caf50' },
     { name: 'Warning', value: 15, color: '#ff9800' },
-    { name: 'Critical', value: 10, color: '#f44336' }
+    { name: 'Critical', value: 10, color: '#f44336' },
   ],
   topRiskFactors: [
     { factor: 'OSCE Sanciones', count: 5 },
     { factor: 'TCE Sanciones', count: 3 },
     { factor: 'Deuda Tributaria', count: 2 },
-    { factor: 'Indecopi', count: 1 }
-  ]
-}
+    { factor: 'Indecopi', count: 1 },
+  ],
+};
 
 function Dashboard(): JSX.Element {
-  const { user } = useAuth()
-  const { data: stats, isLoading } = useDashboardStats()
+  const { user } = useAuth();
+  const { data: stats, isLoading } = useDashboardStats();
 
   // Tomar el RUC de la última verificación para mostrar ML Score
-  const lastRuc = (stats?.recent_activity?.[0] as ActivityItem & { ruc?: string })?.ruc || null
-  const { data: mlScore } = useMLScore(lastRuc, 90)
+  const lastRuc = (stats?.recent_activity?.[0] as ActivityItem & { ruc?: string })?.ruc || null;
+  const { data: mlScore } = useMLScore(lastRuc, 90);
 
   // Use server data when available, fallback to mock
-  const chartData: DefaultChartData = stats?.chart_data || defaultChartData
-  const recentActivity: ActivityItem[] = stats?.recent_activity || []
+  const chartData: DefaultChartData = stats?.chart_data || defaultChartData;
+  const recentActivity: ActivityItem[] = stats?.recent_activity || [];
 
   if (isLoading) {
     return (
       <div className="dashboard-loading">
         <LoadingSpinner size="large" text="Cargando dashboard..." />
       </div>
-    )
+    );
   }
 
   return (
@@ -140,7 +152,9 @@ function Dashboard(): JSX.Element {
         <div className="ml-score-summary">
           <div className="ml-summary-header">
             <h3>ML Score de Riesgo Predictivo</h3>
-            <Badge variant="default" size="small">v{mlScore.model_version}</Badge>
+            <Badge variant="default" size="small">
+              v{mlScore.model_version}
+            </Badge>
           </div>
           <div className="ml-summary-content">
             <div className="ml-summary-item">
@@ -149,9 +163,14 @@ function Dashboard(): JSX.Element {
                 <span
                   className="ml-score-value"
                   style={{
-                    color: mlScore.risk_level === 'low' ? '#22c55e' :
-                           mlScore.risk_level === 'moderate' ? '#eab308' :
-                           mlScore.risk_level === 'high' ? '#f97316' : '#ef4444'
+                    color:
+                      mlScore.risk_level === 'low'
+                        ? '#22c55e'
+                        : mlScore.risk_level === 'moderate'
+                          ? '#eab308'
+                          : mlScore.risk_level === 'high'
+                            ? '#f97316'
+                            : '#ef4444',
                   }}
                 >
                   {mlScore.ml_score}
@@ -160,15 +179,23 @@ function Dashboard(): JSX.Element {
               </div>
               <Badge
                 variant={
-                  mlScore.risk_level === 'low' ? 'success' :
-                  mlScore.risk_level === 'moderate' ? 'warning' :
-                  mlScore.risk_level === 'high' ? 'error' : 'error'
+                  mlScore.risk_level === 'low'
+                    ? 'success'
+                    : mlScore.risk_level === 'moderate'
+                      ? 'warning'
+                      : mlScore.risk_level === 'high'
+                        ? 'error'
+                        : 'error'
                 }
                 size="small"
               >
-                {mlScore.risk_level === 'low' ? 'Bajo Riesgo' :
-                 mlScore.risk_level === 'moderate' ? 'Riesgo Moderado' :
-                 mlScore.risk_level === 'high' ? 'Alto Riesgo' : 'Riesgo Crítico'}
+                {mlScore.risk_level === 'low'
+                  ? 'Bajo Riesgo'
+                  : mlScore.risk_level === 'moderate'
+                    ? 'Riesgo Moderado'
+                    : mlScore.risk_level === 'high'
+                      ? 'Alto Riesgo'
+                      : 'Riesgo Crítico'}
               </Badge>
             </div>
             {mlScore.explanation?.[0] && (
@@ -190,8 +217,8 @@ function Dashboard(): JSX.Element {
               <AreaChart data={chartData.verificationsByMonth}>
                 <defs>
                   <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#d4af37" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#d4af37" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#d4af37" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#d4af37" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
@@ -229,9 +256,7 @@ function Dashboard(): JSX.Element {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
-                />
+                <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -315,7 +340,7 @@ function Dashboard(): JSX.Element {
             <div className="progress-bar">
               <div
                 className="progress-fill"
-                style={{ width: `${Math.min((stats?.invites_accepted || 0) / 10 * 100, 100)}%` }}
+                style={{ width: `${Math.min(((stats?.invites_accepted || 0) / 10) * 100, 100)}%` }}
               ></div>
             </div>
             <p className="progress-hint">
@@ -333,7 +358,7 @@ function Dashboard(): JSX.Element {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Dashboard
+export default Dashboard;

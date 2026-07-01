@@ -14,17 +14,24 @@ interface FormatDateOptions {
 /**
  * Format date to localized string
  */
-export function formatDate(date: string | Date | null | undefined, options: FormatDateOptions = {}): string {
-  if (!date) return 'N/A';
+export function formatDate(
+  date: string | Date | null | undefined,
+  options: FormatDateOptions = {}
+): string {
+  if (!date) {
+    return 'N/A';
+  }
 
   const d = new Date(date);
-  if (isNaN(d.getTime())) return 'Fecha inválida';
+  if (isNaN(d.getTime())) {
+    return 'Fecha inválida';
+  }
 
   const defaultOptions: FormatDateOptions = {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    ...options
+    ...options,
   };
 
   return d.toLocaleDateString('es-PE', defaultOptions as Intl.DateTimeFormatOptions);
@@ -34,17 +41,21 @@ export function formatDate(date: string | Date | null | undefined, options: Form
  * Format datetime to localized string
  */
 export function formatDateTime(date: string | Date | null | undefined): string {
-  if (!date) return 'N/A';
+  if (!date) {
+    return 'N/A';
+  }
 
   const d = new Date(date);
-  if (isNaN(d.getTime())) return 'Fecha inválida';
+  if (isNaN(d.getTime())) {
+    return 'Fecha inválida';
+  }
 
   return d.toLocaleString('es-PE', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 }
 
@@ -52,11 +63,13 @@ export function formatDateTime(date: string | Date | null | undefined): string {
  * Format number with locale
  */
 export function formatNumber(num: number | null | undefined, decimals = 0): string {
-  if (num === null || num === undefined) return 'N/A';
+  if (num === null || num === undefined) {
+    return 'N/A';
+  }
 
   return Number(num).toLocaleString('es-PE', {
     minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
+    maximumFractionDigits: decimals,
   });
 }
 
@@ -64,11 +77,13 @@ export function formatNumber(num: number | null | undefined, decimals = 0): stri
  * Format currency in PEN
  */
 export function formatCurrency(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined) return 'N/A';
+  if (amount === null || amount === undefined) {
+    return 'N/A';
+  }
 
   return new Intl.NumberFormat('es-PE', {
     style: 'currency',
-    currency: 'PEN'
+    currency: 'PEN',
   }).format(amount);
 }
 
@@ -76,8 +91,12 @@ export function formatCurrency(amount: number | null | undefined): string {
  * Truncate text with ellipsis
  */
 export function truncate(text: string | null | undefined, maxLength = 50): string {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
+  if (!text) {
+    return '';
+  }
+  if (text.length <= maxLength) {
+    return text;
+  }
 
   return text.substring(0, maxLength) + '...';
 }
@@ -86,9 +105,15 @@ export function truncate(text: string | null | undefined, maxLength = 50): strin
  * Get risk level color
  */
 export function getRiskColor(score: number): string {
-  if (score >= 80) return '#4caf50'; // Green - Low risk
-  if (score >= 60) return '#ff9800'; // Orange - Medium risk
-  if (score >= 40) return '#f44336'; // Red - High risk
+  if (score >= 80) {
+    return '#4caf50';
+  } // Green - Low risk
+  if (score >= 60) {
+    return '#ff9800';
+  } // Orange - Medium risk
+  if (score >= 40) {
+    return '#f44336';
+  } // Red - High risk
   return '#8b0000'; // Dark red - Critical
 }
 
@@ -96,9 +121,15 @@ export function getRiskColor(score: number): string {
  * Get risk level label
  */
 export function getRiskLabel(score: number): string {
-  if (score >= 80) return 'Bajo Riesgo';
-  if (score >= 60) return 'Riesgo Medio';
-  if (score >= 40) return 'Alto Riesgo';
+  if (score >= 80) {
+    return 'Bajo Riesgo';
+  }
+  if (score >= 60) {
+    return 'Riesgo Medio';
+  }
+  if (score >= 40) {
+    return 'Alto Riesgo';
+  }
   return 'Riesgo Crítico';
 }
 
@@ -107,16 +138,16 @@ export function getRiskLabel(score: number): string {
  */
 export function getStatusClass(status: string | null | undefined): string {
   const statusMap: Record<string, string> = {
-    'completed': 'status-success',
-    'pending': 'status-pending',
-    'processing': 'status-processing',
-    'error': 'status-error',
-    'failed': 'status-error',
-    'accepted': 'status-success',
-    'rejected': 'status-error',
-    'active': 'status-success',
-    'inactive': 'status-inactive',
-    'revoked': 'status-error'
+    completed: 'status-success',
+    pending: 'status-pending',
+    processing: 'status-processing',
+    error: 'status-error',
+    failed: 'status-error',
+    accepted: 'status-success',
+    rejected: 'status-error',
+    active: 'status-success',
+    inactive: 'status-inactive',
+    revoked: 'status-error',
   };
 
   return statusMap[status?.toLowerCase() ?? ''] || 'status-default';
@@ -126,10 +157,14 @@ export function getStatusClass(status: string | null | undefined): string {
  * Validate RUC format
  */
 export function isValidRUC(ruc: string | null | undefined): boolean {
-  if (!ruc) return false;
+  if (!ruc) {
+    return false;
+  }
 
   // RUC must be 11 digits
-  if (!/^\d{11}$/.test(ruc)) return false;
+  if (!/^\d{11}$/.test(ruc)) {
+    return false;
+  }
 
   // Check if starts with valid digits (10, 15, 16, 17, 20)
   const firstTwo = parseInt(ruc.substring(0, 2));
@@ -142,9 +177,9 @@ export function isValidRUC(ruc: string | null | undefined): boolean {
  * Generate UUID v4
  */
 export function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c: string) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c: string) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -175,11 +210,11 @@ export function throttle<T extends (...args: unknown[]) => void>(
   limit = 300
 ): (...args: Parameters<T>) => void {
   let inThrottle = false;
-  return function(this: unknown, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     if (!inThrottle) {
       func.apply(this, args);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      setTimeout(() => (inThrottle = false), limit);
     }
   };
 }
@@ -254,7 +289,7 @@ export const storage = {
   get<T>(key: string, defaultValue: T | null = null): T | null {
     try {
       const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) as T : defaultValue;
+      return item ? (JSON.parse(item) as T) : defaultValue;
     } catch (e) {
       return defaultValue;
     }
@@ -285,7 +320,7 @@ export const storage = {
     } catch (e) {
       return false;
     }
-  }
+  },
 };
 
 /**
@@ -295,19 +330,29 @@ export function timeAgo(date: string | Date): string {
   const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
 
   let interval = seconds / 31536000;
-  if (interval > 1) return Math.floor(interval) + ' años atrás';
+  if (interval > 1) {
+    return Math.floor(interval) + ' años atrás';
+  }
 
   interval = seconds / 2592000;
-  if (interval > 1) return Math.floor(interval) + ' meses atrás';
+  if (interval > 1) {
+    return Math.floor(interval) + ' meses atrás';
+  }
 
   interval = seconds / 86400;
-  if (interval > 1) return Math.floor(interval) + ' días atrás';
+  if (interval > 1) {
+    return Math.floor(interval) + ' días atrás';
+  }
 
   interval = seconds / 3600;
-  if (interval > 1) return Math.floor(interval) + ' horas atrás';
+  if (interval > 1) {
+    return Math.floor(interval) + ' horas atrás';
+  }
 
   interval = seconds / 60;
-  if (interval > 1) return Math.floor(interval) + ' minutos atrás';
+  if (interval > 1) {
+    return Math.floor(interval) + ' minutos atrás';
+  }
 
   return 'hace unos segundos';
 }

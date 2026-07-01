@@ -1,82 +1,87 @@
-import { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
-import api from '../services/api'
-import './Compliance.css'
+import { useState, useEffect } from 'react';
+
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+import './Compliance.css';
 
 interface ComplianceData {
-  status: string
-  description: string
-  contractual_obligation?: boolean
-  contractual_signed_at?: string
-  founder_expires_at?: string
+  status: string;
+  description: string;
+  contractual_obligation?: boolean;
+  contractual_signed_at?: string;
+  founder_expires_at?: string;
 }
 
 interface ObligationsData {
-  invites_sent: number
-  invites_converted: number
-  conversion_rate: number
-  estimated_commission: number
-  required_invites: number
+  invites_sent: number;
+  invites_converted: number;
+  conversion_rate: number;
+  estimated_commission: number;
+  required_invites: number;
 }
 
 interface NetworkInvite {
-  id: string
-  email: string
-  status: string
-  created_at: string
+  id: string;
+  email: string;
+  status: string;
+  created_at: string;
 }
 
 interface NetworkData {
-  total_invited: number
-  total_paid: number
-  network_depth: number
-  recent_invites?: NetworkInvite[]
+  total_invited: number;
+  total_paid: number;
+  network_depth: number;
+  recent_invites?: NetworkInvite[];
 }
 
 export default function Compliance(): JSX.Element {
-  const { user } = useAuth()
-  const [compliance, setCompliance] = useState<ComplianceData | null>(null)
-  const [obligations, setObligations] = useState<ObligationsData | null>(null)
-  const [network, setNetwork] = useState<NetworkData | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string>('')
+  const { user } = useAuth();
+  const [compliance, setCompliance] = useState<ComplianceData | null>(null);
+  const [obligations, setObligations] = useState<ObligationsData | null>(null);
+  const [network, setNetwork] = useState<NetworkData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    fetchComplianceData()
-  }, [])
+    fetchComplianceData();
+  }, []);
 
   const fetchComplianceData = async (): Promise<void> => {
     try {
-      setLoading(true)
+      setLoading(true);
       const [complianceRes, obligationsRes, networkRes] = await Promise.all([
         api.get('/api/v2/founder/compliance'),
         api.get('/api/v2/founder/obligations'),
-        api.get('/api/v2/founder/network')
-      ])
+        api.get('/api/v2/founder/network'),
+      ]);
 
-      setCompliance(complianceRes.data)
-      setObligations(obligationsRes.data)
-      setNetwork(networkRes.data)
+      setCompliance(complianceRes.data);
+      setObligations(obligationsRes.data);
+      setNetwork(networkRes.data);
     } catch (err) {
-      setError('Error al cargar datos de compliance')
-      console.error(err)
+      setError('Error al cargar datos de compliance');
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getStatusColor = (status: string): string => {
     const colors: Record<string, string> = {
-      'cumpliendo': 'success',
-      'en_riesgo': 'warning',
-      'riesgo_inminente': 'danger',
-      'sin_obligacion': 'neutral'
-    }
-    return colors[status] || 'neutral'
-  }
+      cumpliendo: 'success',
+      en_riesgo: 'warning',
+      riesgo_inminente: 'danger',
+      sin_obligacion: 'neutral',
+    };
+    return colors[status] || 'neutral';
+  };
 
-  if (loading) return <div className="compliance-loading">Cargando...</div>
-  if (error) return <div className="compliance-error">{error}</div>
+  if (loading) {
+    return <div className="compliance-loading">Cargando...</div>;
+  }
+  if (error) {
+    return <div className="compliance-error">{error}</div>;
+  }
 
   return (
     <div className="compliance-container">
@@ -100,8 +105,18 @@ export default function Compliance(): JSX.Element {
           {compliance.contractual_obligation && (
             <div className="obligation-details">
               <h3>Obligación Contractual</h3>
-              <p>Firmada: {compliance.contractual_signed_at ? new Date(compliance.contractual_signed_at).toLocaleDateString() : 'N/A'}</p>
-              <p>Expira: {compliance.founder_expires_at ? new Date(compliance.founder_expires_at).toLocaleDateString() : 'N/A'}</p>
+              <p>
+                Firmada:{' '}
+                {compliance.contractual_signed_at
+                  ? new Date(compliance.contractual_signed_at).toLocaleDateString()
+                  : 'N/A'}
+              </p>
+              <p>
+                Expira:{' '}
+                {compliance.founder_expires_at
+                  ? new Date(compliance.founder_expires_at).toLocaleDateString()
+                  : 'N/A'}
+              </p>
             </div>
           )}
         </div>
@@ -135,11 +150,14 @@ export default function Compliance(): JSX.Element {
               <div className="progress-bar">
                 <div
                   className="progress-fill"
-                  style={{ width: `${Math.min((obligations.invites_converted / obligations.required_invites) * 100, 100)}%` }}
+                  style={{
+                    width: `${Math.min((obligations.invites_converted / obligations.required_invites) * 100, 100)}%`,
+                  }}
                 />
               </div>
               <p className="progress-text">
-                {obligations.invites_converted} de {obligations.required_invites} invitados convertidos
+                {obligations.invites_converted} de {obligations.required_invites} invitados
+                convertidos
               </p>
             </div>
           )}
@@ -180,9 +198,7 @@ export default function Compliance(): JSX.Element {
                     <tr key={invite.id}>
                       <td>{invite.email}</td>
                       <td>
-                        <span className={`status-tag ${invite.status}`}>
-                          {invite.status}
-                        </span>
+                        <span className={`status-tag ${invite.status}`}>{invite.status}</span>
                       </td>
                       <td>{new Date(invite.created_at).toLocaleDateString()}</td>
                     </tr>
@@ -194,5 +210,5 @@ export default function Compliance(): JSX.Element {
         </div>
       )}
     </div>
-  )
+  );
 }

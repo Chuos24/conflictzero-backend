@@ -1,28 +1,32 @@
-import { useState } from 'react'
-import { useMLScore, useMLAnomalies } from '../hooks/useQueries'
-import Badge from './Badge'
-import LoadingSpinner from './LoadingSpinner'
-import './MLScoreCard.css'
+import { useState } from 'react';
+
+import { useMLScore, useMLAnomalies } from '../hooks/useQueries';
+
+import Badge from './Badge';
+import LoadingSpinner from './LoadingSpinner';
+import './MLScoreCard.css';
 
 interface MLScoreCardProps {
-  ruc: string | null
+  ruc: string | null;
 }
 
 function MLScoreCard({ ruc }: MLScoreCardProps): JSX.Element | null {
-  const [showDetails, setShowDetails] = useState(false)
-  const lookbackDays = 90
+  const [showDetails, setShowDetails] = useState(false);
+  const lookbackDays = 90;
 
-  const { data: score, isLoading: scoreLoading, error: scoreError } = useMLScore(ruc, lookbackDays)
-  const { data: anomalies } = useMLAnomalies(ruc, 30)
+  const { data: score, isLoading: scoreLoading, error: scoreError } = useMLScore(ruc, lookbackDays);
+  const { data: anomalies } = useMLAnomalies(ruc, 30);
 
-  if (!ruc) return null
+  if (!ruc) {
+    return null;
+  }
 
   if (scoreLoading) {
     return (
       <div className="ml-score-card loading">
         <LoadingSpinner size="medium" text="Calculando ML Score..." />
       </div>
-    )
+    );
   }
 
   if (scoreError) {
@@ -30,39 +34,53 @@ function MLScoreCard({ ruc }: MLScoreCardProps): JSX.Element | null {
       <div className="ml-score-card error">
         <p className="error-text">Error calculando ML Score: {scoreError.message}</p>
       </div>
-    )
+    );
   }
 
-  if (!score) return null
+  if (!score) {
+    return null;
+  }
 
   const getRiskColor = (level: string) => {
     switch (level) {
-      case 'low': return '#22c55e'
-      case 'moderate': return '#eab308'
-      case 'high': return '#f97316'
-      case 'critical': return '#ef4444'
-      default: return '#888'
+      case 'low':
+        return '#22c55e';
+      case 'moderate':
+        return '#eab308';
+      case 'high':
+        return '#f97316';
+      case 'critical':
+        return '#ef4444';
+      default:
+        return '#888';
     }
-  }
+  };
 
   const getRiskLabel = (level: string) => {
     switch (level) {
-      case 'low': return 'Bajo Riesgo'
-      case 'moderate': return 'Riesgo Moderado'
-      case 'high': return 'Alto Riesgo'
-      case 'critical': return 'Riesgo Crítico'
-      default: return level
+      case 'low':
+        return 'Bajo Riesgo';
+      case 'moderate':
+        return 'Riesgo Moderado';
+      case 'high':
+        return 'Alto Riesgo';
+      case 'critical':
+        return 'Riesgo Crítico';
+      default:
+        return level;
     }
-  }
+  };
 
-  const scoreColor = getRiskColor(score.risk_level)
-  const scoreAngle = (score.ml_score / 100) * 180 - 90 // -90 to 90 degrees
+  const scoreColor = getRiskColor(score.risk_level);
+  const scoreAngle = (score.ml_score / 100) * 180 - 90; // -90 to 90 degrees
 
   return (
     <div className="ml-score-card">
       <div className="ml-score-header">
         <h3>ML Score de Riesgo</h3>
-        <Badge variant="default" size="small">v{score.model_version}</Badge>
+        <Badge variant="default" size="small">
+          v{score.model_version}
+        </Badge>
       </div>
 
       <div className="ml-score-gauge">
@@ -72,7 +90,7 @@ function MLScoreCard({ ruc }: MLScoreCardProps): JSX.Element | null {
             className="gauge-fill"
             style={{
               background: `conic-gradient(${scoreColor} ${score.ml_score}%, transparent 0)`,
-              transform: `rotate(${scoreAngle}deg)`
+              transform: `rotate(${scoreAngle}deg)`,
             }}
           />
           <div className="gauge-center">
@@ -85,16 +103,18 @@ function MLScoreCard({ ruc }: MLScoreCardProps): JSX.Element | null {
         <div className="gauge-info">
           <Badge
             variant={
-              score.risk_level === 'low' ? 'success' :
-              score.risk_level === 'moderate' ? 'warning' :
-              score.risk_level === 'high' ? 'error' : 'error'
+              score.risk_level === 'low'
+                ? 'success'
+                : score.risk_level === 'moderate'
+                  ? 'warning'
+                  : score.risk_level === 'high'
+                    ? 'error'
+                    : 'error'
             }
           >
             {getRiskLabel(score.risk_level)}
           </Badge>
-          <span className="gauge-meta">
-            Basado en {score.lookback_days} días de historial
-          </span>
+          <span className="gauge-meta">Basado en {score.lookback_days} días de historial</span>
         </div>
       </div>
 
@@ -106,7 +126,9 @@ function MLScoreCard({ ruc }: MLScoreCardProps): JSX.Element | null {
             {anomalies.anomalies.map((a, i) => (
               <div key={i} className={`anomaly-item severity-${a.severity}`}>
                 <Badge
-                  variant={a.severity === 'critical' ? 'error' : a.severity === 'high' ? 'warning' : 'info'}
+                  variant={
+                    a.severity === 'critical' ? 'error' : a.severity === 'high' ? 'warning' : 'info'
+                  }
                   size="small"
                 >
                   {a.severity}
@@ -127,10 +149,15 @@ function MLScoreCard({ ruc }: MLScoreCardProps): JSX.Element | null {
             <div className="feature-track">
               <div
                 className="feature-fill"
-                style={{ width: `${score.features.verification_frequency}%`, background: '#2196f3' }}
+                style={{
+                  width: `${score.features.verification_frequency}%`,
+                  background: '#2196f3',
+                }}
               />
             </div>
-            <span className="feature-value">{score.features.verification_frequency.toFixed(0)}</span>
+            <span className="feature-value">
+              {score.features.verification_frequency.toFixed(0)}
+            </span>
           </div>
           <div className="feature-bar">
             <span className="feature-label">Volatilidad de Score</span>
@@ -167,20 +194,22 @@ function MLScoreCard({ ruc }: MLScoreCardProps): JSX.Element | null {
             <div className="feature-track">
               <div
                 className="feature-fill"
-                style={{ width: `${score.features.compliance_consistency}%`, background: '#4caf50' }}
+                style={{
+                  width: `${score.features.compliance_consistency}%`,
+                  background: '#4caf50',
+                }}
               />
             </div>
-            <span className="feature-value">{score.features.compliance_consistency.toFixed(0)}</span>
+            <span className="feature-value">
+              {score.features.compliance_consistency.toFixed(0)}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Explicación */}
       <div className="ml-explanation">
-        <button
-          className="btn-ghost toggle-details"
-          onClick={() => setShowDetails(!showDetails)}
-        >
+        <button className="btn-ghost toggle-details" onClick={() => setShowDetails(!showDetails)}>
           {showDetails ? 'Ocultar' : 'Ver'} explicación del modelo
         </button>
         {showDetails && (
@@ -196,12 +225,10 @@ function MLScoreCard({ ruc }: MLScoreCardProps): JSX.Element | null {
         <span className="meta-item">
           Calculado: {new Date(score.calculated_at).toLocaleString('es-PE')}
         </span>
-        <span className="meta-item">
-          RUC: {score.ruc}
-        </span>
+        <span className="meta-item">RUC: {score.ruc}</span>
       </div>
     </div>
-  )
+  );
 }
 
-export default MLScoreCard
+export default MLScoreCard;

@@ -1,34 +1,31 @@
-import React from 'react'
-import './Card.css'
+import React from 'react';
+import './Card.css';
 
 export interface CardProps {
-  children: React.ReactNode
-  title?: string
-  icon?: React.ReactNode
-  action?: React.ReactNode
-  className?: string
-  hoverable?: boolean
-  onClick?: () => void
+  children: React.ReactNode;
+  title?: string;
+  icon?: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string;
+  hoverable?: boolean;
+  onClick?: () => void;
 }
 
-function Card({ 
-  children, 
-  title = undefined, 
+function Card({
+  children,
+  title = undefined,
   icon = undefined,
   action = undefined,
   className = '',
   hoverable = false,
-  onClick = undefined
+  onClick = undefined,
 }: CardProps): JSX.Element {
-  const classes = [
-    'card',
-    hoverable && 'card--hoverable',
-    onClick && 'card--clickable',
-    className
-  ].filter(Boolean).join(' ')
-  
+  const classes = ['card', hoverable && 'card--hoverable', onClick && 'card--clickable', className]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div 
+    <div
       className={classes}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -43,11 +40,9 @@ function Card({
           {action && <div className="card__action">{action}</div>}
         </div>
       )}
-      <div className="card__body">
-        {children}
-      </div>
+      <div className="card__body">{children}</div>
     </div>
-  )
+  );
 }
 
-export default Card
+export default Card;

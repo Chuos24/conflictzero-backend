@@ -1,33 +1,35 @@
-import { type ReactNode, type ChangeEvent } from 'react'
-import { useDataTable } from '../hooks/usePagination'
-import { useLocalStorage } from '../hooks/useLocalStorage'
-import LoadingSpinner from './LoadingSpinner'
-import './DataTable.css'
+import { type ReactNode, type ChangeEvent } from 'react';
+
+import { useDataTable } from '../hooks/usePagination';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+
+import LoadingSpinner from './LoadingSpinner';
+import './DataTable.css';
 
 export interface DataTableColumn<T = Record<string, unknown>> {
-  key: keyof T | string
-  title: string
-  sortable?: boolean
-  searchable?: boolean
-  defaultSort?: boolean
-  width?: string
-  render?: (value: unknown, row: T) => ReactNode
+  key: keyof T | string;
+  title: string;
+  sortable?: boolean;
+  searchable?: boolean;
+  defaultSort?: boolean;
+  width?: string;
+  render?: (value: unknown, row: T) => ReactNode;
 }
 
 export interface DataTableProps<T = Record<string, unknown>> {
-  data?: T[]
-  columns?: DataTableColumn<T>[]
-  searchPlaceholder?: string
-  itemsPerPage?: number
-  selectable?: boolean
-  onRowClick?: ((row: T) => void) | null
-  loading?: boolean
-  emptyMessage?: string
+  data?: T[];
+  columns?: DataTableColumn<T>[];
+  searchPlaceholder?: string;
+  itemsPerPage?: number;
+  selectable?: boolean;
+  onRowClick?: ((row: T) => void) | null;
+  loading?: boolean;
+  emptyMessage?: string;
 }
 
 /**
  * Reusable DataTable Component
- * 
+ *
  * Features:
  * - Search/filter
  * - Sort by column
@@ -44,11 +46,11 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
   selectable = false,
   onRowClick = null,
   loading = false,
-  emptyMessage = 'No hay datos disponibles'
+  emptyMessage = 'No hay datos disponibles',
 }: DataTableProps<T>): JSX.Element {
-  const searchFields = columns.filter(col => col.searchable).map(col => col.key as string)
-  const defaultSort = columns.find(col => col.defaultSort)?.key as string | null
-  
+  const searchFields = columns.filter(col => col.searchable).map(col => col.key as string);
+  const defaultSort = columns.find(col => col.defaultSort)?.key as string | null;
+
   const {
     searchTerm,
     setSearchTerm,
@@ -64,47 +66,52 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
     hasPrevPage,
     totalItems,
     displayItems,
-    resultCount
-  } = useDataTable(data as Record<string, unknown>[], searchFields, defaultSort, itemsPerPage)
-  
-  const [selectedRowsRaw, setSelectedRows] = useLocalStorage<(string | number)[]>('datatable-selection', [])
-  const selectedRows = selectedRowsRaw ?? []
-  
+    resultCount,
+  } = useDataTable(data as Record<string, unknown>[], searchFields, defaultSort, itemsPerPage);
+
+  const [selectedRowsRaw, setSelectedRows] = useLocalStorage<(string | number)[]>(
+    'datatable-selection',
+    []
+  );
+  const selectedRows = selectedRowsRaw ?? [];
+
   const handleSelectAll = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       const ids = displayItems
         .map(row => (row as T).id)
-        .filter((id): id is string | number => id !== undefined)
-      setSelectedRows(ids)
+        .filter((id): id is string | number => id !== undefined);
+      setSelectedRows(ids);
     } else {
-      setSelectedRows([])
+      setSelectedRows([]);
     }
-  }
-  
+  };
+
   const handleSelectRow = (id: string | number | undefined) => {
-    if (id === undefined) return
+    if (id === undefined) {
+      return;
+    }
     setSelectedRows(prev => {
-      const current = prev ?? []
-      return current.includes(id)
-        ? current.filter(rowId => rowId !== id)
-        : [...current, id]
-    })
-  }
-  
-  const isAllSelected = displayItems.length > 0 && displayItems.every(row => {
-    const id = (row as T).id
-    return id !== undefined && selectedRows.includes(id)
-  })
-  
+      const current = prev ?? [];
+      return current.includes(id) ? current.filter(rowId => rowId !== id) : [...current, id];
+    });
+  };
+
+  const isAllSelected =
+    displayItems.length > 0 &&
+    displayItems.every(row => {
+      const id = (row as T).id;
+      return id !== undefined && selectedRows.includes(id);
+    });
+
   if (loading) {
     return (
       <div className="datatable__loading">
         <LoadingSpinner />
         <p>Cargando datos...</p>
       </div>
-    )
+    );
   }
-  
+
   return (
     <div className="datatable">
       {/* Search */}
@@ -114,11 +121,11 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
             type="text"
             placeholder={searchPlaceholder}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             className="datatable__search-input"
           />
           {searchTerm && (
-            <button 
+            <button
               className="datatable__search-clear"
               onClick={clearSearch}
               aria-label="Limpiar búsqueda"
@@ -131,7 +138,7 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
           {resultCount} de {totalItems} resultados
         </div>
       </div>
-      
+
       {/* Table */}
       <div className="datatable__wrapper">
         <table className="datatable__table">
@@ -139,15 +146,11 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
             <tr>
               {selectable && (
                 <th className="datatable__th datatable__th--select">
-                  <input 
-                    type="checkbox" 
-                    checked={isAllSelected}
-                    onChange={handleSelectAll}
-                  />
+                  <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} />
                 </th>
               )}
               {columns.map(col => (
-                <th 
+                <th
                   key={col.key as string}
                   className={`datatable__th ${col.sortable ? 'datatable__th--sortable' : ''}`}
                   onClick={() => col.sortable && toggleSort(col.key as string)}
@@ -155,9 +158,7 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
                 >
                   {col.title}
                   {col.sortable && (
-                    <span className="datatable__sort-icon">
-                      {getSortIcon(col.key as string)}
-                    </span>
+                    <span className="datatable__sort-icon">{getSortIcon(col.key as string)}</span>
                   )}
                 </th>
               ))}
@@ -166,36 +167,32 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
           <tbody>
             {displayItems.length === 0 ? (
               <tr>
-                <td 
-                  colSpan={columns.length + (selectable ? 1 : 0)}
-                  className="datatable__empty"
-                >
+                <td colSpan={columns.length + (selectable ? 1 : 0)} className="datatable__empty">
                   {emptyMessage}
                 </td>
               </tr>
             ) : (
               displayItems.map((row, index) => (
-                <tr 
+                <tr
                   key={(row as T).id || index}
                   className={`datatable__row ${onRowClick ? 'datatable__row--clickable' : ''}`}
                   onClick={() => onRowClick && onRowClick(row as T)}
                 >
                   {selectable && (
                     <td className="datatable__td datatable__td--select">
-                      <input 
+                      <input
                         type="checkbox"
                         checked={selectedRows.includes((row as T).id ?? '')}
                         onChange={() => handleSelectRow((row as T).id)}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={e => e.stopPropagation()}
                       />
                     </td>
                   )}
                   {columns.map(col => (
                     <td key={col.key as string} className="datatable__td">
-                      {col.render 
+                      {col.render
                         ? col.render((row as Record<string, unknown>)[col.key as string], row as T)
-                        : String((row as Record<string, unknown>)[col.key as string] ?? '—')
-                      }
+                        : String((row as Record<string, unknown>)[col.key as string] ?? '—')}
                     </td>
                   ))}
                 </tr>
@@ -208,14 +205,10 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="datatable__pagination">
-          <button
-            className="datatable__page-btn"
-            onClick={prevPage}
-            disabled={!hasPrevPage}
-          >
+          <button className="datatable__page-btn" onClick={prevPage} disabled={!hasPrevPage}>
             ← Anterior
           </button>
-          
+
           <div className="datatable__pages">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <button
@@ -227,18 +220,14 @@ function DataTable<T extends { id?: string | number } = Record<string, unknown>>
               </button>
             ))}
           </div>
-          
-          <button
-            className="datatable__page-btn"
-            onClick={nextPage}
-            disabled={!hasNextPage}
-          >
+
+          <button className="datatable__page-btn" onClick={nextPage} disabled={!hasNextPage}>
             Siguiente →
           </button>
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default DataTable
+export default DataTable;

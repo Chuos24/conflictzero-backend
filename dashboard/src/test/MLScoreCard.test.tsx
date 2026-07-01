@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import MLScoreCard from '../components/MLScoreCard'
-import * as useQueriesModule from '../hooks/useQueries'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+import MLScoreCard from '../components/MLScoreCard';
+import * as useQueriesModule from '../hooks/useQueries';
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -10,16 +11,16 @@ const createWrapper = () => {
       queries: { retry: false, enabled: false },
       mutations: { retry: false },
     },
-  })
+  });
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  )
-}
+  );
+};
 
 describe('MLScoreCard', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
   it('renders loading state', () => {
     vi.spyOn(useQueriesModule, 'useMLScore').mockReturnValue({
@@ -31,14 +32,14 @@ describe('MLScoreCard', () => {
       isSuccess: false,
       status: 'pending',
       fetchStatus: 'fetching',
-    } as any)
+    } as any);
     vi.spyOn(useQueriesModule, 'useMLAnomalies').mockReturnValue({
       data: undefined,
-    } as any)
+    } as any);
 
-    render(<MLScoreCard ruc="20123456789" />, { wrapper: createWrapper() })
-    expect(screen.getByText(/Calculando ML Score/)).toBeInTheDocument()
-  })
+    render(<MLScoreCard ruc="20123456789" />, { wrapper: createWrapper() });
+    expect(screen.getByText(/Calculando ML Score/)).toBeInTheDocument();
+  });
 
   it('renders error state', () => {
     vi.spyOn(useQueriesModule, 'useMLScore').mockReturnValue({
@@ -50,20 +51,20 @@ describe('MLScoreCard', () => {
       isSuccess: false,
       status: 'error',
       fetchStatus: 'idle',
-    } as any)
+    } as any);
     vi.spyOn(useQueriesModule, 'useMLAnomalies').mockReturnValue({
       data: undefined,
-    } as any)
+    } as any);
 
-    render(<MLScoreCard ruc="20123456789" />, { wrapper: createWrapper() })
-    expect(screen.getByText(/Error calculando ML Score/)).toBeInTheDocument()
-    expect(screen.getByText(/Network error/)).toBeInTheDocument()
-  })
+    render(<MLScoreCard ruc="20123456789" />, { wrapper: createWrapper() });
+    expect(screen.getByText(/Error calculando ML Score/)).toBeInTheDocument();
+    expect(screen.getByText(/Network error/)).toBeInTheDocument();
+  });
 
   it('renders null when no ruc', () => {
-    const { container } = render(<MLScoreCard ruc={null} />, { wrapper: createWrapper() })
-    expect(container.firstChild).toBeNull()
-  })
+    const { container } = render(<MLScoreCard ruc={null} />, { wrapper: createWrapper() });
+    expect(container.firstChild).toBeNull();
+  });
 
   it('renders score data', () => {
     const mockScore = {
@@ -81,7 +82,7 @@ describe('MLScoreCard', () => {
       lookback_days: 90,
       calculated_at: '2026-05-13T10:00:00Z',
       model_version: 'v1.5',
-    }
+    };
 
     vi.spyOn(useQueriesModule, 'useMLScore').mockReturnValue({
       data: mockScore,
@@ -92,16 +93,16 @@ describe('MLScoreCard', () => {
       isSuccess: true,
       status: 'success',
       fetchStatus: 'idle',
-    } as any)
+    } as any);
     vi.spyOn(useQueriesModule, 'useMLAnomalies').mockReturnValue({
       data: { has_anomalies: false, anomaly_count: 0, anomalies: [] },
-    } as any)
+    } as any);
 
-    render(<MLScoreCard ruc="20123456789" />, { wrapper: createWrapper() })
-    expect(screen.getByText('ML Score de Riesgo')).toBeInTheDocument()
-    expect(screen.getByText('78')).toBeInTheDocument()
-    expect(screen.getByText(/Bajo Riesgo/)).toBeInTheDocument()
-  })
+    render(<MLScoreCard ruc="20123456789" />, { wrapper: createWrapper() });
+    expect(screen.getByText('ML Score de Riesgo')).toBeInTheDocument();
+    expect(screen.getByText('78')).toBeInTheDocument();
+    expect(screen.getByText(/Bajo Riesgo/)).toBeInTheDocument();
+  });
 
   it('renders anomalies when present', () => {
     const mockScore = {
@@ -119,16 +120,16 @@ describe('MLScoreCard', () => {
       lookback_days: 90,
       calculated_at: '2026-05-13T10:00:00Z',
       model_version: 'v1.5',
-    }
+    };
 
     const anomalies = {
       has_anomalies: true,
       anomaly_count: 2,
       anomalies: [
         { severity: 'critical', description: 'Sanción reciente detectada' },
-        { severity: 'high', description: 'Incremento de deuda' }
-      ]
-    }
+        { severity: 'high', description: 'Incremento de deuda' },
+      ],
+    };
 
     vi.spyOn(useQueriesModule, 'useMLScore').mockReturnValue({
       data: mockScore,
@@ -139,14 +140,14 @@ describe('MLScoreCard', () => {
       isSuccess: true,
       status: 'success',
       fetchStatus: 'idle',
-    } as any)
+    } as any);
     vi.spyOn(useQueriesModule, 'useMLAnomalies').mockReturnValue({
       data: anomalies,
-    } as any)
+    } as any);
 
-    render(<MLScoreCard ruc="20123456789" />, { wrapper: createWrapper() })
-    expect(screen.getByText(/Anomalías Detectadas/)).toBeInTheDocument()
-    expect(screen.getByText('Sanción reciente detectada')).toBeInTheDocument()
-    expect(screen.getByText('Incremento de deuda')).toBeInTheDocument()
-  })
-})
+    render(<MLScoreCard ruc="20123456789" />, { wrapper: createWrapper() });
+    expect(screen.getByText(/Anomalías Detectadas/)).toBeInTheDocument();
+    expect(screen.getByText('Sanción reciente detectada')).toBeInTheDocument();
+    expect(screen.getByText('Incremento de deuda')).toBeInTheDocument();
+  });
+});

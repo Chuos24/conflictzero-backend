@@ -1,63 +1,85 @@
-import { useState } from 'react'
-import { useMonitoringStats, useMonitoringAlerts, useMonitoringChanges, useMarkMonitoringAlertRead, useDismissMonitoringAlert } from '../hooks/useQueries'
-import type { MonitoringAlert, MonitoringChange } from '../hooks/useQueries'
-import LoadingSpinner from '../components/LoadingSpinner'
-import Badge from '../components/Badge'
+import { useState } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, AreaChart, Area
-} from 'recharts'
-import './Monitoring.css'
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+} from 'recharts';
+
+import {
+  useMonitoringStats,
+  useMonitoringAlerts,
+  useMonitoringChanges,
+  useMarkMonitoringAlertRead,
+  useDismissMonitoringAlert,
+} from '../hooks/useQueries';
+import type { MonitoringAlert, MonitoringChange } from '../hooks/useQueries';
+import LoadingSpinner from '../components/LoadingSpinner';
+import Badge from '../components/Badge';
+import './Monitoring.css';
 
 function Monitoring(): JSX.Element {
-  const [activeTab, setActiveTab] = useState<'overview' | 'alerts' | 'changes' | 'rules'>('overview')
-  const [alertFilter, setAlertFilter] = useState<string>('all')
-  
-  const { data: stats, isLoading: statsLoading } = useMonitoringStats()
-  const { data: alerts, isLoading: alertsLoading } = useMonitoringAlerts(alertFilter !== 'all' ? alertFilter : undefined)
-  const { data: changes, isLoading: changesLoading } = useMonitoringChanges()
-  const markReadMutation = useMarkMonitoringAlertRead()
-  const dismissMutation = useDismissMonitoringAlert()
+  const [activeTab, setActiveTab] = useState<'overview' | 'alerts' | 'changes' | 'rules'>(
+    'overview'
+  );
+  const [alertFilter, setAlertFilter] = useState<string>('all');
 
-  const isLoading = statsLoading || alertsLoading || changesLoading
+  const { data: stats, isLoading: statsLoading } = useMonitoringStats();
+  const { data: alerts, isLoading: alertsLoading } = useMonitoringAlerts(
+    alertFilter !== 'all' ? alertFilter : undefined
+  );
+  const { data: changes, isLoading: changesLoading } = useMonitoringChanges();
+  const markReadMutation = useMarkMonitoringAlertRead();
+  const dismissMutation = useDismissMonitoringAlert();
+
+  const isLoading = statsLoading || alertsLoading || changesLoading;
 
   if (isLoading) {
     return (
       <div className="monitoring-loading">
         <LoadingSpinner size="large" text="Cargando monitoreo..." />
       </div>
-    )
+    );
   }
 
-  const getSeverityVariant = (severity: string): 'info' | 'warning' | 'success' | 'error' | 'default' => {
+  const getSeverityVariant = (
+    severity: string
+  ): 'info' | 'warning' | 'success' | 'error' | 'default' => {
     switch (severity) {
-      case 'critical': return 'error'
-      case 'warning': return 'warning'
-      case 'info': return 'info'
-      default: return 'default'
+      case 'critical':
+        return 'error';
+      case 'warning':
+        return 'warning';
+      case 'info':
+        return 'info';
+      default:
+        return 'default';
     }
-  }
+  };
 
   const getChangeTypeLabel = (type: string): string => {
     const labels: Record<string, string> = {
-      'sanction_added': 'Sanción nueva',
-      'representative_changed': 'Cambio de representante',
-      'address_changed': 'Cambio de dirección',
-      'score_dropped': 'Riesgo aumentado',
-      'status_changed': 'Cambio de estado',
-      'compliance_expired': 'Compliance vencido'
-    }
-    return labels[type] || type
-  }
+      sanction_added: 'Sanción nueva',
+      representative_changed: 'Cambio de representante',
+      address_changed: 'Cambio de dirección',
+      score_dropped: 'Riesgo aumentado',
+      status_changed: 'Cambio de estado',
+      compliance_expired: 'Compliance vencido',
+    };
+    return labels[type] || type;
+  };
 
   return (
     <div className="monitoring">
       <header className="monitoring-header">
         <div>
           <h1>Monitoreo Continuo</h1>
-          <p className="monitoring-subtitle">
-            Seguimiento automático de proveedores en tu red
-          </p>
+          <p className="monitoring-subtitle">Seguimiento automático de proveedores en tu red</p>
         </div>
         <div className="monitoring-actions">
           <button className="btn-primary" onClick={() => alert('Ejecutar monitoreo manual')}>
@@ -136,16 +158,22 @@ function Monitoring(): JSX.Element {
             <div className="chart-card wide">
               <h3>Tendencia de Cambios (30 días)</h3>
               <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={changes?.slice(0, 30).map((c: MonitoringChange, i: number) => ({
-                  day: i + 1,
-                  count: changes.filter((ch: MonitoringChange) => 
-                    new Date(ch.created_at).toDateString() === new Date(c.created_at).toDateString()
-                  ).length
-                })) || []}>
+                <AreaChart
+                  data={
+                    changes?.slice(0, 30).map((c: MonitoringChange, i: number) => ({
+                      day: i + 1,
+                      count: changes.filter(
+                        (ch: MonitoringChange) =>
+                          new Date(ch.created_at).toDateString() ===
+                          new Date(c.created_at).toDateString()
+                      ).length,
+                    })) || []
+                  }
+                >
                   <defs>
                     <linearGradient id="colorChanges" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ff9800" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#ff9800" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#ff9800" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#ff9800" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
@@ -155,7 +183,13 @@ function Monitoring(): JSX.Element {
                     contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                     labelStyle={{ color: '#ff9800' }}
                   />
-                  <Area type="monotone" dataKey="count" stroke="#ff9800" fillOpacity={1} fill="url(#colorChanges)" />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#ff9800"
+                    fillOpacity={1}
+                    fill="url(#colorChanges)"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -163,11 +197,13 @@ function Monitoring(): JSX.Element {
             <div className="chart-card">
               <h3>Severidad de Cambios</h3>
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={[
-                  { name: 'Info', value: stats?.warning_changes || 0, color: '#2196f3' },
-                  { name: 'Warning', value: stats?.warning_changes || 0, color: '#ff9800' },
-                  { name: 'Critical', value: stats?.critical_changes || 0, color: '#f44336' }
-                ]}>
+                <BarChart
+                  data={[
+                    { name: 'Info', value: stats?.warning_changes || 0, color: '#2196f3' },
+                    { name: 'Warning', value: stats?.warning_changes || 0, color: '#ff9800' },
+                    { name: 'Critical', value: stats?.critical_changes || 0, color: '#f44336' },
+                  ]}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis dataKey="name" stroke="#888" />
                   <YAxis stroke="#888" />
@@ -189,8 +225,8 @@ function Monitoring(): JSX.Element {
                     {stats.last_run.status}
                   </Badge>
                   <span className="run-date">
-                    {stats.last_run.completed_at 
-                      ? new Date(stats.last_run.completed_at).toLocaleString('es-PE') 
+                    {stats.last_run.completed_at
+                      ? new Date(stats.last_run.completed_at).toLocaleString('es-PE')
                       : 'En progreso...'}
                   </span>
                 </div>
@@ -206,9 +242,9 @@ function Monitoring(): JSX.Element {
       {activeTab === 'alerts' && (
         <div className="monitoring-alerts">
           <div className="filter-bar">
-            <select 
-              value={alertFilter} 
-              onChange={(e) => setAlertFilter(e.target.value)}
+            <select
+              value={alertFilter}
+              onChange={e => setAlertFilter(e.target.value)}
               className="filter-select"
             >
               <option value="all">Todas</option>
@@ -233,10 +269,18 @@ function Monitoring(): JSX.Element {
                   <h4 className="alert-title">{alertItem.title}</h4>
                   <p className="alert-message">{alertItem.message}</p>
                   <div className="alert-actions">
-                    <button className="btn-sm" onClick={() => markReadMutation.mutate(alertItem.id)} disabled={markReadMutation.isPending}>
+                    <button
+                      className="btn-sm"
+                      onClick={() => markReadMutation.mutate(alertItem.id)}
+                      disabled={markReadMutation.isPending}
+                    >
                       Marcar leída
                     </button>
-                    <button className="btn-sm btn-ghost" onClick={() => dismissMutation.mutate(alertItem.id)} disabled={dismissMutation.isPending}>
+                    <button
+                      className="btn-sm btn-ghost"
+                      onClick={() => dismissMutation.mutate(alertItem.id)}
+                      disabled={dismissMutation.isPending}
+                    >
                       Descartar
                     </button>
                   </div>
@@ -288,9 +332,7 @@ function Monitoring(): JSX.Element {
                         {change.previous_value && change.new_value && (
                           <span className="arrow">→</span>
                         )}
-                        {change.new_value && (
-                          <span className="new-value">{change.new_value}</span>
-                        )}
+                        {change.new_value && <span className="new-value">{change.new_value}</span>}
                       </td>
                     </tr>
                   ))}
@@ -314,7 +356,7 @@ function Monitoring(): JSX.Element {
               + Nueva Regla
             </button>
           </div>
-          
+
           <div className="rules-list">
             <div className="rule-card">
               <div className="rule-header">
@@ -328,7 +370,7 @@ function Monitoring(): JSX.Element {
                 <span className="config-item">🕐 Diario</span>
               </div>
             </div>
-            
+
             <div className="rule-card">
               <div className="rule-header">
                 <h4>Sanciones Críticas</h4>
@@ -344,7 +386,7 @@ function Monitoring(): JSX.Element {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default Monitoring
+export default Monitoring;

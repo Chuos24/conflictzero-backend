@@ -1,23 +1,25 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import ThemeToggle from './ThemeToggle'
-import './Layout.css'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+
+import { useAuth } from '../context/AuthContext';
+
+import ThemeToggle from './ThemeToggle';
+import './Layout.css';
 
 export interface NavItem {
-  path: string
-  label: string
-  icon: string
+  path: string;
+  label: string;
+  icon: string;
 }
 
 function Layout(): JSX.Element {
-  const { user, logout } = useAuth()
-  const location = useLocation()
-  const navigate = useNavigate()
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+    logout();
+    navigate('/login');
+  };
 
   const navItems: NavItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -33,7 +35,7 @@ function Layout(): JSX.Element {
     { path: '/countries', label: 'Países', icon: '🌍' },
     { path: '/profile', label: 'Perfil', icon: '👤' },
     { path: '/settings', label: 'Configuración', icon: '⚙️' },
-  ]
+  ];
 
   return (
     <div className="layout">
@@ -49,7 +51,7 @@ function Layout(): JSX.Element {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((item) => (
+          {navItems.map(item => (
             <Link
               key={item.path}
               to={item.path}
@@ -79,7 +81,7 @@ function Layout(): JSX.Element {
         <Outlet />
       </main>
     </div>
-  )
+  );
 }
 
-export default Layout
+export default Layout;

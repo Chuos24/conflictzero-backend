@@ -1,32 +1,33 @@
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useAuth } from '../context/AuthContext'
-import { useToast } from '../context/ToastContext'
-import { profileSchema } from '../lib/validations'
-import api from '../services/api'
-import type { z } from 'zod'
-import './Profile.css'
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
 
-type ProfileFormData = z.infer<typeof profileSchema>
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { profileSchema } from '../lib/validations';
+import api from '../services/api';
+import './Profile.css';
+
+type ProfileFormData = z.infer<typeof profileSchema>;
 
 interface UserProfile {
-  razon_social?: string
-  contact_name?: string
-  contact_phone?: string
-  contact_email?: string
-  ruc_hash?: string
-  plan_tier?: string
-  is_founder?: boolean
-  status?: string
-  used_queries_this_month?: number
-  max_monthly_queries?: number
+  razon_social?: string;
+  contact_name?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  ruc_hash?: string;
+  plan_tier?: string;
+  is_founder?: boolean;
+  status?: string;
+  used_queries_this_month?: number;
+  max_monthly_queries?: number;
 }
 
 export default function Profile(): JSX.Element {
-  const { user, setUser } = useAuth()
-  const { success, error } = useToast()
-  const [isEditing, setIsEditing] = useState<boolean>(false)
+  const { user, setUser } = useAuth();
+  const { success, error } = useToast();
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const {
     register,
@@ -41,7 +42,7 @@ export default function Profile(): JSX.Element {
       contact_name: (user as UserProfile)?.contact_name || '',
       contact_phone: (user as UserProfile)?.contact_phone || '',
     },
-  })
+  });
 
   // Sync form when user data changes
   useEffect(() => {
@@ -50,26 +51,28 @@ export default function Profile(): JSX.Element {
         razon_social: (user as UserProfile).razon_social || '',
         contact_name: (user as UserProfile).contact_name || '',
         contact_phone: (user as UserProfile).contact_phone || '',
-      })
+      });
     }
-  }, [user, reset])
+  }, [user, reset]);
 
   const onSubmit = async (data: ProfileFormData): Promise<void> => {
     try {
-      await api.patch('/api/v1/company/profile', data)
+      await api.patch('/api/v1/company/profile', data);
       if (user) {
-        setUser({ ...user, ...data, id: user.id })
+        setUser({ ...user, ...data, id: user.id });
       }
-      success('Perfil actualizado correctamente')
-      setIsEditing(false)
+      success('Perfil actualizado correctamente');
+      setIsEditing(false);
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al actualizar perfil'
-      setError('root', { message })
-      error(message)
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        'Error al actualizar perfil';
+      setError('root', { message });
+      error(message);
     }
-  }
+  };
 
-  const typedUser = user as UserProfile
+  const typedUser = user as UserProfile;
 
   return (
     <div className="profile-container">
@@ -85,15 +88,11 @@ export default function Profile(): JSX.Element {
             <span className={`plan-badge ${typedUser?.plan_tier}`}>
               {typedUser?.plan_tier?.toUpperCase()}
             </span>
-            {typedUser?.is_founder && (
-              <span className="founder-badge">FOUNDER</span>
-            )}
+            {typedUser?.is_founder && <span className="founder-badge">FOUNDER</span>}
           </div>
         </div>
 
-        {errors.root && (
-          <div className="message error">{errors.root.message}</div>
-        )}
+        {errors.root && <div className="message error">{errors.root.message}</div>}
 
         {isEditing ? (
           <form onSubmit={handleSubmit(onSubmit)} className="profile-form" noValidate>
@@ -106,7 +105,9 @@ export default function Profile(): JSX.Element {
                 aria-invalid={errors.razon_social ? 'true' : 'false'}
               />
               {errors.razon_social && (
-                <span className="field-error" role="alert">{errors.razon_social.message}</span>
+                <span className="field-error" role="alert">
+                  {errors.razon_social.message}
+                </span>
               )}
             </div>
             <div className="form-group">
@@ -118,7 +119,9 @@ export default function Profile(): JSX.Element {
                 aria-invalid={errors.contact_name ? 'true' : 'false'}
               />
               {errors.contact_name && (
-                <span className="field-error" role="alert">{errors.contact_name.message}</span>
+                <span className="field-error" role="alert">
+                  {errors.contact_name.message}
+                </span>
               )}
             </div>
             <div className="form-group">
@@ -130,18 +133,16 @@ export default function Profile(): JSX.Element {
                 aria-invalid={errors.contact_phone ? 'true' : 'false'}
               />
               {errors.contact_phone && (
-                <span className="field-error" role="alert">{errors.contact_phone.message}</span>
+                <span className="field-error" role="alert">
+                  {errors.contact_phone.message}
+                </span>
               )}
             </div>
             <div className="form-actions">
               <button type="submit" className="btn-primary" disabled={isSubmitting}>
                 {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setIsEditing(false)}
-              >
+              <button type="button" className="btn-secondary" onClick={() => setIsEditing(false)}>
                 Cancelar
               </button>
             </div>
@@ -174,15 +175,12 @@ export default function Profile(): JSX.Element {
                 {typedUser?.used_queries_this_month} / {typedUser?.max_monthly_queries}
               </span>
             </div>
-            <button
-              className="btn-primary edit-btn"
-              onClick={() => setIsEditing(true)}
-            >
+            <button className="btn-primary edit-btn" onClick={() => setIsEditing(true)}>
               Editar Perfil
             </button>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

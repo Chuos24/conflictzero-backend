@@ -1,43 +1,43 @@
-import { Component, type ReactNode, type ErrorInfo } from 'react'
-import './ErrorBoundary.css'
+import { Component, type ReactNode, type ErrorInfo } from 'react';
+import './ErrorBoundary.css';
 
 export interface ErrorBoundaryProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export interface ErrorBoundaryState {
-  hasError: boolean
-  error: Error | null
-  errorInfo: ErrorInfo | null
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props)
-    this.state = { hasError: false, error: null, errorInfo: null }
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
-    return { hasError: true, error: _error, errorInfo: null }
+    return { hasError: true, error: _error, errorInfo: null };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({
       error: error,
-      errorInfo: errorInfo
-    })
-    
+      errorInfo: errorInfo,
+    });
+
     // Log error to monitoring service (e.g., Sentry)
-    console.error('Error caught by ErrorBoundary:', error, errorInfo)
+    console.error('Error caught by ErrorBoundary:', error, errorInfo);
   }
 
   handleReload = () => {
-    window.location.reload()
-  }
+    window.location.reload();
+  };
 
   handleGoHome = () => {
-    window.location.href = '/dashboard'
-  }
+    window.location.href = '/dashboard';
+  };
 
   render() {
     if (this.state.hasError) {
@@ -47,17 +47,15 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             <div className="error-icon">⚠</div>
             <h1>Algo salió mal</h1>
             <p>Ha ocurrido un error inesperado. Por favor, intenta recargar la página.</p>
-            
+
             {import.meta.env.DEV && this.state.error && (
               <div className="error-details">
                 <h3>Detalles del error:</h3>
                 <pre>{this.state.error.toString()}</pre>
-                {this.state.errorInfo && (
-                  <pre>{this.state.errorInfo.componentStack}</pre>
-                )}
+                {this.state.errorInfo && <pre>{this.state.errorInfo.componentStack}</pre>}
               </div>
             )}
-            
+
             <div className="error-actions">
               <button onClick={this.handleReload} className="btn-primary">
                 Recargar Página
@@ -68,11 +66,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             </div>
           </div>
         </div>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
-export default ErrorBoundary
+export default ErrorBoundary;

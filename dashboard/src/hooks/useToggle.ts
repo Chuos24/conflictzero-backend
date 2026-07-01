@@ -1,21 +1,27 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react';
 
-export type UseToggleReturn = [boolean, () => void, () => void, () => void, (value: boolean) => void]
+export type UseToggleReturn = [
+  boolean,
+  () => void,
+  () => void,
+  () => void,
+  (value: boolean) => void,
+];
 
 export function useToggle(initialValue = false): UseToggleReturn {
-  const [value, setValue] = useState(initialValue)
+  const [value, setValue] = useState(initialValue);
 
   const toggle = useCallback(() => {
-    setValue(v => !v)
-  }, [])
+    setValue(v => !v);
+  }, []);
 
   const setTrue = useCallback(() => {
-    setValue(true)
-  }, [])
+    setValue(true);
+  }, []);
 
   const setFalse = useCallback(() => {
-    setValue(false)
-  }, [])
+    setValue(false);
+  }, []);
 
-  return [value, toggle, setTrue, setFalse, setValue]
+  return [value, toggle, setTrue, setFalse, setValue];
 }

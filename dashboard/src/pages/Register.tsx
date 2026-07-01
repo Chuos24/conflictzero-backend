@@ -1,21 +1,22 @@
-import { useNavigate, Link } from 'react-router-dom'
-import { useState, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { registerSchema } from '../lib/validations'
-import { authAPI } from '../services/api'
-import type { z } from 'zod'
-import './Register.css'
+import { useNavigate, Link } from 'react-router-dom';
+import { useState, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
 
-type RegisterFormData = z.infer<typeof registerSchema>
+import { registerSchema } from '../lib/validations';
+import { authAPI } from '../services/api';
+import './Register.css';
+
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 interface CountryConfig {
-  code: string
-  name: string
-  label: string
-  placeholder: string
-  mask?: string
-  maxLength: number
+  code: string;
+  name: string;
+  label: string;
+  placeholder: string;
+  mask?: string;
+  maxLength: number;
 }
 
 const COUNTRIES: CountryConfig[] = [
@@ -24,13 +25,13 @@ const COUNTRIES: CountryConfig[] = [
   { code: 'CO', name: 'Colombia', label: 'NIT', placeholder: '901234567', maxLength: 10 },
   { code: 'MX', name: 'México', label: 'RFC', placeholder: 'ABCD010101ABC', maxLength: 13 },
   { code: 'ES', name: 'España', label: 'NIF/CIF', placeholder: 'A12345678', maxLength: 9 },
-]
+];
 
 function Register(): JSX.Element {
-  const navigate = useNavigate()
-  const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(COUNTRIES[0])
-  const [docError, setDocError] = useState('')
-  const [isValidating, setIsValidating] = useState(false)
+  const navigate = useNavigate();
+  const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(COUNTRIES[0]);
+  const [docError, setDocError] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
 
   const {
     register,
@@ -50,43 +51,51 @@ function Register(): JSX.Element {
       password: '',
       confirmPassword: '',
     },
-  })
+  });
 
-  const watchedCountry = watch('country_code')
+  const watchedCountry = watch('country_code');
 
-  const handleCountryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const country = COUNTRIES.find(c => c.code === e.target.value) || COUNTRIES[0]
-    setSelectedCountry(country)
-    setValue('country_code', country.code)
-    setValue('ruc', '')
-    setDocError('')
-  }, [setValue])
+  const handleCountryChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const country = COUNTRIES.find(c => c.code === e.target.value) || COUNTRIES[0];
+      setSelectedCountry(country);
+      setValue('country_code', country.code);
+      setValue('ruc', '');
+      setDocError('');
+    },
+    [setValue]
+  );
 
-  const validateDocument = useCallback(async (value: string) => {
-    if (!value || value.length < 8) return
-    setIsValidating(true)
-    setDocError('')
-    try {
-      const res = await fetch('/api/v1/countries/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ country_code: selectedCountry.code, document: value }),
-      })
-      const data = await res.json()
-      if (!data.valid) {
-        setDocError(data.error || 'Documento inválido')
+  const validateDocument = useCallback(
+    async (value: string) => {
+      if (!value || value.length < 8) {
+        return;
       }
-    } catch {
-      // Silenciar errores de red para no bloquear el registro
-    } finally {
-      setIsValidating(false)
-    }
-  }, [selectedCountry.code])
+      setIsValidating(true);
+      setDocError('');
+      try {
+        const res = await fetch('/api/v1/countries/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ country_code: selectedCountry.code, document: value }),
+        });
+        const data = await res.json();
+        if (!data.valid) {
+          setDocError(data.error || 'Documento inválido');
+        }
+      } catch {
+        // Silenciar errores de red para no bloquear el registro
+      } finally {
+        setIsValidating(false);
+      }
+    },
+    [selectedCountry.code]
+  );
 
   const onSubmit = async (data: RegisterFormData): Promise<void> => {
     if (docError) {
-      setError('ruc', { message: docError })
-      return
+      setError('ruc', { message: docError });
+      return;
     }
     try {
       const res = await authAPI.register({
@@ -96,17 +105,17 @@ function Register(): JSX.Element {
         contact_email: data.contact_email,
         contact_phone: data.contact_phone || undefined,
         password: data.password,
-      })
+      });
       if (res.status === 200 || res.status === 201) {
-        navigate('/login', { state: { registered: true } })
+        navigate('/login', { state: { registered: true } });
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } }
+      const e = err as { response?: { data?: { detail?: string } } };
       setError('root', {
         message: e.response?.data?.detail || 'Error al registrar. Intente nuevamente.',
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="register-container">
@@ -119,9 +128,7 @@ function Register(): JSX.Element {
           <p>Conflict Zero - Verificación de Riesgo</p>
         </div>
 
-        {errors.root && (
-          <div className="error-message">{errors.root.message}</div>
-        )}
+        {errors.root && <div className="error-message">{errors.root.message}</div>}
 
         <form onSubmit={handleSubmit(onSubmit)} className="register-form" noValidate>
           {/* Selector de país */}
@@ -141,7 +148,9 @@ function Register(): JSX.Element {
               ))}
             </select>
             {errors.country_code && (
-              <span className="field-error" role="alert">{errors.country_code.message}</span>
+              <span className="field-error" role="alert">
+                {errors.country_code.message}
+              </span>
             )}
           </div>
 
@@ -154,16 +163,24 @@ function Register(): JSX.Element {
               placeholder={selectedCountry.placeholder}
               maxLength={selectedCountry.maxLength}
               {...register('ruc', {
-                onChange: (e) => {
-                  setDocError('')
-                  validateDocument(e.target.value)
+                onChange: e => {
+                  setDocError('');
+                  validateDocument(e.target.value);
                 },
               })}
               aria-invalid={errors.ruc || docError ? 'true' : 'false'}
             />
             {isValidating && <span className="field-info">Validando...</span>}
-            {errors.ruc && <span className="field-error" role="alert">{errors.ruc.message}</span>}
-            {docError && <span className="field-error" role="alert">{docError}</span>}
+            {errors.ruc && (
+              <span className="field-error" role="alert">
+                {errors.ruc.message}
+              </span>
+            )}
+            {docError && (
+              <span className="field-error" role="alert">
+                {docError}
+              </span>
+            )}
           </div>
 
           {/* Razón social */}
@@ -177,7 +194,9 @@ function Register(): JSX.Element {
               aria-invalid={errors.razon_social ? 'true' : 'false'}
             />
             {errors.razon_social && (
-              <span className="field-error" role="alert">{errors.razon_social.message}</span>
+              <span className="field-error" role="alert">
+                {errors.razon_social.message}
+              </span>
             )}
           </div>
 
@@ -192,7 +211,9 @@ function Register(): JSX.Element {
               aria-invalid={errors.contact_email ? 'true' : 'false'}
             />
             {errors.contact_email && (
-              <span className="field-error" role="alert">{errors.contact_email.message}</span>
+              <span className="field-error" role="alert">
+                {errors.contact_email.message}
+              </span>
             )}
           </div>
 
@@ -207,7 +228,9 @@ function Register(): JSX.Element {
               aria-invalid={errors.contact_phone ? 'true' : 'false'}
             />
             {errors.contact_phone && (
-              <span className="field-error" role="alert">{errors.contact_phone.message}</span>
+              <span className="field-error" role="alert">
+                {errors.contact_phone.message}
+              </span>
             )}
           </div>
 
@@ -222,7 +245,9 @@ function Register(): JSX.Element {
               aria-invalid={errors.password ? 'true' : 'false'}
             />
             {errors.password && (
-              <span className="field-error" role="alert">{errors.password.message}</span>
+              <span className="field-error" role="alert">
+                {errors.password.message}
+              </span>
             )}
           </div>
 
@@ -237,21 +262,21 @@ function Register(): JSX.Element {
               aria-invalid={errors.confirmPassword ? 'true' : 'false'}
             />
             {errors.confirmPassword && (
-              <span className="field-error" role="alert">{errors.confirmPassword.message}</span>
+              <span className="field-error" role="alert">
+                {errors.confirmPassword.message}
+              </span>
             )}
           </div>
 
-          <button
-            type="submit"
-            className="register-btn"
-            disabled={isSubmitting || !!docError}
-          >
+          <button type="submit" className="register-btn" disabled={isSubmitting || !!docError}>
             {isSubmitting ? 'Registrando...' : 'Crear Cuenta'}
           </button>
         </form>
 
         <div className="register-footer">
-          <p>¿Ya tienes cuenta? <Link to="/login">Iniciar sesión</Link></p>
+          <p>
+            ¿Ya tienes cuenta? <Link to="/login">Iniciar sesión</Link>
+          </p>
         </div>
       </div>
 
@@ -260,7 +285,7 @@ function Register(): JSX.Element {
         <div className="decoration-circle"></div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Register
+export default Register;

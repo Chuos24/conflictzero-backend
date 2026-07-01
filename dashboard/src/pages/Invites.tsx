@@ -1,26 +1,27 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useAuth } from '../context/AuthContext'
-import { useInvites, useInviteStats, useCreateInvite } from '../hooks/useQueries'
-import { inviteAPI } from '../services/api'
-import { inviteSchema } from '../lib/validations'
-import Skeleton from '../components/Skeleton'
-import type { z } from 'zod'
-import type { Invite } from '../types'
-import './Invites.css'
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
 
-type InviteFormData = z.infer<typeof inviteSchema>
+import { useAuth } from '../context/AuthContext';
+import { useInvites, useInviteStats, useCreateInvite } from '../hooks/useQueries';
+import { inviteAPI } from '../services/api';
+import { inviteSchema } from '../lib/validations';
+import Skeleton from '../components/Skeleton';
+import type { Invite } from '../types';
+import './Invites.css';
+
+type InviteFormData = z.infer<typeof inviteSchema>;
 
 function Invites(): JSX.Element {
-  const { user } = useAuth()
-  const [showForm, setShowForm] = useState<boolean>(false)
-  const [actionError, setActionError] = useState<string>('')
-  const [actionSuccess, setActionSuccess] = useState<string>('')
+  const { user } = useAuth();
+  const [showForm, setShowForm] = useState<boolean>(false);
+  const [actionError, setActionError] = useState<string>('');
+  const [actionSuccess, setActionSuccess] = useState<string>('');
 
-  const { data: invitesData, isLoading: loadingInvites } = useInvites()
-  const { data: stats, isLoading: loadingStats } = useInviteStats()
-  const createInvite = useCreateInvite()
+  const { data: invitesData, isLoading: loadingInvites } = useInvites();
+  const { data: stats, isLoading: loadingStats } = useInviteStats();
+  const createInvite = useCreateInvite();
 
   const {
     register,
@@ -35,55 +36,58 @@ function Invites(): JSX.Element {
       company_name: '',
       message: '',
     },
-  })
+  });
 
   const onSubmit = async (data: InviteFormData): Promise<void> => {
-    setActionError('')
-    setActionSuccess('')
+    setActionError('');
+    setActionSuccess('');
 
     try {
-      await createInvite.mutateAsync(data)
-      setActionSuccess('Invitación enviada exitosamente')
-      reset()
-      setShowForm(false)
+      await createInvite.mutateAsync(data);
+      setActionSuccess('Invitación enviada exitosamente');
+      reset();
+      setShowForm(false);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al enviar invitación'
-      setError('root', { message: msg })
-      setActionError(msg)
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        'Error al enviar invitación';
+      setError('root', { message: msg });
+      setActionError(msg);
     }
-  }
+  };
 
   const handleResend = async (inviteId: string): Promise<void> => {
-    setActionError('')
-    setActionSuccess('')
+    setActionError('');
+    setActionSuccess('');
     try {
-      await inviteAPI.resend(inviteId)
-      setActionSuccess('Invitación reenviada')
+      await inviteAPI.resend(inviteId);
+      setActionSuccess('Invitación reenviada');
     } catch {
-      setActionError('Error al reenviar')
+      setActionError('Error al reenviar');
     }
-  }
+  };
 
   const getStatusBadge = (status: string): JSX.Element => {
     const statusConfig: Record<string, { class: string; label: string }> = {
       pending: { class: 'status-pending', label: 'Pendiente' },
       accepted: { class: 'status-accepted', label: 'Aceptada' },
-      expired: { class: 'status-expired', label: 'Expirada' }
-    }
-    const config = statusConfig[status] || statusConfig.pending
-    return <span className={`status-badge ${config.class}`}>{config.label}</span>
-  }
+      expired: { class: 'status-expired', label: 'Expirada' },
+    };
+    const config = statusConfig[status] || statusConfig.pending;
+    return <span className={`status-badge ${config.class}`}>{config.label}</span>;
+  };
 
-  const loading = loadingInvites || loadingStats
-  const invites: Invite[] = invitesData?.items || []
+  const loading = loadingInvites || loadingStats;
+  const invites: Invite[] = invitesData?.items || [];
   const computedStats = {
     total_sent: invites.length,
     accepted: invites.filter(i => i.status === 'accepted').length,
     pending: invites.filter(i => i.status === 'pending').length,
-    conversion_rate: invites.length > 0
-      ? Math.round((invites.filter(i => i.status === 'accepted').length / invites.length) * 100)
-      : 0
-  }
+    conversion_rate:
+      invites.length > 0
+        ? Math.round((invites.filter(i => i.status === 'accepted').length / invites.length) * 100)
+        : 0,
+  };
 
   if (loading) {
     return (
@@ -105,7 +109,7 @@ function Invites(): JSX.Element {
         </div>
         <Skeleton variant="rect" height={400} />
       </div>
-    )
+    );
   }
 
   return (
@@ -151,10 +155,7 @@ function Invites(): JSX.Element {
       {actionSuccess && <div className="alert alert-success">{actionSuccess}</div>}
 
       <div className="invites-actions">
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowForm(!showForm)}
-        >
+        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Cancelar' : '+ Nueva Invitación'}
         </button>
       </div>
@@ -174,7 +175,9 @@ function Invites(): JSX.Element {
                   aria-invalid={errors.email ? 'true' : 'false'}
                 />
                 {errors.email && (
-                  <span className="field-error" role="alert">{errors.email.message}</span>
+                  <span className="field-error" role="alert">
+                    {errors.email.message}
+                  </span>
                 )}
               </div>
               <div className="form-group">
@@ -187,7 +190,9 @@ function Invites(): JSX.Element {
                   aria-invalid={errors.company_name ? 'true' : 'false'}
                 />
                 {errors.company_name && (
-                  <span className="field-error" role="alert">{errors.company_name.message}</span>
+                  <span className="field-error" role="alert">
+                    {errors.company_name.message}
+                  </span>
                 )}
               </div>
             </div>
@@ -200,7 +205,9 @@ function Invites(): JSX.Element {
                 {...register('message')}
               />
               {errors.message && (
-                <span className="field-error" role="alert">{errors.message.message}</span>
+                <span className="field-error" role="alert">
+                  {errors.message.message}
+                </span>
               )}
             </div>
             <button
@@ -234,7 +241,7 @@ function Invites(): JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {invites.map((invite) => (
+              {invites.map(invite => (
                 <tr key={invite.id}>
                   <td>{invite.company_name}</td>
                   <td>{invite.email}</td>
@@ -262,12 +269,15 @@ function Invites(): JSX.Element {
           <div className="notice-icon">⭐</div>
           <div className="notice-content">
             <h4>Programa Founder Activo</h4>
-            <p>Como Founder, tienes la obligación contractual de invitar a tus subcontratistas. Cada invitación cuenta para tu red de confianza.</p>
+            <p>
+              Como Founder, tienes la obligación contractual de invitar a tus subcontratistas. Cada
+              invitación cuenta para tu red de confianza.
+            </p>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default Invites
+export default Invites;

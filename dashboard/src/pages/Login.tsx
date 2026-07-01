@@ -1,16 +1,17 @@
-import { useNavigate, Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useAuth } from '../context/AuthContext'
-import { loginSchema } from '../lib/validations'
-import type { z } from 'zod'
-import './Login.css'
+import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
 
-type LoginFormData = z.infer<typeof loginSchema>
+import { useAuth } from '../context/AuthContext';
+import { loginSchema } from '../lib/validations';
+import './Login.css';
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 function Login(): JSX.Element {
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -23,24 +24,24 @@ function Login(): JSX.Element {
       ruc: '',
       password: '',
     },
-  })
+  });
 
   const onSubmit = async (data: LoginFormData): Promise<void> => {
     try {
-      const result = await login(data.ruc, data.password)
+      const result = await login(data.ruc, data.password);
       if (result.success) {
-        navigate('/dashboard')
+        navigate('/dashboard');
       } else {
         setError('root', {
           message: result.error || 'Error al iniciar sesión',
-        })
+        });
       }
     } catch (err) {
       setError('root', {
         message: 'Error de conexión. Intente nuevamente.',
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="login-container">
@@ -53,11 +54,7 @@ function Login(): JSX.Element {
           <p>Plataforma de Compliance y Verificación</p>
         </div>
 
-        {errors.root && (
-          <div className="error-message">
-            {errors.root.message}
-          </div>
-        )}
+        {errors.root && <div className="error-message">{errors.root.message}</div>}
 
         <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
           <div className="form-group">
@@ -71,7 +68,9 @@ function Login(): JSX.Element {
               aria-invalid={errors.ruc ? 'true' : 'false'}
             />
             {errors.ruc && (
-              <span className="field-error" role="alert">{errors.ruc.message}</span>
+              <span className="field-error" role="alert">
+                {errors.ruc.message}
+              </span>
             )}
           </div>
 
@@ -85,21 +84,21 @@ function Login(): JSX.Element {
               aria-invalid={errors.password ? 'true' : 'false'}
             />
             {errors.password && (
-              <span className="field-error" role="alert">{errors.password.message}</span>
+              <span className="field-error" role="alert">
+                {errors.password.message}
+              </span>
             )}
           </div>
 
-          <button
-            type="submit"
-            className="login-btn"
-            disabled={isSubmitting}
-          >
+          <button type="submit" className="login-btn" disabled={isSubmitting}>
             {isSubmitting ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
 
         <div className="login-footer">
-          <p>¿No tienes cuenta? <Link to="/register">Regístrate</Link></p>
+          <p>
+            ¿No tienes cuenta? <Link to="/register">Regístrate</Link>
+          </p>
           <p className="founder-link">
             ¿Eres constructora? <Link to="/founders">Aplica al programa Founder</Link>
           </p>
@@ -111,7 +110,7 @@ function Login(): JSX.Element {
         <div className="decoration-circle"></div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Login
+export default Login;

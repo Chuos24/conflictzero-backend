@@ -1,21 +1,22 @@
-import { useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useCompare, useCompareHistory } from '../hooks/useQueries'
-import { compareSchema } from '../lib/validations'
-import Skeleton from '../components/Skeleton'
-import type { z } from 'zod'
-import type { Comparison } from '../types'
-import './Compare.css'
+import { useState } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
 
-type CompareFormData = z.infer<typeof compareSchema>
+import { useCompare, useCompareHistory } from '../hooks/useQueries';
+import { compareSchema } from '../lib/validations';
+import Skeleton from '../components/Skeleton';
+import type { Comparison } from '../types';
+import './Compare.css';
+
+type CompareFormData = z.infer<typeof compareSchema>;
 
 function Compare(): JSX.Element {
-  const [results, setResults] = useState<Comparison | null>(null)
-  const [error, setError] = useState<string>('')
+  const [results, setResults] = useState<Comparison | null>(null);
+  const [error, setError] = useState<string>('');
 
-  const compareMutation = useCompare()
-  const { data: historyData, isLoading: historyLoading } = useCompareHistory()
+  const compareMutation = useCompare();
+  const { data: historyData, isLoading: historyLoading } = useCompareHistory();
 
   const {
     control,
@@ -28,51 +29,57 @@ function Compare(): JSX.Element {
     defaultValues: {
       rucs: ['', ''],
     },
-  })
+  });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'rucs' as never,
-  })
+  });
 
   const onSubmit = async (data: CompareFormData): Promise<void> => {
-    setError('')
-    setResults(null)
+    setError('');
+    setResults(null);
 
     try {
-      const result = await compareMutation.mutateAsync(data.rucs)
-      setResults(result)
+      const result = await compareMutation.mutateAsync(data.rucs);
+      setResults(result);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al comparar empresas'
-      setFormError('root', { message: msg })
-      setError(msg)
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        'Error al comparar empresas';
+      setFormError('root', { message: msg });
+      setError(msg);
     }
-  }
+  };
 
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return 'success'
-    if (score >= 60) return 'warning'
-    if (score >= 40) return 'danger'
-    return 'critical'
-  }
+    if (score >= 80) {
+      return 'success';
+    }
+    if (score >= 60) {
+      return 'warning';
+    }
+    if (score >= 40) {
+      return 'danger';
+    }
+    return 'critical';
+  };
 
   const getRiskLabel = (level: string): string => {
     const labels: Record<string, string> = {
-      'low': 'Bajo',
-      'medium': 'Medio',
-      'high': 'Alto',
-      'critical': 'Crítico'
-    }
-    return labels[level] || level
-  }
+      low: 'Bajo',
+      medium: 'Medio',
+      high: 'Alto',
+      critical: 'Crítico',
+    };
+    return labels[level] || level;
+  };
 
   return (
     <div className="compare-page">
       <header className="page-header">
         <h1>Comparar Empresas</h1>
-        <p className="subtitle">
-          Compara hasta 10 empresas simultáneamente
-        </p>
+        <p className="subtitle">Compara hasta 10 empresas simultáneamente</p>
       </header>
 
       <div className="compare-container">
@@ -90,11 +97,7 @@ function Compare(): JSX.Element {
                     className={errors.rucs?.[index] ? 'invalid' : ''}
                   />
                   {fields.length > 2 && (
-                    <button
-                      type="button"
-                      className="remove-btn"
-                      onClick={() => remove(index)}
-                    >
+                    <button type="button" className="remove-btn" onClick={() => remove(index)}>
                       ×
                     </button>
                   )}
@@ -107,11 +110,7 @@ function Compare(): JSX.Element {
             )}
 
             {fields.length < 10 && (
-              <button
-                type="button"
-                className="add-ruc-btn"
-                onClick={() => append('')}
-              >
+              <button type="button" className="add-ruc-btn" onClick={() => append('')}>
                 + Agregar RUC
               </button>
             )}
@@ -119,11 +118,7 @@ function Compare(): JSX.Element {
             {errors.root && <div className="error-message">{errors.root.message}</div>}
             {error && <div className="error-message">{error}</div>}
 
-            <button
-              type="submit"
-              className="compare-btn"
-              disabled={compareMutation.isPending}
-            >
+            <button type="submit" className="compare-btn" disabled={compareMutation.isPending}>
               {compareMutation.isPending ? 'Comparando...' : 'Comparar Empresas'}
             </button>
           </form>
@@ -147,7 +142,7 @@ function Compare(): JSX.Element {
                   </tr>
                 </thead>
                 <tbody>
-                  {results.companies?.map((company) => (
+                  {results.companies?.map(company => (
                     <tr key={company.ruc}>
                       <td className="company-name">{company.name}</td>
                       <td className="ruc-cell">{company.ruc}</td>
@@ -217,12 +212,8 @@ function Compare(): JSX.Element {
             )}
 
             <div className="export-actions">
-              <button className="export-btn pdf">
-                📄 Exportar PDF
-              </button>
-              <button className="export-btn excel">
-                📊 Exportar Excel
-              </button>
+              <button className="export-btn pdf">📄 Exportar PDF</button>
+              <button className="export-btn excel">📊 Exportar Excel</button>
             </div>
           </div>
         )}
@@ -234,11 +225,9 @@ function Compare(): JSX.Element {
             <Skeleton variant="rect" height={200} />
           ) : historyData?.items && historyData.items.length > 0 ? (
             <div className="history-list">
-              {historyData.items.map((item) => (
+              {historyData.items.map(item => (
                 <div key={item.id} className="history-item">
-                  <span className="history-rucs">
-                    {item.rucs?.join(', ') || 'N/A'}
-                  </span>
+                  <span className="history-rucs">{item.rucs?.join(', ') || 'N/A'}</span>
                   <span className="history-date">
                     {new Date(item.created_at).toLocaleDateString()}
                   </span>
@@ -253,7 +242,7 @@ function Compare(): JSX.Element {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Compare
+export default Compare;

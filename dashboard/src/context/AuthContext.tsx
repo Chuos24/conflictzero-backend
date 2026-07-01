@@ -1,63 +1,67 @@
-import { createContext, useState, useContext, useEffect, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
-import api from '../services/api'
-import type { User, AuthContextType } from '../types'
+import { createContext, useState, useContext, useEffect, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const AuthContext = createContext<AuthContextType | null>(null)
+import api from '../services/api';
+import type { User, AuthContextType } from '../types';
+
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('cz_token')
+    const token = localStorage.getItem('cz_token');
     if (token) {
-      fetchUser(token)
+      fetchUser(token);
     } else {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   const fetchUser = async (token: string) => {
     try {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      const response = await api.get('/api/v1/auth/me')
-      setUser(response.data)
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const response = await api.get('/api/v1/auth/me');
+      setUser(response.data);
     } catch (error) {
-      console.error('Failed to fetch user:', error)
-      localStorage.removeItem('cz_token')
-      delete api.defaults.headers.common['Authorization']
+      console.error('Failed to fetch user:', error);
+      localStorage.removeItem('cz_token');
+      delete api.defaults.headers.common['Authorization'];
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await api.post('/api/v1/auth/login', { email, password })
-      const { access_token, user } = response.data
-      
-      localStorage.setItem('cz_token', access_token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-      setUser(user)
-      
-      return { success: true }
+      const response = await api.post('/api/v1/auth/login', { email, password });
+      const { access_token, user } = response.data;
+
+      localStorage.setItem('cz_token', access_token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      setUser(user);
+
+      return { success: true };
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string } } }
+      const err = error as { response?: { data?: { detail?: string } } };
       return {
         success: false,
-        error: err.response?.data?.detail || 'Error de autenticación'
-      }
+        error: err.response?.data?.detail || 'Error de autenticación',
+      };
     }
-  }
+  };
 
   const logout = () => {
-    localStorage.removeItem('cz_token')
-    delete api.defaults.headers.common['Authorization']
-    setUser(null)
-    navigate('/login')
-  }
+    localStorage.removeItem('cz_token');
+    delete api.defaults.headers.common['Authorization'];
+    setUser(null);
+    navigate('/login');
+  };
 
   const value: AuthContextType = {
     user,
@@ -65,16 +69,16 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     login,
     logout,
     setUser,
-    isAuthenticated: !!user
-  }
+    isAuthenticated: !!user,
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
+    throw new Error('useAuth must be used within AuthProvider');
   }
-  return context
+  return context;
 }

@@ -12,7 +12,16 @@ export type CompanyStatus = 'pending' | 'active' | 'suspended' | 'cancelled';
 export type ApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected' | 'waitlisted';
 export type SelloStatus = 'bronze' | 'silver' | 'gold' | 'expired';
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
-export type InviteStatus = 'sent' | 'opened' | 'clicked' | 'registered' | 'paid' | 'expired' | 'cancelled' | 'pending' | 'accepted';
+export type InviteStatus =
+  | 'sent'
+  | 'opened'
+  | 'clicked'
+  | 'registered'
+  | 'paid'
+  | 'expired'
+  | 'cancelled'
+  | 'pending'
+  | 'accepted';
 export type AlertSeverity = 'info' | 'warning' | 'critical';
 export type AlertStatus = 'unread' | 'read' | 'resolved';
 
@@ -445,8 +454,19 @@ export interface PaginatedResponse<T> {
 // GDPR / PRIVACY
 // ============================================================
 
-export type GDPRRequestType = 'access' | 'rectification' | 'erasure' | 'portability' | 'objection' | 'restriction';
-export type GDPRRequestStatus = 'pending' | 'in_review' | 'fulfilled' | 'rejected' | 'partially_fulfilled';
+export type GDPRRequestType =
+  | 'access'
+  | 'rectification'
+  | 'erasure'
+  | 'portability'
+  | 'objection'
+  | 'restriction';
+export type GDPRRequestStatus =
+  | 'pending'
+  | 'in_review'
+  | 'fulfilled'
+  | 'rejected'
+  | 'partially_fulfilled';
 
 export interface GDPRRequest {
   id: string;

@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
@@ -29,7 +30,9 @@ const Countries = lazy(() => import('./pages/Countries'));
 
 function PageLoader(): JSX.Element {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+    <div
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}
+    >
       <LoadingSpinner size="large" />
     </div>
   );

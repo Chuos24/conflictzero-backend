@@ -1,26 +1,27 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useAuth } from '../context/AuthContext'
-import { useVerifications, useVerifyRuc } from '../hooks/useQueries'
-import { verifyRucSchema } from '../lib/validations'
-import MLScoreCard from '../components/MLScoreCard'
-import type { z } from 'zod'
-import type { VerificationResult } from '../types'
-import './Verifications.css'
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
 
-type VerifyFormData = z.infer<typeof verifyRucSchema>
+import { useAuth } from '../context/AuthContext';
+import { useVerifications, useVerifyRuc } from '../hooks/useQueries';
+import { verifyRucSchema } from '../lib/validations';
+import MLScoreCard from '../components/MLScoreCard';
+import type { VerificationResult } from '../types';
+import './Verifications.css';
+
+type VerifyFormData = z.infer<typeof verifyRucSchema>;
 
 interface ExtendedVerificationResult extends VerificationResult {
-  ruc: string
-  company_name: string
-  certificate_url?: string
+  ruc: string;
+  company_name: string;
+  certificate_url?: string;
 }
 
 function Verifications(): JSX.Element {
-  const { user } = useAuth()
-  const { data: historyData } = useVerifications()
-  const verifyMutation = useVerifyRuc()
+  const { user } = useAuth();
+  const { data: historyData } = useVerifications();
+  const verifyMutation = useVerifyRuc();
 
   const {
     register,
@@ -30,55 +31,65 @@ function Verifications(): JSX.Element {
   } = useForm<VerifyFormData>({
     resolver: zodResolver(verifyRucSchema),
     defaultValues: { ruc: '' },
-  })
+  });
 
-  const [results, setResults] = useState<ExtendedVerificationResult | null>(null)
+  const [results, setResults] = useState<ExtendedVerificationResult | null>(null);
 
   const onSubmit = async (data: VerifyFormData): Promise<void> => {
     try {
-      const result = await verifyMutation.mutateAsync(data.ruc)
+      const result = await verifyMutation.mutateAsync(data.ruc);
       setResults({
         ...result,
         ruc: data.ruc,
         company_name: result.razon_social || 'Empresa desconocida',
-      })
-      reset()
+      });
+      reset();
     } catch (err) {
       // Error handled by mutation
     }
-  }
+  };
 
-  const history = historyData?.items || []
-  const loading = verifyMutation.isPending
-  const error = (verifyMutation.error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || errors.ruc?.message
+  const history = historyData?.items || [];
+  const loading = verifyMutation.isPending;
+  const error =
+    (verifyMutation.error as { response?: { data?: { detail?: string } } })?.response?.data
+      ?.detail || errors.ruc?.message;
 
   const getRiskColor = (level: string): string => {
     switch (level) {
-      case 'low': return 'success'
-      case 'medium': return 'warning'
-      case 'high': return 'danger'
-      case 'critical': return 'critical'
-      default: return 'neutral'
+      case 'low':
+        return 'success';
+      case 'medium':
+        return 'warning';
+      case 'high':
+        return 'danger';
+      case 'critical':
+        return 'critical';
+      default:
+        return 'neutral';
     }
-  }
+  };
 
   const getRiskLabel = (level: string): string => {
     switch (level) {
-      case 'low': return 'Bajo'
-      case 'medium': return 'Medio'
-      case 'high': return 'Alto'
-      case 'critical': return 'Crítico'
-      default: return 'Desconocido'
+      case 'low':
+        return 'Bajo';
+      case 'medium':
+        return 'Medio';
+      case 'high':
+        return 'Alto';
+      case 'critical':
+        return 'Crítico';
+      default:
+        return 'Desconocido';
     }
-  }
+  };
 
   return (
     <div className="verifications-page">
       <header className="page-header">
         <h1>Verificaciones</h1>
-        <p className="subtitle">
-          Consulta el riesgo de empresas en tiempo real
-        </p>
+        <p className="subtitle">Consulta el riesgo de empresas en tiempo real</p>
       </header>
 
       <div className="verifications-grid">
@@ -95,11 +106,7 @@ function Verifications(): JSX.Element {
                 {...register('ruc')}
                 aria-invalid={errors.ruc ? 'true' : 'false'}
               />
-              <button
-                type="submit"
-                className="verify-btn"
-                disabled={loading}
-              >
+              <button type="submit" className="verify-btn" disabled={loading}>
                 {loading ? 'Verificando...' : 'Verificar'}
               </button>
             </div>
@@ -122,9 +129,13 @@ function Verifications(): JSX.Element {
                   <span className="score-label">/100</span>
                 </div>
                 <div className="score-legend">
-                  {results.score >= 80 ? '✅ Excelente' :
-                   results.score >= 60 ? '⚠️ Regular' :
-                   results.score >= 40 ? '❌ Riesgoso' : '🚨 Crítico'}
+                  {results.score >= 80
+                    ? '✅ Excelente'
+                    : results.score >= 60
+                      ? '⚠️ Regular'
+                      : results.score >= 40
+                        ? '❌ Riesgoso'
+                        : '🚨 Crítico'}
                 </div>
               </div>
               <div className="result-details">
@@ -159,9 +170,7 @@ function Verifications(): JSX.Element {
           )}
 
           {/* ML Score - se muestra cuando hay resultados */}
-          {results && (
-            <MLScoreCard ruc={results.ruc} />
-          )}
+          {results && <MLScoreCard ruc={results.ruc} />}
         </div>
 
         {/* Historial */}
@@ -173,14 +182,18 @@ function Verifications(): JSX.Element {
             </div>
           ) : (
             <div className="history-list">
-              {history.map((item) => (
+              {history.map(item => (
                 <div key={item.id} className="history-item">
                   <div className="history-info">
-                    <span className="history-name">{item.result?.razon_social || 'Empresa desconocida'}</span>
+                    <span className="history-name">
+                      {item.result?.razon_social || 'Empresa desconocida'}
+                    </span>
                     <span className="history-ruc">{item.ruc}</span>
                   </div>
                   <div className="history-meta">
-                    <span className={`risk-dot ${getRiskColor(item.result?.risk_level || '')}`}></span>
+                    <span
+                      className={`risk-dot ${getRiskColor(item.result?.risk_level || '')}`}
+                    ></span>
                     <span className="history-score">{item.result?.score || 0}/100</span>
                     <span className="history-date">
                       {new Date(item.created_at).toLocaleDateString()}
@@ -200,16 +213,17 @@ function Verifications(): JSX.Element {
           <div
             className="usage-fill"
             style={{
-              width: `${((user?.used_queries_this_month || 0) / (user?.max_monthly_queries || 1000)) * 100}%`
+              width: `${((user?.used_queries_this_month || 0) / (user?.max_monthly_queries || 1000)) * 100}%`,
             }}
           ></div>
         </div>
         <p className="usage-text">
-          {user?.used_queries_this_month || 0} / {user?.max_monthly_queries || 1000} consultas este mes
+          {user?.used_queries_this_month || 0} / {user?.max_monthly_queries || 1000} consultas este
+          mes
         </p>
       </div>
     </div>
-  )
+  );
 }
 
-export default Verifications
+export default Verifications;

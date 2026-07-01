@@ -1,44 +1,55 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts'
-import './Charts.css'
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import './Charts.css';
 
 // Colores del tema
-const COLORS = ['#d4af37', '#c0c0c0', '#cd7f32', '#1a1a1a', '#8b0000']
+const COLORS = ['#d4af37', '#c0c0c0', '#cd7f32', '#1a1a1a', '#8b0000'];
 
 export interface VerificationTrendsData {
-  date: string
-  verifications: number
-  comparisons: number
+  date: string;
+  verifications: number;
+  comparisons: number;
 }
 
 export interface RiskDistributionData {
-  name: string
-  value: number
-  color?: string
+  name: string;
+  value: number;
+  color?: string;
 }
 
 export interface SanctionsByEntityData {
-  entity: string
-  sanciones: number
+  entity: string;
+  sanciones: number;
 }
 
 export interface ComplianceHistoryData {
-  month: string
-  score: number
+  month: string;
+  score: number;
 }
 
 export interface VerificationTrendsProps {
-  data?: VerificationTrendsData[]
+  data?: VerificationTrendsData[];
 }
 
 /**
  * Gráfico de verificaciones por tiempo
  */
 export function VerificationTrends({ data = [] }: VerificationTrendsProps): JSX.Element {
-  const [chartData, setChartData] = useState<VerificationTrendsData[]>([])
+  const [chartData, setChartData] = useState<VerificationTrendsData[]>([]);
 
   useEffect(() => {
     if (data.length === 0) {
@@ -49,12 +60,12 @@ export function VerificationTrends({ data = [] }: VerificationTrendsProps): JSX.
         { date: 'Abr', verifications: 22, comparisons: 6 },
         { date: 'May', verifications: 30, comparisons: 10 },
         { date: 'Jun', verifications: 35, comparisons: 12 },
-      ]
-      setChartData(sample)
+      ];
+      setChartData(sample);
     } else {
-      setChartData(data)
+      setChartData(data);
     }
-  }, [data])
+  }, [data]);
 
   return (
     <div className="chart-container">
@@ -64,40 +75,40 @@ export function VerificationTrends({ data = [] }: VerificationTrendsProps): JSX.
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
           <XAxis dataKey="date" stroke="#888" />
           <YAxis stroke="#888" />
-          <Tooltip 
+          <Tooltip
             contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #d4af37' }}
             labelStyle={{ color: '#d4af37' }}
           />
           <Legend />
-          <Line 
-            type="monotone" 
-            dataKey="verifications" 
-            name="Verificaciones" 
-            stroke="#d4af37" 
+          <Line
+            type="monotone"
+            dataKey="verifications"
+            name="Verificaciones"
+            stroke="#d4af37"
             strokeWidth={2}
           />
-          <Line 
-            type="monotone" 
-            dataKey="comparisons" 
-            name="Comparaciones" 
-            stroke="#c0c0c0" 
+          <Line
+            type="monotone"
+            dataKey="comparisons"
+            name="Comparaciones"
+            stroke="#c0c0c0"
             strokeWidth={2}
           />
         </LineChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }
 
 export interface RiskDistributionProps {
-  data?: RiskDistributionData[]
+  data?: RiskDistributionData[];
 }
 
 /**
  * Gráfico de distribución de riesgo
  */
 export function RiskDistribution({ data = [] }: RiskDistributionProps): JSX.Element {
-  const [chartData, setChartData] = useState<RiskDistributionData[]>([])
+  const [chartData, setChartData] = useState<RiskDistributionData[]>([]);
 
   useEffect(() => {
     if (data.length === 0) {
@@ -106,11 +117,11 @@ export function RiskDistribution({ data = [] }: RiskDistributionProps): JSX.Elem
         { name: 'Riesgo Medio', value: 30, color: '#eab308' },
         { name: 'Alto Riesgo', value: 18, color: '#f97316' },
         { name: 'Crítico', value: 7, color: '#ef4444' },
-      ])
+      ]);
     } else {
-      setChartData(data)
+      setChartData(data);
     }
-  }, [data])
+  }, [data]);
 
   return (
     <div className="chart-container">
@@ -130,25 +141,23 @@ export function RiskDistribution({ data = [] }: RiskDistributionProps): JSX.Elem
               <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip 
-            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #d4af37' }}
-          />
+          <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #d4af37' }} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }
 
 export interface SanctionsByEntityProps {
-  data?: SanctionsByEntityData[]
+  data?: SanctionsByEntityData[];
 }
 
 /**
  * Gráfico de sanciones por entidad
  */
 export function SanctionsByEntity({ data = [] }: SanctionsByEntityProps): JSX.Element {
-  const [chartData, setChartData] = useState<SanctionsByEntityData[]>([])
+  const [chartData, setChartData] = useState<SanctionsByEntityData[]>([]);
 
   useEffect(() => {
     if (data.length === 0) {
@@ -157,11 +166,11 @@ export function SanctionsByEntity({ data = [] }: SanctionsByEntityProps): JSX.El
         { entity: 'OSCE', sanciones: 5 },
         { entity: 'TCE', sanciones: 1 },
         { entity: 'INDECOPI', sanciones: 3 },
-      ])
+      ]);
     } else {
-      setChartData(data)
+      setChartData(data);
     }
-  }, [data])
+  }, [data]);
 
   return (
     <div className="chart-container">
@@ -171,7 +180,7 @@ export function SanctionsByEntity({ data = [] }: SanctionsByEntityProps): JSX.El
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
           <XAxis dataKey="entity" stroke="#888" />
           <YAxis stroke="#888" />
-          <Tooltip 
+          <Tooltip
             contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #d4af37' }}
             labelStyle={{ color: '#d4af37' }}
           />
@@ -179,18 +188,18 @@ export function SanctionsByEntity({ data = [] }: SanctionsByEntityProps): JSX.El
         </BarChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }
 
 export interface ComplianceHistoryProps {
-  data?: ComplianceHistoryData[]
+  data?: ComplianceHistoryData[];
 }
 
 /**
  * Gráfico de compliance score histórico
  */
 export function ComplianceHistory({ data = [] }: ComplianceHistoryProps): JSX.Element {
-  const [chartData, setChartData] = useState<ComplianceHistoryData[]>([])
+  const [chartData, setChartData] = useState<ComplianceHistoryData[]>([]);
 
   useEffect(() => {
     if (data.length === 0) {
@@ -201,11 +210,11 @@ export function ComplianceHistory({ data = [] }: ComplianceHistoryProps): JSX.El
         { month: 'Abr', score: 82 },
         { month: 'May', score: 85 },
         { month: 'Jun', score: 88 },
-      ])
+      ]);
     } else {
-      setChartData(data)
+      setChartData(data);
     }
-  }, [data])
+  }, [data]);
 
   return (
     <div className="chart-container">
@@ -215,35 +224,40 @@ export function ComplianceHistory({ data = [] }: ComplianceHistoryProps): JSX.El
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
           <XAxis dataKey="month" stroke="#888" />
           <YAxis domain={[0, 100]} stroke="#888" />
-          <Tooltip 
+          <Tooltip
             contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #d4af37' }}
             labelStyle={{ color: '#d4af37' }}
             formatter={(value: number) => [`${value}%`, 'Score']}
           />
-          <Line 
-            type="monotone" 
-            dataKey="score" 
-            stroke="#d4af37" 
+          <Line
+            type="monotone"
+            dataKey="score"
+            stroke="#d4af37"
             strokeWidth={3}
             dot={{ fill: '#d4af37', r: 4 }}
           />
         </LineChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }
 
 export interface StatsDashboardProps {
-  verificationData?: VerificationTrendsData[]
-  riskData?: RiskDistributionData[]
-  sanctionsData?: SanctionsByEntityData[]
-  complianceData?: ComplianceHistoryData[]
+  verificationData?: VerificationTrendsData[];
+  riskData?: RiskDistributionData[];
+  sanctionsData?: SanctionsByEntityData[];
+  complianceData?: ComplianceHistoryData[];
 }
 
 /**
  * Dashboard de estadísticas con múltiples gráficos
  */
-export function StatsDashboard({ verificationData, riskData, sanctionsData, complianceData }: StatsDashboardProps): JSX.Element {
+export function StatsDashboard({
+  verificationData,
+  riskData,
+  sanctionsData,
+  complianceData,
+}: StatsDashboardProps): JSX.Element {
   return (
     <div className="stats-dashboard">
       <div className="charts-grid">
@@ -261,7 +275,7 @@ export function StatsDashboard({ verificationData, riskData, sanctionsData, comp
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default StatsDashboard
+export default StatsDashboard;

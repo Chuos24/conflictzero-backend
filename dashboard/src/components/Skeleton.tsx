@@ -13,24 +13,30 @@ export interface SkeletonProps {
 
 /**
  * Skeleton - Componente de placeholder para estados de carga
- * 
+ *
  * Referencia: Material Design Skeleton Screens
  * https://material.io/design/communication/launch-screen.html#skeleton-screen
  */
-export const Skeleton = ({ 
-  variant = 'text', 
-  width, 
-  height, 
+export const Skeleton = ({
+  variant = 'text',
+  width,
+  height,
   className = '',
   count = 1,
   circle = false,
   style: extraStyle,
-  ...props 
+  ...props
 }: SkeletonProps): JSX.Element => {
   const style: CSSProperties = { ...extraStyle };
-  if (width) style.width = typeof width === 'number' ? `${width}px` : width;
-  if (height) style.height = typeof height === 'number' ? `${height}px` : height;
-  if (circle) style.borderRadius = '50%';
+  if (width) {
+    style.width = typeof width === 'number' ? `${width}px` : width;
+  }
+  if (height) {
+    style.height = typeof height === 'number' ? `${height}px` : height;
+  }
+  if (circle) {
+    style.borderRadius = '50%';
+  }
 
   const elements: JSX.Element[] = [];
   for (let i = 0; i < count; i++) {
@@ -59,7 +65,9 @@ export interface SkeletonCardProps {
  */
 export const SkeletonCard = ({ lines = 3, hasImage = false }: SkeletonCardProps): JSX.Element => (
   <div className="cz-skeleton-card">
-    {hasImage && <Skeleton variant="rect" width="100%" height={160} className="cz-skeleton-card__image" />}
+    {hasImage && (
+      <Skeleton variant="rect" width="100%" height={160} className="cz-skeleton-card__image" />
+    )}
     <div className="cz-skeleton-card__content">
       <Skeleton variant="text" width="60%" height={24} />
       {Array.from({ length: lines }).map((_, i) => (

@@ -1,37 +1,39 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import './Network.css'
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+import './Network.css';
+import type { z } from 'zod';
+
 import {
   useNetworkSuppliers,
   useNetworkStats,
   useNetworkAlerts,
   useAddSupplier,
   useRemoveSupplier,
-  useMarkAlertRead
-} from '../hooks/useQueries'
-import { useToast } from '../context/ToastContext'
-import Modal from '../components/Modal'
-import { addSupplierSchema } from '../lib/validations'
-import type { z } from 'zod'
-import type { NetworkSupplier, NetworkAlert } from '../types'
+  useMarkAlertRead,
+} from '../hooks/useQueries';
+import { useToast } from '../context/ToastContext';
+import Modal from '../components/Modal';
+import { addSupplierSchema } from '../lib/validations';
+import type { NetworkSupplier, NetworkAlert } from '../types';
 
-type AddSupplierFormData = z.infer<typeof addSupplierSchema>
+type AddSupplierFormData = z.infer<typeof addSupplierSchema>;
 
 function Network(): JSX.Element {
-  const { success, error } = useToast()
-  const [showAddModal, setShowAddModal] = useState<boolean>(false)
-  const [activeTab, setActiveTab] = useState<string>('suppliers')
+  const { success, error } = useToast();
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>('suppliers');
 
-  const { data: suppliersData } = useNetworkSuppliers()
-  const { data: stats } = useNetworkStats()
-  const { data: alertsData } = useNetworkAlerts()
-  const addSupplier = useAddSupplier()
-  const removeSupplier = useRemoveSupplier()
-  const markAlertRead = useMarkAlertRead()
+  const { data: suppliersData } = useNetworkSuppliers();
+  const { data: stats } = useNetworkStats();
+  const { data: alertsData } = useNetworkAlerts();
+  const addSupplier = useAddSupplier();
+  const removeSupplier = useRemoveSupplier();
+  const markAlertRead = useMarkAlertRead();
 
-  const suppliers: NetworkSupplier[] = suppliersData?.items || []
-  const alerts: NetworkAlert[] = alertsData?.items || []
+  const suppliers: NetworkSupplier[] = suppliersData?.items || [];
+  const alerts: NetworkAlert[] = alertsData?.items || [];
 
   const {
     register,
@@ -46,52 +48,64 @@ function Network(): JSX.Element {
       name: '',
       alert_threshold: 10,
     },
-  })
+  });
 
   const onSubmit = async (data: AddSupplierFormData): Promise<void> => {
     try {
       await addSupplier.mutateAsync({
         ruc: data.ruc,
         notes: data.name || undefined,
-        tags: []
-      })
-      success('Proveedor agregado exitosamente')
-      setShowAddModal(false)
-      reset()
+        tags: [],
+      });
+      success('Proveedor agregado exitosamente');
+      setShowAddModal(false);
+      reset();
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'Error agregando proveedor'
-      setError('root', { message: errMsg })
-      error(errMsg)
+      const errMsg = err instanceof Error ? err.message : 'Error agregando proveedor';
+      setError('root', { message: errMsg });
+      error(errMsg);
     }
-  }
+  };
 
   const handleRemoveSupplier = async (id: string): Promise<void> => {
-    if (!confirm('¿Estás seguro de eliminar este proveedor de tu red?')) return
-    try {
-      await removeSupplier.mutateAsync(id)
-      success('Proveedor eliminado')
-    } catch (err: unknown) {
-      error('Error eliminando proveedor')
+    if (!confirm('¿Estás seguro de eliminar este proveedor de tu red?')) {
+      return;
     }
-  }
+    try {
+      await removeSupplier.mutateAsync(id);
+      success('Proveedor eliminado');
+    } catch (err: unknown) {
+      error('Error eliminando proveedor');
+    }
+  };
 
   const handleMarkAlertRead = async (alertId: string): Promise<void> => {
     try {
-      await markAlertRead.mutateAsync(alertId)
+      await markAlertRead.mutateAsync(alertId);
     } catch (err: unknown) {
-      error('Error marcando alerta')
+      error('Error marcando alerta');
     }
-  }
+  };
 
   const getRiskColor = (level: string): string => {
-    const colors: Record<string, string> = { low: '#22c55e', medium: '#eab308', high: '#f97316', critical: '#ef4444' }
-    return colors[level] || '#6b7280'
-  }
+    const colors: Record<string, string> = {
+      low: '#22c55e',
+      medium: '#eab308',
+      high: '#f97316',
+      critical: '#ef4444',
+    };
+    return colors[level] || '#6b7280';
+  };
 
   const getRiskLabel = (level: string): string => {
-    const labels: Record<string, string> = { low: 'Bajo', medium: 'Medio', high: 'Alto', critical: 'Crítico' }
-    return labels[level] || level
-  }
+    const labels: Record<string, string> = {
+      low: 'Bajo',
+      medium: 'Medio',
+      high: 'Alto',
+      critical: 'Crítico',
+    };
+    return labels[level] || level;
+  };
 
   return (
     <div className="network-page">
@@ -156,7 +170,9 @@ function Network(): JSX.Element {
                 <div className="supplier-info">
                   <h3>{supplier.razon_social || 'Sin nombre'}</h3>
                   <p className="ruc">RUC: {supplier.ruc}</p>
-                  <p className="added">Agregado: {new Date(supplier.added_at).toLocaleDateString()}</p>
+                  <p className="added">
+                    Agregado: {new Date(supplier.added_at).toLocaleDateString()}
+                  </p>
                 </div>
                 <div className="supplier-metrics">
                   <div className="metric">
@@ -167,7 +183,10 @@ function Network(): JSX.Element {
                   </div>
                   <div className="metric">
                     <span className="label">Riesgo:</span>
-                    <span className="badge" style={{ backgroundColor: getRiskColor(supplier.risk_level) }}>
+                    <span
+                      className="badge"
+                      style={{ backgroundColor: getRiskColor(supplier.risk_level) }}
+                    >
                       {getRiskLabel(supplier.risk_level)}
                     </span>
                   </div>
@@ -177,10 +196,16 @@ function Network(): JSX.Element {
                   </div>
                 </div>
                 <div className="supplier-actions">
-                  <button className="btn btn-sm" onClick={() => window.open(`/compare?ruc=${supplier.ruc}`, '_blank')}>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => window.open(`/compare?ruc=${supplier.ruc}`, '_blank')}
+                  >
                     Ver detalle
                   </button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleRemoveSupplier(supplier.id)}>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => handleRemoveSupplier(supplier.id)}
+                  >
                     Eliminar
                   </button>
                 </div>
@@ -199,7 +224,10 @@ function Network(): JSX.Element {
             </div>
           ) : (
             alerts.map(alert => (
-              <div key={alert.id} className={`alert-card ${alert.status === 'read' ? 'read' : 'unread'}`}>
+              <div
+                key={alert.id}
+                className={`alert-card ${alert.status === 'read' ? 'read' : 'unread'}`}
+              >
                 <div className="alert-header">
                   <span className={`severity-badge ${alert.severity}`}>{alert.severity}</span>
                   <span className="alert-date">{new Date(alert.created_at).toLocaleString()}</span>
@@ -230,7 +258,9 @@ function Network(): JSX.Element {
       >
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           {errors.root && (
-            <div className="error-message" role="alert">{errors.root.message}</div>
+            <div className="error-message" role="alert">
+              {errors.root.message}
+            </div>
           )}
           <div className="form-group">
             <label htmlFor="ruc">RUC del proveedor</label>
@@ -243,19 +273,18 @@ function Network(): JSX.Element {
               aria-invalid={errors.ruc ? 'true' : 'false'}
             />
             {errors.ruc && (
-              <span className="field-error" role="alert">{errors.ruc.message}</span>
+              <span className="field-error" role="alert">
+                {errors.ruc.message}
+              </span>
             )}
           </div>
           <div className="form-group">
             <label htmlFor="name">Nombre (opcional)</label>
-            <input
-              type="text"
-              id="name"
-              placeholder="Nombre del proveedor"
-              {...register('name')}
-            />
+            <input type="text" id="name" placeholder="Nombre del proveedor" {...register('name')} />
             {errors.name && (
-              <span className="field-error" role="alert">{errors.name.message}</span>
+              <span className="field-error" role="alert">
+                {errors.name.message}
+              </span>
             )}
           </div>
           <div className="form-group">
@@ -269,7 +298,9 @@ function Network(): JSX.Element {
               aria-invalid={errors.alert_threshold ? 'true' : 'false'}
             />
             {errors.alert_threshold && (
-              <span className="field-error" role="alert">{errors.alert_threshold.message}</span>
+              <span className="field-error" role="alert">
+                {errors.alert_threshold.message}
+              </span>
             )}
             <small>Notificar cuando el score cambie más de este porcentaje</small>
           </div>
@@ -277,14 +308,18 @@ function Network(): JSX.Element {
             <button type="button" className="btn" onClick={() => setShowAddModal(false)}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting || addSupplier.isPending}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting || addSupplier.isPending}
+            >
               {addSupplier.isPending ? 'Agregando...' : 'Agregar'}
             </button>
           </div>
         </form>
       </Modal>
     </div>
-  )
+  );
 }
 
-export default Network
+export default Network;

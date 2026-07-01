@@ -3,61 +3,65 @@
  * Fase 3 Enterprise - Multi-country configuration
  */
 
-import { useState } from 'react'
-import { useToast } from '../context/ToastContext'
+import { useState } from 'react';
+
+import { useToast } from '../context/ToastContext';
 import {
   SUPPORTED_COUNTRIES,
   getCountryByCode,
   getDefaultCountry,
   formatCurrency,
   validateDocumentFormat,
-  getDocumentPlaceholder
-} from '../utils/countries'
-import './Countries.css'
+  getDocumentPlaceholder,
+} from '../utils/countries';
+import './Countries.css';
 
 interface CountrySettings {
-  code: string
-  enabled: boolean
-  defaultDocument: string
-  apiKeys: Record<string, string>
+  code: string;
+  enabled: boolean;
+  defaultDocument: string;
+  apiKeys: Record<string, string>;
 }
 
 function Countries(): JSX.Element {
-  const { success, error } = useToast()
-  const [activeCountry, setActiveCountry] = useState<string>(getDefaultCountry().code)
+  const { success, error } = useToast();
+  const [activeCountry, setActiveCountry] = useState<string>(getDefaultCountry().code);
   const [settings, setSettings] = useState<Record<string, CountrySettings>>({
     PE: { code: 'PE', enabled: true, defaultDocument: '', apiKeys: {} },
     CL: { code: 'CL', enabled: false, defaultDocument: '', apiKeys: {} },
     CO: { code: 'CO', enabled: false, defaultDocument: '', apiKeys: {} },
     MX: { code: 'MX', enabled: false, defaultDocument: '', apiKeys: {} },
-    ES: { code: 'ES', enabled: false, defaultDocument: '', apiKeys: {} }
-  })
-  const [testDocument, setTestDocument] = useState('')
-  const [validationResult, setValidationResult] = useState<{valid: boolean; message?: string} | null>(null)
+    ES: { code: 'ES', enabled: false, defaultDocument: '', apiKeys: {} },
+  });
+  const [testDocument, setTestDocument] = useState('');
+  const [validationResult, setValidationResult] = useState<{
+    valid: boolean;
+    message?: string;
+  } | null>(null);
 
-  const country = getCountryByCode(activeCountry) || getDefaultCountry()
+  const country = getCountryByCode(activeCountry) || getDefaultCountry();
 
   const handleToggleCountry = (code: string) => {
     setSettings((prev: Record<string, CountrySettings>) => ({
       ...prev,
-      [code]: { ...prev[code], enabled: !prev[code].enabled }
-    }))
-    success(`País ${code} ${settings[code]?.enabled ? 'desactivado' : 'activado'}`)
-  }
+      [code]: { ...prev[code], enabled: !prev[code].enabled },
+    }));
+    success(`País ${code} ${settings[code]?.enabled ? 'desactivado' : 'activado'}`);
+  };
 
   const handleTestDocument = () => {
-    const result = validateDocumentFormat(activeCountry, testDocument)
-    setValidationResult(result)
+    const result = validateDocumentFormat(activeCountry, testDocument);
+    setValidationResult(result);
     if (result.valid) {
-      success('Documento válido')
+      success('Documento válido');
     } else {
-      error(result.message || 'Documento inválido')
+      error(result.message || 'Documento inválido');
     }
-  }
+  };
 
   const handleSave = () => {
-    success('Configuración guardada')
-  }
+    success('Configuración guardada');
+  };
 
   return (
     <div className="countries-page">
@@ -129,12 +133,14 @@ function Countries(): JSX.Element {
 
           <div className="validation-section">
             <h3>🧪 Validador de Documentos</h3>
-            <p>Prueba la validación de {country.documentLabel} para {country.name}</p>
+            <p>
+              Prueba la validación de {country.documentLabel} para {country.name}
+            </p>
             <div className="validation-input">
               <input
                 type="text"
                 value={testDocument}
-                onChange={(e) => setTestDocument(e.target.value)}
+                onChange={e => setTestDocument(e.target.value)}
                 placeholder={getDocumentPlaceholder(activeCountry)}
                 className={validationResult ? (validationResult.valid ? 'valid' : 'invalid') : ''}
               />
@@ -144,7 +150,8 @@ function Countries(): JSX.Element {
             </div>
             {validationResult && (
               <div className={`validation-result ${validationResult.valid ? 'success' : 'error'}`}>
-                {validationResult.valid ? '✅' : '❌'} {validationResult.message || (validationResult.valid ? 'Válido' : 'Inválido')}
+                {validationResult.valid ? '✅' : '❌'}{' '}
+                {validationResult.message || (validationResult.valid ? 'Válido' : 'Inválido')}
               </div>
             )}
           </div>
@@ -154,38 +161,70 @@ function Countries(): JSX.Element {
             <div className="sources-grid">
               {activeCountry === 'PE' && (
                 <>
-                  <div className="source-item"><span>☀️</span> SUNAT</div>
-                  <div className="source-item"><span>📋</span> OSCE</div>
-                  <div className="source-item"><span>⚖️</span> TCE</div>
-                  <div className="source-item"><span>🛡️</span> INDECOPI</div>
+                  <div className="source-item">
+                    <span>☀️</span> SUNAT
+                  </div>
+                  <div className="source-item">
+                    <span>📋</span> OSCE
+                  </div>
+                  <div className="source-item">
+                    <span>⚖️</span> TCE
+                  </div>
+                  <div className="source-item">
+                    <span>🛡️</span> INDECOPI
+                  </div>
                 </>
               )}
               {activeCountry === 'CL' && (
                 <>
-                  <div className="source-item"><span>🏛️</span> SII</div>
-                  <div className="source-item"><span>🛒</span> ChileCompra</div>
-                  <div className="source-item"><span>⚖️</span> TDLC</div>
+                  <div className="source-item">
+                    <span>🏛️</span> SII
+                  </div>
+                  <div className="source-item">
+                    <span>🛒</span> ChileCompra
+                  </div>
+                  <div className="source-item">
+                    <span>⚖️</span> TDLC
+                  </div>
                 </>
               )}
               {activeCountry === 'CO' && (
                 <>
-                  <div className="source-item"><span>🏛️</span> DIAN</div>
-                  <div className="source-item"><span>🛒</span> SECOP</div>
-                  <div className="source-item"><span>🛡️</span> SIC</div>
+                  <div className="source-item">
+                    <span>🏛️</span> DIAN
+                  </div>
+                  <div className="source-item">
+                    <span>🛒</span> SECOP
+                  </div>
+                  <div className="source-item">
+                    <span>🛡️</span> SIC
+                  </div>
                 </>
               )}
               {activeCountry === 'MX' && (
                 <>
-                  <div className="source-item"><span>🏛️</span> SAT</div>
-                  <div className="source-item"><span>🛒</span> CompraNet</div>
-                  <div className="source-item"><span>🛡️</span> COFECE</div>
+                  <div className="source-item">
+                    <span>🏛️</span> SAT
+                  </div>
+                  <div className="source-item">
+                    <span>🛒</span> CompraNet
+                  </div>
+                  <div className="source-item">
+                    <span>🛡️</span> COFECE
+                  </div>
                 </>
               )}
               {activeCountry === 'ES' && (
                 <>
-                  <div className="source-item"><span>🏛️</span> AEAT</div>
-                  <div className="source-item"><span>📜</span> BOE</div>
-                  <div className="source-item"><span>🛡️</span> CNMC</div>
+                  <div className="source-item">
+                    <span>🏛️</span> AEAT
+                  </div>
+                  <div className="source-item">
+                    <span>📜</span> BOE
+                  </div>
+                  <div className="source-item">
+                    <span>🛡️</span> CNMC
+                  </div>
                 </>
               )}
             </div>
@@ -197,8 +236,10 @@ function Countries(): JSX.Element {
               {activeCountry === 'PE' && 'Ley N° 29733 - Protección de Datos Personales'}
               {activeCountry === 'CL' && 'Ley N° 19.628 - Protección de la Vida Privada'}
               {activeCountry === 'CO' && 'Ley 1581 de 2012 - Protección de Datos Personales'}
-              {activeCountry === 'MX' && 'Ley Federal de Protección de Datos Personales en Posesión de los Particulares'}
-              {activeCountry === 'ES' && 'RGPD (Reglamento General de Protección de Datos) + LOPDGDD'}
+              {activeCountry === 'MX' &&
+                'Ley Federal de Protección de Datos Personales en Posesión de los Particulares'}
+              {activeCountry === 'ES' &&
+                'RGPD (Reglamento General de Protección de Datos) + LOPDGDD'}
             </p>
           </div>
 
@@ -210,7 +251,7 @@ function Countries(): JSX.Element {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Countries
+export default Countries;
