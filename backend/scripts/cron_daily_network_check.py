@@ -30,8 +30,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+# Add backend to path - works both in local dev and Docker
+script_dir = os.path.dirname(os.path.abspath(__file__))
+backend_path = os.path.join(script_dir, '..')
+sys.path.insert(0, os.path.abspath(backend_path))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session

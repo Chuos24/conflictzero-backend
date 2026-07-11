@@ -47,6 +47,44 @@ services:
         - backend/**
     autoDeploy: true
 
+  # Cron Job: Re-verificación diaria de proveedores (Mi Red)
+  - type: cron
+    name: conflict-zero-network-check
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: conflict-zero-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: conflict-zero-redis
+          type: redis
+          property: connectionString
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: CERT_MODE
+        value: demo
+      - key: ENV
+        value: production
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
+        value: noreply@czperu.com
+      - key: EMAIL_ENABLED
+        value: "false"
+      - key: FRONTEND_URL
+        value: https://czperu.com
+    schedule: "0 6 * * *"  # 6 AM daily (UTC)
+    buildFilter:
+      paths:
+        - backend/**
+    autoDeploy: true
+    command: ["python", "scripts/cron_daily_network_check.py"]
+
   # Dashboard Static Site
   - type: web
     name: conflict-zero-dashboard
